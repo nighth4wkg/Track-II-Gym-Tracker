@@ -57,6 +57,16 @@ npx.cmd cap sync
 
 Android builds require Android Studio/JDK. iOS builds require macOS and Xcode. The included Native Release workflow produces an installable, debug-signed Android test APK and an unsigned iOS IPA; an App Store/TestFlight IPA still requires Apple signing.
 
+## SideStore and AltStore
+
+Add this source URL in SideStore or AltStore:
+
+```text
+https://github.com/nighth4wkg/Track-II-Gym-Tracker/releases/latest/download/altstore-source.json
+```
+
+SideStore or AltStore downloads the unsigned IPA from the latest GitHub release and signs it locally with your Apple account. Each future native release generates a matching source file automatically; update detection depends on the IPA version, not its release date.
+
 ## Privacy and security
 
 This public source contains placeholders only. Local environment files, Supabase link metadata, build output, QA artifacts, platform-hosting metadata, and signing materials are excluded. Review Supabase Row Level Security policies before allowing real users.

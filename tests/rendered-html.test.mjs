@@ -1296,3 +1296,23 @@ test("native Capacitor configuration packages the shared app with haptics, notif
   assert.match(page, /promiseWithTimeout/);
   assert.match(page, /notificationRequestBusy/);
 });
+
+test("native releases publish a SideStore source from the built IPA metadata", async () => {
+  const [workflow, generator, packageJson, readme] = await Promise.all([
+    read(".github/workflows/native-release.yml"),
+    read("scripts/generate-sidestore-source.mjs"),
+    read("package.json"),
+    read("README.md"),
+  ]);
+
+  assert.match(packageJson, /"generate:sidestore-source"/);
+  assert.match(workflow, /Generate SideStore source/);
+  assert.match(workflow, /CFBundleShortVersionString/);
+  assert.match(workflow, /CFBundleIdentifier/);
+  assert.match(workflow, /MARKETING_VERSION/);
+  assert.match(workflow, /altstore-source\.json/);
+  assert.match(generator, /bundleIdentifier/);
+  assert.match(generator, /releases\/latest\/download\/altstore-source\.json/);
+  assert.match(generator, /Track-II-ios-unsigned\.ipa/);
+  assert.match(readme, /SideStore and AltStore/);
+});

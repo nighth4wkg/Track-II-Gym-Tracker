@@ -74,6 +74,7 @@ jobs:
     name: Unsigned iOS IPA
     runs-on: macos-15
     env:
+      RELEASE_TAG: ${{ inputs.tag }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       NEXT_PUBLIC_TRACK_WEB_ORIGIN: ${{ vars.TRACK_WEB_ORIGIN }}
@@ -102,6 +103,7 @@ jobs:
 
       - name: Build unsigned iOS app
         run: |
+          APP_VERSION="${RELEASE_TAG#v}"
           xcodebuild \
             -project ios/App/App.xcodeproj \
             -scheme App \
@@ -110,7 +112,9 @@ jobs:
             -derivedDataPath ios/build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY=""
+            CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION="$APP_VERSION" \
+            CURRENT_PROJECT_VERSION="$GITHUB_RUN_NUMBER"
 
       - name: Package unsigned IPA
         run: |
@@ -120,11 +124,34 @@ jobs:
           cp -R "$APP_PATH" Payload/
           ditto -c -k --sequesterRsrc --keepParent Payload release-assets/Track-II-ios-unsigned.ipa
 
+      - name: Generate SideStore source
+        env:
+          REPOSITORY_SLUG: ${{ github.repository }}
+          REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+        run: |
+          APP_PATH="$(find ios/build/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' -print -quit)"
+          test -n "$APP_PATH"
+          APP_VERSION="$(plutil -extract CFBundleShortVersionString raw -o - "$APP_PATH/Info.plist")"
+          BUNDLE_ID="$(plutil -extract CFBundleIdentifier raw -o - "$APP_PATH/Info.plist")"
+          MIN_IOS="$(plutil -extract MinimumOSVersion raw -o - "$APP_PATH/Info.plist")"
+          npm run generate:sidestore-source -- \
+            --ipa release-assets/Track-II-ios-unsigned.ipa \
+            --output release-assets/altstore-source.json \
+            --version "$APP_VERSION" \
+            --bundle-id "$BUNDLE_ID" \
+            --min-ios "$MIN_IOS" \
+            --date "$(date -u +%F)" \
+            --release-tag "$RELEASE_TAG" \
+            --repository-url "$REPOSITORY_URL" \
+            --repository-slug "$REPOSITORY_SLUG"
+
       - name: Upload iOS artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: track-ii-ios
-          path: release-assets/Track-II-ios-unsigned.ipa
+          path: |
+            release-assets/Track-II-ios-unsigned.ipa
+            release-assets/altstore-source.json
           if-no-files-found: error
 
   release:

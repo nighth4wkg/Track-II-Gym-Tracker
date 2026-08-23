@@ -1,0 +1,1276 @@
+.calendar-detail-modal.ui-panel {
+  border-radius: 18px;
+}
+.ui-status {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.ui-status > i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+}
+.ui-empty {
+  text-align: center;
+  color: var(--muted);
+}
+.ui-empty h2 {
+  color: var(--ink);
+}
+.ui-empty p {
+  color: var(--muted);
+}
+
+.workout-page .task {
+  background: var(--soft);
+}
+.task-title-line {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.task-title-line .mobile-exercise-title,
+.task-title-line .header-task-edit {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.calendar-legend {
+  font-size: 10px;
+}
+.settings-content .setting-row p,
+.settings-content .personal-info-copy p,
+.settings-content .ai-intro p {
+  max-width: 420px;
+}
+.settings-title-row .settings-close.ui-button {
+  width: 40px;
+  min-width: 40px;
+  height: 40px;
+  min-height: 40px;
+  flex: 0 0 40px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--ink) 28%, var(--line));
+  border-radius: 14px;
+  background: var(--raised);
+  color: var(--ink);
+  font-size: 27px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 0 0 3px color-mix(in srgb, var(--ink) 7%, transparent);
+}
+.settings-title-row .settings-close.ui-button:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink) 44%, var(--line));
+  background: var(--hover);
+  color: var(--ink);
+  transform: translateY(-1px) rotate(6deg);
+  box-shadow:
+    0 10px 28px rgba(0, 0, 0, 0.28),
+    0 0 0 4px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.settings-title-row .settings-close.ui-button:active:not(:disabled) {
+  transform: scale(0.92);
+}
+.settings-title-row .settings-close.ui-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ink) 55%, transparent);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--ink) 10%, transparent);
+}
+.finish-button.is-saving {
+  border-color: var(--line);
+  background: var(--soft);
+  color: var(--muted);
+  box-shadow: none;
+}
+.finish-button.is-saved {
+  border-color: rgba(52, 199, 89, 0.28);
+  background: rgba(52, 199, 89, 0.12);
+  color: #48b875;
+  box-shadow: none;
+  animation: finish-button-complete 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+}
+
+@keyframes finish-button-complete {
+  0% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  20% {
+    transform: translateY(4px) scale(0.95);
+  }
+  42% {
+    transform: translateY(-3px) scale(1.06);
+  }
+  66% {
+    transform: translateY(-5px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+}
+
+@media (max-width: 700px) {
+  .ui-button {
+    min-height: 38px;
+  }
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --track-bottom-tab-height: 72px;
+    --track-bottom-tab-edge: 8px;
+  }
+  .bottom-tab-bar {
+    position: fixed !important;
+    --bottom-tab-bar-height: var(--track-bottom-tab-height);
+    --bottom-tab-track-height: 58px;
+    z-index: 90;
+    left: 50vw;
+    right: auto;
+    top: auto !important;
+    inset-block-start: auto !important;
+    bottom: calc(var(--track-bottom-tab-edge) + var(--track-safe-bottom)) !important;
+    inset-block-end: calc(var(--track-bottom-tab-edge) + var(--track-safe-bottom)) !important;
+    width: min(var(--track-bottom-tab-width), calc(100vw - 24px));
+    max-width: var(--track-bottom-tab-width);
+    display: flex;
+    height: var(--bottom-tab-bar-height);
+    min-height: var(--bottom-tab-bar-height);
+    max-height: var(--bottom-tab-bar-height);
+    justify-content: center;
+    margin: 0 !important;
+    padding: 6px;
+    border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    box-shadow:
+      0 18px 45px rgba(0, 0, 0, 0.2),
+      0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    transform: translateX(-50%);
+  }
+  .bottom-tab-track {
+    width: 100%;
+    height: 58px;
+  }
+  .bottom-tab-track {
+    min-height: var(--bottom-tab-track-height);
+    max-height: var(--bottom-tab-track-height);
+  }
+  .bottom-tab {
+    height: 100%;
+    min-height: 0;
+    font-size: 9px;
+  }
+  .bottom-tab-bar.is-mobile-sidebar-open {
+    animation: bottom-tab-sidebar-dismiss 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    pointer-events: none;
+  }
+  .bottom-tab-bar:not(.is-mobile-sidebar-open):not(.is-settings-hidden) {
+    animation: bottom-tab-sidebar-return 0.56s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .settings-backdrop {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(0, 0, 0, 0.82);
+  }
+  .settings-title-row {
+    position: relative;
+    z-index: 2;
+  }
+  .settings-title-row .settings-close.ui-button {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    flex: 0 0 44px;
+  }
+  .content,
+  .content:has(.timer-screen),
+  .content:has(.welcome-screen) {
+    padding-bottom: calc(120px + var(--track-safe-bottom));
+  }
+  .scroll-shortcuts {
+    bottom: calc(112px + var(--track-safe-bottom));
+  }
+}
+
+@keyframes bottom-tab-sidebar-dismiss {
+  0% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+  62% {
+    opacity: 0.86;
+    visibility: visible;
+    transform: translateX(-50%) translateY(9px) scale(1.012);
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(42px) scale(0.95);
+  }
+}
+
+@keyframes bottom-tab-sidebar-return {
+  0% {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(42px) scale(0.95);
+  }
+  1% {
+    visibility: visible;
+  }
+  58% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(-6px) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-tab-bar.is-mobile-sidebar-open,
+  .bottom-tab-bar:not(.is-mobile-sidebar-open):not(.is-settings-hidden) {
+    animation: none;
+  }
+  .bottom-tab-bar.is-mobile-sidebar-open {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(24px) scale(0.98);
+  }
+  .bottom-tab-bar:not(.is-mobile-sidebar-open):not(.is-settings-hidden) {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%);
+  }
+}
+
+@media (max-width: 1200px) and (orientation: landscape) and (max-height: 420px) {
+  :root {
+    --track-bottom-tab-height: 54px;
+  }
+  .bottom-tab-bar {
+    --bottom-tab-bar-height: var(--track-bottom-tab-height);
+    --bottom-tab-track-height: 44px;
+    bottom: calc(var(--track-bottom-tab-edge) + var(--track-safe-bottom)) !important;
+    inset-block-end: calc(var(--track-bottom-tab-edge) + var(--track-safe-bottom)) !important;
+    height: var(--bottom-tab-bar-height);
+    min-height: var(--bottom-tab-bar-height);
+    max-height: var(--bottom-tab-bar-height);
+    padding: 4px;
+    border-radius: 18px;
+  }
+  .bottom-tab-track {
+    height: 44px;
+  }
+  .bottom-tab-track {
+    min-height: var(--bottom-tab-track-height);
+    max-height: var(--bottom-tab-track-height);
+  }
+  .bottom-tab {
+    height: 100%;
+    min-height: 0;
+    flex-direction: row;
+    gap: 6px;
+    padding: 4px 7px;
+    font-size: 10px;
+  }
+  .bottom-tab-icon,
+  .bottom-tab-icon svg {
+    width: 18px;
+    height: 18px;
+  }
+  .content,
+  .content:has(.timer-screen),
+  .content:has(.welcome-screen) {
+    padding-bottom: calc(88px + var(--track-safe-bottom));
+  }
+  .scroll-shortcuts {
+    bottom: calc(88px + var(--track-safe-bottom));
+  }
+}
+
+@media (min-width: 1201px) {
+  .bottom-tab-bar {
+    position: fixed !important;
+    --bottom-tab-bar-height: 78px;
+    --bottom-tab-track-height: 64px;
+    z-index: 90;
+    left: calc(var(--track-sidebar-width) + (100vw - var(--track-sidebar-width)) / 2);
+    right: auto;
+    top: auto !important;
+    inset-block-start: auto !important;
+    bottom: var(--track-bottom-tab-edge) !important;
+    inset-block-end: var(--track-bottom-tab-edge) !important;
+    width: min(var(--track-bottom-tab-width), calc(100vw - 48px));
+    display: flex;
+    height: var(--bottom-tab-bar-height);
+    min-height: var(--bottom-tab-bar-height);
+    max-height: var(--bottom-tab-bar-height);
+    justify-content: center;
+    margin: 0 !important;
+    padding: 6px;
+    border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+    border-radius: 22px;
+    background: color-mix(in srgb, var(--surface) 70%, transparent);
+    box-shadow:
+      0 18px 45px rgba(0, 0, 0, 0.2),
+      0 2px 8px rgba(0, 0, 0, 0.08);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    transform: translateX(-50%);
+  }
+  .content,
+  .content:has(.timer-screen),
+  .content:has(.welcome-screen) {
+    padding-bottom: 132px;
+  }
+  .bottom-tab-bar.is-sidebar-collapsed {
+    left: 50vw;
+  }
+  .scroll-shortcuts {
+    bottom: 112px;
+  }
+}
+
+/* Mobile clarity pass: keep every page and overlay on a crisp paint surface.
+   iOS home-screen Safari is especially sensitive to filter/backdrop layers on
+   fixed or transformed ancestors, so mobile uses opacity/position motion only. */
+@keyframes mobile-content-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(9px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes mobile-surface-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mobile-stage-arrive {
+  from {
+    opacity: 0;
+    transform: translateX(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mobile-settings-view-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes mobile-notification-in {
+  from {
+    opacity: 0;
+    translate: -50% -12px;
+    scale: 0.98;
+  }
+  to {
+    opacity: 1;
+    translate: -50% 0;
+    scale: 1;
+  }
+}
+
+@media (max-width: 1200px) {
+  /* The header already reserves the safe area. Keep one compact shared rhythm
+     below it for Workout, Timer, Calendar, Rank, and the empty home state. */
+  /* Every top-level page begins on the same baseline below the mobile header. */
+  .content {
+    padding-top: 28px;
+  }
+  .timer-screen {
+    padding-top: 0;
+  }
+  .timer-skeleton-display {
+    margin-top: 58px;
+    margin-bottom: 42px;
+    height: 72px;
+  }
+  .timer-skeleton-controls .timer-skeleton-block {
+    width: 72px;
+    height: 72px;
+  }
+  .timer-skeleton-laps {
+    margin-top: 48px;
+  }
+
+  .content,
+  .content-exit,
+  .timer-screen,
+  .calendar-screen,
+  .rank-screen,
+  .welcome-screen,
+  .settings-view,
+  .settings-view[class*="view-"] > .setting-section,
+  .track-notification,
+  .calendar-detail-modal,
+  .username-prompt,
+  .personal-info-prompt,
+  .password-reset-modal,
+  .exercise-confirm,
+  .admin-users-modal,
+  .admin-users-preview {
+    filter: none !important;
+    -webkit-filter: none !important;
+  }
+
+  .content {
+    animation: mobile-content-arrive 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .content-exit {
+    animation: none !important;
+    transform: scale(0.99) translateY(6px) !important;
+  }
+  .timer-screen,
+  .calendar-screen,
+  .rank-screen,
+  .welcome-screen {
+    animation: mobile-surface-arrive 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .timer-mode-stage {
+    animation: mobile-stage-arrive 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .settings-view,
+  .settings-view[class*="view-"] > .setting-section {
+    animation: mobile-settings-view-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  }
+  .track-notification {
+    animation: mobile-notification-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .track-update-notification {
+    top: calc(74px + env(safe-area-inset-top));
+  }
+
+  /* Move every settings category down with the page content, including Admin,
+     while retaining a scrollable full-screen sheet on short phones. */
+  .settings-content {
+    padding-top: calc(36px + env(safe-area-inset-top)) !important;
+    padding-bottom: calc(42px + env(safe-area-inset-bottom)) !important;
+  }
+
+  /* Keep modal text sharp in Safari/PWA and avoid a filtered fixed ancestor
+     intercepting taps around close buttons. The scrims remain translucent. */
+  .settings-backdrop,
+  .password-reset-backdrop,
+  .exercise-confirm-backdrop,
+  .calendar-detail-backdrop,
+  .username-prompt-backdrop,
+  .personal-info-prompt-backdrop,
+  .admin-users-backdrop,
+  .mobile-sidebar-backdrop {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .settings-tabs-more,
+  .scroll-to-top,
+  .scroll-to-bottom {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .admin-users-backdrop {
+    background: rgba(0, 0, 0, 0.84);
+  }
+  .admin-users-header,
+  .admin-users-header * {
+    filter: none !important;
+    -webkit-filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .admin-users-header {
+    padding-top: max(18px, env(safe-area-inset-top));
+  }
+  .admin-preview-workout {
+    padding-top: 18px;
+  }
+  .calendar-detail-scroll {
+    padding-top: max(80px, calc(34px + env(safe-area-inset-top)));
+  }
+}
+
+/* Mobile settings layout: the tab strip is part of the sheet flow, not a
+   second grid row hidden below the content. This keeps the category tabs near
+   the top and prevents the arrow control from floating over a large blank gap. */
+.settings-backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+  box-sizing: border-box;
+}
+.settings-modal > .settings-content {
+  overscroll-behavior-y: contain;
+}
+@media (max-width: 1200px) {
+  .settings-backdrop {
+    display: grid;
+    place-items: stretch;
+    padding: 0;
+  }
+  .settings-modal {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    grid-template-columns: none;
+    grid-template-rows: none;
+    border: 0;
+    border-radius: 0;
+  }
+  .settings-modal > .settings-nav {
+    display: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap {
+    order: 0;
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    align-items: center;
+    margin: 0;
+    padding: calc(18px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0
+      max(20px, env(safe-area-inset-left));
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs {
+    grid-column: 1 / -1;
+    grid-row: 1;
+    width: 100%;
+    margin: 0;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more {
+    position: relative;
+    grid-column: 2;
+    grid-row: 1;
+    top: auto;
+    right: auto;
+    align-self: center;
+    justify-self: end;
+    transform: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more:active {
+    transform: scale(0.92);
+  }
+  .settings-modal > .settings-content {
+    grid-column: 1;
+    order: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+    height: auto;
+    padding-top: 22px;
+    padding-bottom: calc(30px + env(safe-area-inset-bottom));
+    overflow-y: auto;
+  }
+}
+
+@media (min-width: 1201px) {
+  .settings-backdrop {
+    display: grid;
+    place-items: center;
+  }
+  .settings-modal {
+    width: min(940px, calc(100vw - 44px));
+    height: min(680px, calc(100dvh - 44px));
+    max-height: none;
+    grid-template-columns: 248px minmax(0, 1fr);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+  }
+  .settings-modal > .settings-nav {
+    display: flex;
+  }
+  .settings-modal > .settings-content {
+    grid-column: 2;
+  }
+  .settings-mobile-tabs-wrap {
+    display: none;
+  }
+}
+
+/* Settings polish: keep narrow-screen headings and admin actions visually balanced. */
+@media (max-width: 1200px) {
+  .settings-heading {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .settings-heading h2 {
+    display: block;
+    flex: 1 1 auto;
+    min-width: 0;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .settings-heading > span {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-self: center;
+    margin-left: 0;
+    transform: none;
+  }
+
+  .admin-page {
+    gap: 12px;
+  }
+  .admin-card {
+    padding: 0 14px;
+  }
+  .admin-card > .setting-row {
+    min-height: 0;
+    padding: 17px 0;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .admin-card > .setting-row > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .admin-card > .setting-row > .admin-action-button,
+  .admin-card > .setting-row > .theme-toggle {
+    margin-top: 1px;
+  }
+}
+
+/* Account identity: make the signed-in role immediately scannable without
+   exposing private identity fields in the compact sidebar footer. */
+.account-role-badge {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, var(--line));
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+}
+.account-role-badge.admin {
+  border-color: color-mix(in srgb, var(--track-accent-online) 38%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-online) 12%, var(--soft));
+  color: var(--track-accent-online-ink);
+}
+.account-role-badge.user {
+  color: var(--ink);
+}
+.account-panel {
+  padding-bottom: 12px;
+}
+.account-panel-heading {
+  min-height: 16px;
+}
+.account-identity small {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.account-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--track-accent-online-ink);
+}
+.account-online i {
+  width: 5px;
+  height: 5px;
+  flex: 0 0 5px;
+  border-radius: 50%;
+  background: var(--track-accent-online);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-button,
+  .finish-button.is-saved,
+  .mobile-actions .header-sync-status.sync-status-busy > i,
+  .workout-page .task {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Calendar detail: keep the readable surface centered while visually nesting
+   expanded sets inside the exercise row. */
+.calendar-detail-scroll-wrap {
+  display: flex;
+  justify-content: center;
+}
+.calendar-detail-exercise-info {
+  margin: 0 0 10px 12px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--soft) 76%, var(--surface));
+}
+.calendar-detail-expand-icon {
+  width: 7px;
+  height: 7px;
+  display: block;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.calendar-detail-expand-icon.expanded {
+  transform: translateY(2px) rotate(225deg);
+}
+@media (min-width: 700px) {
+  .calendar-detail-scroll {
+    width: min(1180px, calc(100% - 32px));
+  }
+}
+@media (max-width: 699px) {
+  .calendar-detail-scroll {
+    width: 100%;
+  }
+  .calendar-detail-exercise-info {
+    margin-left: 0;
+  }
+}
+
+/* Workout set grid: weight gets less of the row, while all labels remain on
+   the same columns as their inputs. */
+@media (min-width: 701px) {
+  .workout-page .set-row {
+    min-width: 0;
+    grid-template-columns: 38px minmax(0, 1.05fr) minmax(90px, 0.75fr) minmax(82px, 0.62fr) 30px;
+  }
+  .workout-page .set-heading span:not(:first-child) {
+    text-align: center;
+  }
+}
+
+/* Settings: use the balanced admin-card treatment for every visible pane and
+   combine the legacy single-action privacy/backup/account sections. */
+.settings-view > .setting-section {
+  margin: 18px 0 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--soft);
+}
+.settings-view > .setting-section h3 {
+  margin-bottom: 16px;
+}
+.settings-view.view-account > .setting-section:nth-child(3),
+.settings-view.view-account > .setting-section:nth-child(5),
+.settings-view.view-account > .setting-section:nth-child(7) {
+  display: block !important;
+  visibility: visible !important;
+  animation: settings-view-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.settings-view.view-account > .setting-section:nth-child(3),
+.settings-view.view-account > .setting-section:nth-child(5) {
+  border-bottom: 1px solid var(--line);
+}
+@media (min-width: 1201px) {
+  .settings-modal {
+    width: min(900px, calc(100vw - 44px)) !important;
+    height: min(640px, calc(100dvh - 44px)) !important;
+  }
+}
+@media (max-width: 1200px) {
+  .settings-view > .setting-section {
+    margin-top: 14px;
+    padding: 16px;
+  }
+}
+
+.theme-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 16px;
+}
+.theme-preview-tile {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--raised);
+  color: var(--muted);
+  padding: 9px;
+  cursor: pointer;
+  text-align: left;
+}
+.theme-preview-tile:hover,
+.theme-preview-tile.selected {
+  border-color: color-mix(in srgb, var(--ink) 42%, var(--line));
+  color: var(--ink);
+}
+.theme-preview-tile.selected {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 18%, transparent);
+}
+.theme-preview-window {
+  display: grid;
+  gap: 7px;
+  min-height: 58px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f7f7f5;
+}
+.theme-preview-tile.dark .theme-preview-window {
+  background: #111;
+}
+.theme-preview-window > i {
+  width: 34%;
+  height: 5px;
+  border-radius: 999px;
+  background: #6f6f6a;
+}
+.theme-preview-window > span {
+  display: grid;
+  grid-template-columns: 1.25fr 0.75fr;
+  gap: 5px;
+}
+.theme-preview-window > span i {
+  min-height: 25px;
+  border-radius: 4px;
+  background: #deded9;
+}
+.theme-preview-tile.dark .theme-preview-window > span i {
+  background: #292929;
+}
+.theme-preview-tile strong {
+  font-size: 11px;
+}
+.personal-unit-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 14px;
+  padding: 10px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
+}
+.personal-unit-selector > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 650;
+}
+.personal-unit-selector .segmented-control button {
+  min-width: 86px;
+  height: 27px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+.personal-unit-selector small {
+  color: inherit;
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0.72;
+}
+.settings-personal-fields {
+  max-width: 360px;
+}
+.settings-personal-fields label > div {
+  max-width: 160px;
+}
+.settings-personal-fields input {
+  max-width: 160px;
+}
+.notification-setting-help {
+  display: block;
+  max-width: 430px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.45;
+}
+.export-card {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--raised);
+}
+.export-actions .export-action-button {
+  min-width: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+.export-action-button svg {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ai-key-control {
+  position: relative;
+}
+.ai-key-control input {
+  padding-right: 44px;
+}
+.ai-key-visibility {
+  position: absolute;
+  top: 50%;
+  right: 7px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  padding: 0;
+  cursor: pointer;
+  transform: translateY(-50%);
+}
+.ai-key-visibility:hover {
+  background: var(--subtle);
+  color: var(--ink);
+}
+.ai-key-visibility svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.ai-upload-icon {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--raised);
+  color: var(--ink);
+}
+.ai-upload-icon svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.exercise-unit-settings,
+.exercise-unit-settings * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-synthesis: none;
+}
+.settings-content {
+  scrollbar-gutter: stable;
+}
+
+@media (max-width: 560px) {
+  .personal-unit-selector {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .personal-unit-selector .segmented-control {
+    width: 100%;
+  }
+  .personal-unit-selector .segmented-control button {
+    flex: 1 1 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .calendar-detail-expand-icon {
+    transition: none;
+  }
+}
+
+/* Final review pass: keep setting panes focused, make workout controls read as
+   a true table, and keep the timer/rank feedback legible at every scale. */
+.updates-page-card-heading {
+  align-items: center;
+}
+.updates-page-card-label {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.settings-view.view-appearance .theme-preview-grid {
+  margin-top: 0;
+}
+.about-page {
+  padding-top: 18px;
+}
+.personal-info-actions {
+  margin: 18px -20px -20px;
+  padding: 14px 20px 20px;
+  border-top: 1px solid var(--line);
+}
+.ai-key-visibility {
+  top: 0;
+  bottom: 0;
+  height: auto;
+  transform: none;
+}
+
+.composer .search-add-button {
+  border: 1px solid color-mix(in srgb, var(--ink) 16%, var(--line));
+  background: var(--raised);
+  color: var(--ink);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.composer .search-add-button:hover:not(:disabled),
+.composer .search-add-button:focus-visible:not(:disabled) {
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--line));
+  background: var(--hover);
+}
+.composer .search-add-button:disabled {
+  border-color: transparent;
+  background: var(--subtle);
+  color: var(--muted);
+  box-shadow: none;
+}
+
+@media (min-width: 701px) {
+  .workout-page .set-row {
+    grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 32px;
+  }
+  .workout-page .set-heading span {
+    text-align: center;
+  }
+  .workout-page .set-number,
+  .workout-page .remove-set {
+    justify-self: center;
+  }
+}
+.workout-page .remove-set {
+  color: color-mix(in srgb, var(--muted) 82%, var(--ink));
+}
+.workout-page .remove-set:hover,
+.workout-page .remove-set:focus-visible {
+  background: color-mix(in srgb, #dc5656 18%, transparent);
+  color: #ff7770;
+}
+
+.rank-screen,
+.rank-screen .eyebrow,
+.rank-screen .rank-kicker,
+.settings-nav .settings-kicker {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+.rank-body-map {
+  shape-rendering: geometricPrecision;
+  text-rendering: geometricPrecision;
+}
+.rank-body-map path,
+.rank-body-map circle {
+  vector-effect: non-scaling-stroke;
+}
+.rank-card-progress {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+.rank-card-progress small {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 550;
+}
+.rank-legend-items i {
+  border: 1px solid color-mix(in srgb, var(--ink) 30%, var(--line));
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface) 45%, transparent);
+}
+
+.timer-display-wrap {
+  position: relative;
+  width: fit-content;
+  display: grid;
+  place-items: center;
+  margin: 72px auto 46px;
+}
+.timer-display-wrap .timer-display {
+  position: relative;
+  z-index: 1;
+  margin: 0;
+}
+.timer-controls .rest-button {
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+@media (max-width: 1200px) {
+  .timer-display-wrap {
+    margin: 58px auto 42px;
+  }
+}
+
+/* Finish is a session-level action, so keep it in the app header rather than
+   floating beside the exercise list or competing with scroll shortcuts. */
+.desktop-finish-action {
+  position: fixed;
+  z-index: 140;
+  top: 20px;
+  right: 22px;
+}
+.desktop-finish-action.has-admin {
+  right: 72px;
+}
+.desktop-finish-action .header-finish-button {
+  min-height: 36px;
+  border: 1px solid color-mix(in srgb, var(--control-ink) 14%, transparent);
+  border-radius: 999px;
+  padding: 0 14px;
+  box-shadow:
+    0 9px 24px rgba(0, 0, 0, 0.22),
+    0 2px 6px rgba(0, 0, 0, 0.12);
+}
+.mobile-actions .header-finish-button {
+  min-height: 32px;
+  flex: 0 0 auto;
+  padding: 0 12px;
+  border-radius: 999px;
+  font-size: 10px;
+}
+.mobile-header-leading {
+  flex: 1 1 auto;
+}
+.mobile-header .home-brand {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  white-space: nowrap;
+}
+.mobile-header .home-brand > span:not(.brand-mark) {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mobile-actions {
+  flex: 0 0 auto;
+  min-width: 0;
+}
+.mobile-actions .header-sync-status {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  flex: 0 0 10px;
+  gap: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0;
+}
+.mobile-actions .header-sync-status > i {
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+}
+.mobile-actions .header-sync-status.sync-status-busy {
+  color: var(--track-accent-online-ink);
+}
+.mobile-actions .header-sync-status.sync-status-busy > i {
+  animation: header-sync-change-drop 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes header-sync-change-drop {
+  0% {
+    transform: translateY(0) scale(1);
+  }
+  28% {
+    transform: translateY(4px) scale(1.08);
+  }
+  54% {
+    transform: translateY(-2px) scale(0.96);
+  }
+  76% {
+    transform: translateY(1px) scale(1.02);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (max-width: 1200px) {
+  .desktop-finish-action {
+    display: none;
+  }
+  .mobile-actions {
+    gap: 8px;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-header {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+  .mobile-header-leading {
+    gap: 7px;
+  }
+  .mobile-actions {
+    gap: 6px;
+  }
+  .mobile-actions .header-finish-button {
+    padding: 0 8px;
+  }
+}

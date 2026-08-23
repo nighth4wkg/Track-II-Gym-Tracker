@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="track-icon-title">
+  <title id="track-icon-title">Track</title>
+  <rect width="1024" height="1024" rx="220" fill="#000000"/>
+  <g fill="#FFFFFF">
+    <rect x="108" y="254" width="132" height="516" rx="42"/>
+    <rect x="278" y="308" width="112" height="408" rx="36"/>
+    <rect x="634" y="308" width="112" height="408" rx="36"/>
+    <rect x="784" y="254" width="132" height="516" rx="42"/>
+    <rect x="360" y="452" width="304" height="120" rx="60"/>
+  </g>
+</svg>

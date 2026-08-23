@@ -1,0 +1,11 @@
+[functions.username-auth]
+verify_jwt = false
+
+[functions.extract-workout]
+verify_jwt = true
+
+[functions.admin-member-data]
+verify_jwt = true
+
+[functions.admin-announcement]
+verify_jwt = true

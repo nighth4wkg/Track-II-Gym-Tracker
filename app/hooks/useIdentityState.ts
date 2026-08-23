@@ -1,0 +1,89 @@
+"use client";
+
+import { useState } from "react";
+import type { User } from "@supabase/supabase-js";
+import type { PersonalInfo, ReleaseSignal, TrackAnnouncement } from "../trackTypes";
+import { TRACK_UI_COPY } from "../trackConstants";
+
+export function useIdentityState() {
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [usernamePromptOpen, setUsernamePromptOpen] = useState(false);
+  const [usernameInput, setUsernameInput] = useState("");
+  const [usernameMessage, setUsernameMessage] = useState("");
+  const [usernameSaving, setUsernameSaving] = useState(false);
+  const [personalInfo, setPersonalInfo] = useState<PersonalInfo | null>(null);
+  const [personalHeightInput, setPersonalHeightInput] = useState("");
+  const [personalWeightInput, setPersonalWeightInput] = useState("");
+  const [personalInfoPromptOpen, setPersonalInfoPromptOpen] = useState(false);
+  const [personalInfoSaving, setPersonalInfoSaving] = useState(false);
+  const [personalInfoMessage, setPersonalInfoMessage] = useState("");
+  const [cloudReady, setCloudReady] = useState(false);
+  const [exerciseNames, setExerciseNames] = useState<string[]>([]);
+  const [syncLabel, setSyncLabel] = useState<string>(TRACK_UI_COPY.status.saved);
+  const [siteUpdateSeconds, setSiteUpdateSeconds] = useState<number | null>(null);
+  const [updateReady, setUpdateReady] = useState<ReleaseSignal | null>(null);
+  const [updatesViewBusy, setUpdatesViewBusy] = useState(false);
+  const [updatesViewMessage, setUpdatesViewMessage] = useState("");
+  const [adminAuthorized, setAdminAuthorized] = useState(false);
+  const [updateCheckBusy, setUpdateCheckBusy] = useState(false);
+  const [updateCheckMessage, setUpdateCheckMessage] = useState("");
+  const [availableUpdateVersion, setAvailableUpdateVersion] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState<TrackAnnouncement | null>(null);
+  const [announcementOffset, setAnnouncementOffset] = useState(0);
+
+  return {
+    user,
+    setUser,
+    authLoading,
+    setAuthLoading,
+    usernamePromptOpen,
+    setUsernamePromptOpen,
+    usernameInput,
+    setUsernameInput,
+    usernameMessage,
+    setUsernameMessage,
+    usernameSaving,
+    setUsernameSaving,
+    personalInfo,
+    setPersonalInfo,
+    personalHeightInput,
+    setPersonalHeightInput,
+    personalWeightInput,
+    setPersonalWeightInput,
+    personalInfoPromptOpen,
+    setPersonalInfoPromptOpen,
+    personalInfoSaving,
+    setPersonalInfoSaving,
+    personalInfoMessage,
+    setPersonalInfoMessage,
+    cloudReady,
+    setCloudReady,
+    exerciseNames,
+    setExerciseNames,
+    syncLabel,
+    setSyncLabel,
+    siteUpdateSeconds,
+    setSiteUpdateSeconds,
+    updateReady,
+    setUpdateReady,
+    updatesViewBusy,
+    setUpdatesViewBusy,
+    updatesViewMessage,
+    setUpdatesViewMessage,
+    adminAuthorized,
+    setAdminAuthorized,
+    updateCheckBusy,
+    setUpdateCheckBusy,
+    updateCheckMessage,
+    setUpdateCheckMessage,
+    availableUpdateVersion,
+    setAvailableUpdateVersion,
+    announcement,
+    setAnnouncement,
+    announcementOffset,
+    setAnnouncementOffset,
+  };
+}
+
+export type IdentityState = ReturnType<typeof useIdentityState>;

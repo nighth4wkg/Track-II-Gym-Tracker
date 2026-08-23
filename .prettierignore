@@ -1,0 +1,11 @@
+node_modules/
+.next/
+.vinext/
+.wrangler/
+dist/
+work/
+release-artifacts/
+excluded_from_project/
+backups/
+outputs/
+_zip-inspect/

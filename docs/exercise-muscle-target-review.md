@@ -1,0 +1,596 @@
+# Track exercise-to-muscle review
+
+**Library snapshot:** 584 unique exercise names
+
+This is a review draft for the app owner. Each line describes the exercise's intended primary training target, with important assisting regions included for compound or ambiguous movements. It is not yet wired into Track.
+
+## Items needing extra manual review
+
+- None. Please flag any classification you disagree with during review.
+
+## Full alphabetical list
+
+- 1-arm dumbbell recline curl - Biceps
+- Ab wheel rollout - Core (abdominals and trunk stabilizers)
+- Air Squat - Legs (quadriceps and glutes)
+- Alternating dumbbell bench press - Chest - pectorals (triceps and front delts assist)
+- Alternating dumbbell curl - Biceps
+- Alternating dumbbell shoulder press - Shoulders - delts (triceps assist)
+- Arnold dumbbell press - Shoulders - delts (triceps assist)
+- Arnold press - Shoulders - delts (triceps assist)
+- Assisted Chin-Up - Back - lats (biceps assist where elbows flex)
+- Assisted Dip - Chest / triceps
+- Assisted dip machine - Chest / triceps
+- Assisted Pull-Up - Back - lats (biceps assist where elbows flex)
+- Assisted pull-up machine - Back - lats (biceps assist where elbows flex)
+- Back extension - Spinal erectors (glutes and hamstrings assist)
+- Back squat - Legs (quadriceps and glutes)
+- Ball Slams - Full body / power
+- Band External Shoulder Rotation - Rotator cuff - infraspinatus and teres minor
+- Band Internal Shoulder Rotation - Rotator cuff - subscapularis
+- Band Pull-Apart - Rear delts / upper back
+- Band-Assisted Bench Press - Chest - pectorals (triceps and front delts assist)
+- Banded Face Pull - Rear delts / upper back
+- Banded Hip March - Hip flexors
+- Banded Muscle-Up - Upper body compound - lats, chest and triceps
+- Banded Side Kicks - Hip abductors (glute medius/minimus)
+- Bar Dip - Chest / triceps
+- Bar Hang - Forearms / grip
+- Barbell bench press - Chest - pectorals (triceps and front delts assist)
+- Barbell clean - Full body / power
+- Barbell clean and press - Full body / power
+- Barbell complex - Full body / power
+- Barbell curl - Biceps
+- Barbell deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Barbell decline bench press - Chest - pectorals (triceps and front delts assist)
+- Barbell floor press - Chest - pectorals (triceps and front delts assist)
+- Barbell Front Raise - Shoulders - front delts
+- Barbell front squat - Legs (quadriceps and glutes)
+- Barbell hack squat - Legs (quadriceps and glutes)
+- Barbell hip thrust - Glutes
+- Barbell Incline Triceps Extension - Triceps
+- Barbell Lunge - Legs (quadriceps and glutes)
+- Barbell Lying Triceps Extension - Triceps
+- Barbell overhead press - Shoulders - delts (triceps assist)
+- Barbell Preacher Curl - Biceps
+- Barbell Rear Delt Row - Rear delts / upper back
+- Barbell reverse lunge - Legs (quadriceps and glutes)
+- Barbell row - Back - upper back and lats
+- Barbell seal row - Back - upper back and lats
+- Barbell Seated Calf Raise - Calves
+- Barbell shrug - Upper trapezius
+- Barbell snatch - Full body / power
+- Barbell split squat - Legs (quadriceps and glutes)
+- Barbell Standing Calf Raise - Calves
+- Barbell Standing Triceps Extension - Triceps
+- Barbell step-up - Legs (quadriceps and glutes)
+- Barbell sumo deadlift - Posterior chain - glutes, adductors, hamstrings and spinal erectors
+- Barbell thruster - Full body / power
+- Barbell upright row - Back - upper back and lats
+- Barbell walking lunge - Legs (quadriceps and glutes)
+- Barbell wrist curl - Forearms (wrist flexors)
+- Barbell Wrist Curl Behind the Back - Forearms (wrist flexors)
+- Barbell Wrist Extension - Forearms (wrist extensors)
+- Battle ropes - Full body / power
+- Bayesian cable curl - Biceps
+- Behind-the-neck press - Shoulders - delts (triceps assist)
+- Belt squat - Legs (quadriceps and glutes)
+- Belt squat machine - Legs (quadriceps and glutes)
+- Bench Dip - Triceps
+- Bench Press - Chest - pectorals (triceps and front delts assist)
+- Bench Press Against Band - Chest - pectorals (triceps and front delts assist)
+- Bent-over row - Back - upper back and lats
+- Bicycle crunch - Core (abdominals and trunk stabilizers)
+- Block Clean - Full body / power
+- Block pull - Posterior chain - glutes, hamstrings and spinal erectors
+- Block Snatch - Full body / power
+- Board Press - Chest - pectorals (triceps and front delts assist)
+- Body Weight Lunge - Legs (quadriceps and glutes)
+- Bodyweight Curl - Biceps
+- Bodyweight Leg Curl - Hamstrings
+- Box jump - Legs (quadriceps, glutes, calves) / power
+- Box squat - Legs (quadriceps and glutes)
+- Bulgarian split squat - Legs (quadriceps and glutes)
+- Burpee - Full body / power
+- Cable chest fly - Chest - pectorals
+- Cable Chest Press - Chest - pectorals (triceps and front delts assist)
+- Cable Close Grip Seated Row - Back - upper back and lats
+- Cable crossover - Chest - pectorals
+- Cable Crossover Bicep Curl - Biceps
+- Cable crunch - Core (abdominals and trunk stabilizers)
+- Cable cuff lateral raise - Shoulders - lateral delts (upper traps assist)
+- Cable cuff Y-raise - Shoulders - lateral delts (upper traps assist)
+- Cable curl - Biceps
+- Cable Curl With Bar - Biceps
+- Cable Curl With Rope - Biceps
+- Cable External Shoulder Rotation - Rotator cuff - infraspinatus and teres minor
+- Cable Front Raise - Shoulders - front delts
+- Cable Glute Kickback - Glutes
+- Cable Internal Shoulder Rotation - Rotator cuff - subscapularis
+- Cable lat prayer - Back - lats (biceps assist where elbows flex)
+- Cable lat pullover - Back - lats (biceps assist where elbows flex)
+- Cable lateral raise - Shoulders - lateral delts (upper traps assist)
+- Cable Machine Hip Abduction - Hip abductors (glute medius/minimus)
+- Cable overhead triceps extension - Triceps
+- Cable preacher curl - Biceps
+- Cable pull-through - Glutes / hamstrings
+- Cable Rear Delt Row - Rear delts / upper back
+- Cable reverse fly - Rear delts / upper back
+- Cable row - Back - lats and upper back
+- Cable Wide Grip Seated Row - Upper back - traps, rhomboids and rear delts
+- Cable woodchop - Core (obliques and trunk stabilizers)
+- Cable wrist cuff lateral raise - Shoulders - lateral delts (upper traps assist)
+- Calf press - Calves
+- Calf Raise in Leg Press - Calves
+- Captain's Chair Knee Raise - Core (abdominals and hip flexors)
+- Captain's Chair Leg Raise - Core (abdominals and hip flexors)
+- Chair Squat - Legs (quadriceps and glutes)
+- Chest dip - Chest / triceps
+- Chest press machine - Chest - pectorals (triceps and front delts assist)
+- Chest to Bar - Back - lats and upper back (biceps assist)
+- Chest-Supported Dumbbell Row - Back - lats and upper back
+- Chest-supported machine row - Back - upper back and lats
+- Chest-supported row - Back - upper back and lats
+- Chin-up - Back - lats (biceps assist where elbows flex)
+- Clamshells - Hip abductors (glute medius/minimus)
+- Clap Push-Up - Chest - pectorals (triceps and front delts assist)
+- Clean - Full body / power
+- Clean and jerk - Full body / power
+- Close-grip bench press - Triceps
+- Close-Grip Chin-Up - Back - lats (biceps assist where elbows flex)
+- Close-Grip Feet-Up Bench Press - Triceps / chest
+- Close-Grip Lat Pulldown - Back - lats (biceps assist where elbows flex)
+- Close-Grip Push-Up - Triceps
+- Cobra Push-Up - Chest - pectorals (triceps and front delts assist)
+- Concentration curl - Biceps
+- Conventional deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Copenhagen Plank - Core / hip adductors
+- Core Twist - Core (abdominals and trunk stabilizers)
+- Cossack Squat - Legs (adductors, glutes, quadriceps)
+- Cross-body cable lat pull-around - Back - lats (biceps assist where elbows flex)
+- Cross-body cable triceps extension - Triceps
+- Crunch - Core (abdominals and trunk stabilizers)
+- Cuban Press - Shoulders - delts (triceps assist)
+- Cuffed cable pulldown - Back - lats (biceps assist where elbows flex)
+- Cuffed rear delt fly - Rear delts / upper back
+- Curtsy Lunge - Legs (quadriceps and glutes)
+- Cycling - Cardio / lower-body endurance
+- Dead bug - Core (abdominals and trunk stabilizers)
+- Dead Bug With Dumbbells - Core (abdominals and trunk stabilizers)
+- Deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Death March with Dumbbells - Hamstrings / glutes / spinal erectors
+- Decline bench press - Chest - pectorals (triceps and front delts assist)
+- Decline Push-Up - Chest - pectorals (triceps and front delts assist)
+- Deep stretch push-up - Chest - pectorals (triceps and front delts assist)
+- Deficit barbell row - Back - upper back and lats
+- Deficit deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Deficit push-up - Chest - pectorals (triceps and front delts assist)
+- Depth Jump - Legs (quadriceps, glutes, calves) / power
+- Devils Press - Full body / power
+- Dip - Chest / triceps
+- Donkey calf raise - Calves
+- Donkey Kicks - Glutes
+- Drag Curl - Biceps
+- Dragon Flag - Core (abdominals and trunk stabilizers)
+- Dual-cable chest press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell bench press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell Chest Fly - Chest - pectorals
+- Dumbbell Chest Press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell chest-supported row - Back - upper back and lats
+- Dumbbell clean - Full body / power
+- Dumbbell curl - Biceps
+- Dumbbell deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Dumbbell decline bench press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell Decline Chest Press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell floor press - Chest - pectorals (triceps and front delts assist)
+- Dumbbell fly - Chest - pectorals
+- Dumbbell Frog Pumps - Glutes
+- Dumbbell front raise - Shoulders - front delts
+- Dumbbell front squat - Legs (quadriceps and glutes)
+- Dumbbell hammer curl - Elbow flexors - brachialis/brachioradialis and biceps
+- Dumbbell Horizontal External Shoulder Rotation - Rotator cuff - infraspinatus and teres minor
+- Dumbbell Horizontal Internal Shoulder Rotation - Rotator cuff - subscapularis
+- Dumbbell incline fly - Chest - pectorals
+- Dumbbell incline row - Back - upper back and lats
+- Dumbbell incline shoulder press - Shoulders - delts (triceps assist)
+- Dumbbell lateral raise - Shoulders - lateral delts (upper traps assist)
+- Dumbbell lunge - Legs (quadriceps and glutes)
+- Dumbbell Lying Triceps Extension - Triceps
+- Dumbbell overhead triceps extension - Triceps
+- Dumbbell Preacher Curl - Biceps
+- Dumbbell pullover - Back - lats (biceps assist where elbows flex)
+- Dumbbell rear delt row - Rear delts / upper back
+- Dumbbell reverse fly - Rear delts / upper back
+- Dumbbell reverse lunge - Legs (quadriceps and glutes)
+- Dumbbell Romanian deadlift - Hamstrings / glutes / spinal erectors
+- Dumbbell row - Back - lats and upper back
+- Dumbbell seal row - Back - upper back and lats
+- Dumbbell shoulder press - Shoulders - delts (triceps assist)
+- Dumbbell Shrug - Upper trapezius
+- Dumbbell Side Bend - Core (obliques and trunk stabilizers)
+- Dumbbell snatch - Full body / power
+- Dumbbell split squat - Legs (quadriceps and glutes)
+- Dumbbell Squat - Legs (quadriceps and glutes)
+- Dumbbell Standing Triceps Extension - Triceps
+- Dumbbell step-up - Legs (quadriceps and glutes)
+- Dumbbell sumo deadlift - Posterior chain - glutes, adductors, hamstrings and spinal erectors
+- Dumbbell sumo squat - Legs (quadriceps and glutes)
+- Dumbbell swing - Posterior chain - glutes and hamstrings
+- Dumbbell thruster - Full body / power
+- Dumbbell upright row - Back - upper back and lats
+- Dumbbell walking lunge - Legs (quadriceps and glutes)
+- Dumbbell Wrist Curl - Forearms (wrist flexors)
+- Dumbbell Wrist Extension - Forearms (wrist extensors)
+- Dumbbell Y-raise - Shoulders - lateral delts (upper traps assist)
+- Dumbbell Zottman curl - Elbow flexors - brachialis/brachioradialis and biceps
+- Dynamic Side Plank - Core (obliques and trunk stabilizers)
+- Eccentric Heel Drop - Calves
+- Elliptical - Cardio / lower-body endurance
+- EZ Bar Lying Triceps Extension - Triceps
+- EZ Curl - Biceps
+- EZ-bar Bayesian curl - Biceps
+- Face pull - Rear delts / upper back
+- Farmer carry - Full body / grip and core
+- Farmerâ€™s carry - Full body / grip and core
+- Farmers Walk - Full body / grip and core
+- Fat Bar Deadlift - Forearms / grip
+- Feet-Up Bench Press - Chest - pectorals (triceps and front delts assist)
+- Fire Hydrants - Hip abductors (glute medius/minimus)
+- Flat bench press - Chest - pectorals (triceps and front delts assist)
+- Floor Back Extension - Spinal erectors (glutes and hamstrings assist)
+- Floor Press - Chest - pectorals (triceps and front delts assist)
+- Frog Pumps - Glutes
+- Front Hold - Shoulders - front delts
+- Front rack dumbbell carry - Full body / grip and core
+- Front squat - Legs (quadriceps and glutes)
+- Frontal-plane Keenan flap - Back - latissimus dorsi (teres major assists)
+- Glute bridge - Glutes
+- Glute drive machine - Glutes
+- Glute Ham Raise - Hamstrings
+- Goblet squat - Legs (quadriceps and glutes)
+- Good morning - Hamstrings / glutes / spinal erectors
+- Gorilla Row - Back - lats and upper back
+- Gripper - Forearms / grip
+- Ground to Overhead - Full body / power
+- Hack squat - Legs (quadriceps and glutes)
+- Hack squat machine - Legs (quadriceps and glutes)
+- Half Air Squat - Legs (quadriceps and glutes)
+- Hammer curl - Elbow flexors - brachialis/brachioradialis and biceps
+- Handstand push-up - Chest - pectorals (triceps and front delts assist)
+- Hang Clean - Full body / power
+- Hang Power Clean - Full body / power
+- Hang Power Snatch - Full body / power
+- Hang Snatch - Full body / power
+- Hanging knee raise - Core (abdominals and hip flexors)
+- Hanging leg raise - Core (abdominals and hip flexors)
+- Hanging Sit-Up - Core (abdominals and trunk stabilizers)
+- Hanging Windshield Wiper - Core (obliques and trunk stabilizers)
+- Heel Raise - Calves
+- Heel Walk - Tibialis anterior
+- High pull - Full body / power
+- High to Low Wood Chop with Band - Core (obliques and trunk stabilizers)
+- High to Low Wood Chop with Cable - Core (obliques and trunk stabilizers)
+- Hip abduction machine - Hip abductors (glute medius/minimus)
+- Hip Adduction Against Band - Hip adductors
+- Hip adduction machine - Hip adductors
+- Hip Thrust - Glutes
+- Hip thrust machine - Glutes
+- Hip Thrust With Band Around Knees - Glutes
+- Hollow Body Crunch - Core (abdominals and trunk stabilizers)
+- Hollow Hold - Core (abdominals and trunk stabilizers)
+- Horizontal leg press - Legs (quadriceps and glutes)
+- Horizontal Wood Chop with Band - Core (obliques and trunk stabilizers)
+- Horizontal Wood Chop with Cable - Core (obliques and trunk stabilizers)
+- Iliac lat pulldown - Back - lats (biceps assist where elbows flex)
+- Incline barbell bench press - Chest - upper pectorals (front delts and triceps assist)
+- Incline Bench Press - Chest - upper pectorals (front delts and triceps assist)
+- Incline cable chest press - Chest - upper pectorals (front delts and triceps assist)
+- Incline cable curl - Biceps
+- Incline cable fly - Chest - pectorals
+- Incline chest press machine - Chest - upper pectorals (front delts and triceps assist)
+- Incline dumbbell bench press - Chest - upper pectorals (front delts and triceps assist)
+- Incline dumbbell curl - Biceps
+- Incline Dumbbell Press - Chest - upper pectorals (front delts and triceps assist)
+- Incline Push-Up - Chest - upper pectorals (front delts and triceps assist)
+- Inverted row - Back - upper back and lats
+- Inverted Row with Underhand Grip - Back - upper back and lats
+- Jackknife Sit-Up - Core (abdominals and trunk stabilizers)
+- Jefferson curl - Spinal erectors (glutes and hamstrings assist)
+- Jerk - Full body / power
+- JM press - Triceps
+- Jump rope - Cardio / calves and lower-body endurance
+- Jump Squat - Legs (quadriceps, glutes, calves) / power
+- Jumping Lunge - Legs (quadriceps, glutes, calves) / power
+- Katana triceps extension - Triceps
+- Keenan flap - Back - latissimus dorsi (teres major assists)
+- Kelso shrug - Upper back - middle traps and rhomboids
+- Kettlebell clean - Full body / power
+- Kettlebell Clean & Jerk - Full body / power
+- Kettlebell Clean & Press - Full body / power
+- Kettlebell Curl - Biceps
+- Kettlebell Floor Press - Chest - pectorals (triceps and front delts assist)
+- Kettlebell Front Squat - Legs (quadriceps and glutes)
+- Kettlebell Halo - Shoulders / rotator cuff and core stability
+- Kettlebell Plank Pull Through - Core (abdominals and trunk stabilizers)
+- Kettlebell Press - Shoulders - delts (triceps assist)
+- Kettlebell Push Press - Shoulders / triceps with leg drive
+- Kettlebell Row - Back - upper back and lats
+- Kettlebell Snatch - Full body / power
+- Kettlebell swing - Posterior chain - glutes and hamstrings
+- Kettlebell Thrusters - Full body / power
+- Kettlebell Tibialis Raise - Tibialis anterior
+- Kettlebell Windmill - Core (obliques and trunk stabilizers)
+- Kneeling Ab Wheel Roll-Out - Core (abdominals and trunk stabilizers)
+- Kneeling Incline Push-Up - Chest - upper pectorals (front delts and triceps assist)
+- Kneeling lat pulldown - Back - lats (biceps assist where elbows flex)
+- Kneeling Plank - Core (abdominals and trunk stabilizers)
+- Kneeling Push-Up - Chest - pectorals (triceps and front delts assist)
+- Kneeling Side Plank - Core (obliques and trunk stabilizers)
+- Kroc Row - Back - lats and upper back
+- Landmine Hack Squat - Legs (quadriceps and glutes)
+- Landmine press - Shoulders - delts (triceps assist)
+- Landmine Rotation - Core (obliques and trunk stabilizers)
+- Landmine row - Back - upper back and lats
+- Landmine squat - Legs (quadriceps and glutes)
+- Larsen press - Chest - pectorals (triceps and front delts assist)
+- Lat pulldown - Back - lats (biceps assist where elbows flex)
+- Lat pulldown machine - Back - lats (biceps assist where elbows flex)
+- Lat Pulldown With Neutral Grip - Back - lats (biceps assist where elbows flex)
+- Lat Pulldown With Pronated Grip - Back - lats (biceps assist where elbows flex)
+- Lat Pulldown With Supinated Grip - Back - lats (biceps assist where elbows flex)
+- Lateral Bound - Legs (quadriceps, glutes, calves) / power
+- Lateral lunge - Legs (adductors, glutes, quadriceps)
+- Lateral Walk With Band - Hip abductors (glute medius/minimus)
+- Leg curl machine - Hamstrings
+- Leg Curl On Ball - Hamstrings
+- Leg extension - Quadriceps
+- Leg press - Legs (quadriceps and glutes)
+- Leg press machine - Legs (quadriceps and glutes)
+- Lengthened-partial cable lateral raise - Shoulders - lateral delts (upper traps assist)
+- Lengthened-partial leg extension - Quadriceps
+- Lengthened-partial preacher curl - Biceps
+- Lengthened-partial pull-up - Back - lats (biceps assist where elbows flex)
+- Long-length partial calf raise - Calves
+- Long-length partial leg curl - Hamstrings
+- Low to High Wood Chop with Band - Core (obliques and trunk stabilizers)
+- Low to High Wood Chop with Cable - Core (obliques and trunk stabilizers)
+- L-Sit - Core (abdominals and hip flexors)
+- Lu raise - Shoulders - lateral delts (upper traps assist)
+- Lying Bicep Cable Curl on Bench - Biceps
+- Lying Bicep Cable Curl on Floor - Biceps
+- Lying Dumbbell External Shoulder Rotation - Rotator cuff - infraspinatus and teres minor
+- Lying Dumbbell Internal Shoulder Rotation - Rotator cuff - subscapularis
+- Lying leg curl - Hamstrings
+- Lying Leg Raise - Core (abdominals and hip flexors)
+- Lying Neck Curl - Neck flexors
+- Lying Neck Extension - Neck extensors and stabilizers
+- Lying Windshield Wiper - Core (obliques and trunk stabilizers)
+- Lying Windshield Wiper with Bent Knees - Core (obliques and trunk stabilizers)
+- Machine Bicep Curl - Biceps
+- Machine chest fly - Chest - pectorals
+- Machine Chest Press - Chest - pectorals (triceps and front delts assist)
+- Machine Crunch - Core (abdominals and trunk stabilizers)
+- Machine Glute Kickbacks - Glutes
+- Machine Lat Pulldown - Back - lats (biceps assist where elbows flex)
+- Machine lateral raise - Shoulders - lateral delts (upper traps assist)
+- Machine Overhead Triceps Extension - Triceps
+- Machine preacher curl - Biceps
+- Machine pullover - Back - lats (biceps assist where elbows flex)
+- Machine shoulder press - Shoulders - delts (triceps assist)
+- Meadows press - Shoulders - delts (triceps assist)
+- Meadows row - Back - lats and upper back
+- Medicine Ball Chest Pass - Chest - pectorals
+- Military press - Shoulders - delts (triceps assist)
+- Monkey Row - Back - upper back and lats
+- Mountain Climbers - Core (abdominals and hip flexors)
+- Muscle-Up (Bar) - Upper body compound - lats, chest and triceps
+- Muscle-Up (Rings) - Upper body compound - lats, chest and triceps
+- Neutral Close-Grip Lat Pulldown - Back - lats (biceps assist where elbows flex)
+- Nordic hamstring curl - Hamstrings
+- Nordic Hamstring Eccentric - Hamstrings
+- Oblique Crunch - Core (obliques and trunk stabilizers)
+- Oblique Sit-Up - Core (obliques and trunk stabilizers)
+- Omni-directional lateral raise - Shoulders - lateral delts (upper traps assist)
+- One-Arm Landmine Press - Shoulders - delts (triceps assist)
+- One-Handed Bar Hang - Forearms / grip
+- One-Handed Cable Row - Back - lats and upper back
+- One-Handed Kettlebell Swing - Posterior chain - glutes and hamstrings
+- One-Handed Lat Pulldown - Back - lats (biceps assist where elbows flex)
+- One-Legged Glute Bridge - Glutes
+- One-Legged Hip Thrust - Glutes
+- One-Legged Leg Curl - Hamstrings
+- One-Legged Leg Extension - Quadriceps
+- One-Legged Lying Leg Curl - Hamstrings
+- One-Legged Seated Leg Curl - Hamstrings
+- Overhead cable curl - Biceps
+- Overhead Cable Triceps Extension (Lower Position) - Triceps
+- Overhead Cable Triceps Extension (Upper Position) - Triceps
+- Overhead press - Shoulders - delts (triceps assist)
+- Overhead squat - Legs (quadriceps and glutes)
+- Pallof Press - Core (abdominals and trunk stabilizers)
+- Pause bench press - Chest - pectorals (triceps and front delts assist)
+- Pause Deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Pause squat - Legs (quadriceps and glutes)
+- Paused deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Pec deck - Chest - pectorals
+- Pendlay deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Pendlay row - Back - upper back and lats
+- Pendulum squat - Legs (quadriceps and glutes)
+- Pendulum squat machine - Legs (quadriceps and glutes)
+- Pin press - Chest - pectorals (triceps and front delts assist)
+- Pin Squat - Legs (quadriceps and glutes)
+- Pistol squat - Legs (quadriceps and glutes)
+- Plank - Core (abdominals and trunk stabilizers)
+- Plank to Push-Up - Core (abdominals and trunk stabilizers)
+- Plank with Leg Lifts - Core (abdominals and trunk stabilizers)
+- Plank with Shoulder Taps - Core (abdominals and trunk stabilizers)
+- Plate Front Raise - Shoulders - front delts
+- Plate Pinch - Forearms / grip
+- Plate Wrist Curl - Forearms (wrist flexors)
+- Poliquin Raise - Shoulders - lateral delts
+- Poliquin Step-Up - Legs (quadriceps and glutes)
+- Power clean - Full body / power
+- Power Jerk - Full body / power
+- Power Snatch - Full body / power
+- Preacher curl - Biceps
+- Preacher curl machine - Biceps
+- Prisoner Get Up - Full body / core
+- Prone Neck Bridge - Neck extensors and stabilizers
+- Pull-up - Back - lats (biceps assist where elbows flex)
+- Pull-Up With a Neutral Grip - Back - lats (biceps assist where elbows flex)
+- Push press - Shoulders / triceps with leg drive
+- Push-up - Chest - pectorals (triceps and front delts assist)
+- Push-Up Against Wall - Chest - pectorals (triceps and front delts assist)
+- Push-Ups With Feet in Rings - Chest - pectorals (triceps and front delts assist)
+- Rack pull - Posterior chain - glutes, hamstrings and spinal erectors
+- Rear delt fly - Rear delts / upper back
+- Rear delt machine - Rear delts / upper back
+- Recline curl - Biceps
+- Renegade row - Back - upper back and lats
+- Resistance Band Chest Fly - Chest - pectorals
+- Resistance Band Curl - Biceps
+- Resistance Band Lateral Raise - Shoulders - lateral delts (upper traps assist)
+- Reverse Barbell Curl - Biceps
+- Reverse Barbell Lunge - Legs (quadriceps and glutes)
+- Reverse Body Weight Lunge - Legs (quadriceps and glutes)
+- Reverse Cable Flyes - Rear delts / upper back
+- Reverse curl - Elbow flexors - brachialis/brachioradialis and biceps
+- Reverse Dumbbell Curl - Biceps
+- Reverse Dumbbell Flyes - Rear delts - posterior shoulder
+- Reverse Dumbbell Flyes on Incline Bench - Rear delts - posterior shoulder
+- Reverse Dumbbell Lunge - Legs (quadriceps and glutes)
+- Reverse fly machine - Rear delts / upper back
+- Reverse Hyperextension - Glutes / hamstrings / spinal erectors
+- Reverse lunge - Legs (quadriceps and glutes)
+- Reverse Machine Fly - Rear delts / upper back
+- Reverse Nordic - Quadriceps
+- Reverse Nordic curl - Quadriceps
+- Reverse-grip barbell bench press - Chest - pectorals (triceps and front delts assist)
+- Ring Dip - Chest / triceps
+- Ring Pull-Up - Back - lats (biceps assist where elbows flex)
+- Ring Row - Back - upper back and lats
+- Romanian deadlift - Hamstrings / glutes / spinal erectors
+- Rope pushdown - Triceps
+- Rowing machine - Cardio / full body (legs, back, arms)
+- Running - Cardio / lower-body endurance
+- Russian twist - Core (obliques and trunk stabilizers)
+- Safety bar squat - Legs (quadriceps and glutes)
+- Sagittal-plane Keenan flap - Back - latissimus dorsi (teres major assists)
+- Scap Pull-Up - Back - lats (biceps assist where elbows flex)
+- Seal row - Back - upper back and lats
+- Seated Barbell Overhead Press - Shoulders - delts (triceps assist)
+- Seated Cable Chest Fly - Chest - pectorals
+- Seated cable fly - Chest - pectorals
+- Seated cable row - Back - lats and upper back
+- Seated calf raise - Calves
+- Seated dip machine - Triceps
+- Seated Dumbbell Shoulder Press - Shoulders - delts (triceps assist)
+- Seated good morning - Hamstrings / glutes / spinal erectors
+- Seated Kettlebell Press - Shoulders - delts (triceps assist)
+- Seated leg curl - Hamstrings
+- Seated leg press - Legs (quadriceps and glutes)
+- Seated Machine Row - Back - upper back and lats
+- Seated Smith Machine Shoulder Press - Shoulders - delts (triceps assist)
+- Shallow Body Weight Lunge - Legs (quadriceps and glutes)
+- Shrug - Upper trapezius
+- Side Lunges (Bodyweight) - Legs (adductors, glutes, quadriceps)
+- Side plank - Core (obliques and trunk stabilizers)
+- Single Leg Deadlift with Kettlebell - Posterior chain - glutes, hamstrings and spinal erectors
+- Single-arm cable pulldown - Back - lats (biceps assist where elbows flex)
+- Single-arm cable row - Back - lats and upper back
+- Single-arm dumbbell bench press - Chest - pectorals (triceps and front delts assist)
+- Single-arm dumbbell floor press - Chest - pectorals (triceps and front delts assist)
+- Single-arm dumbbell row - Back - lats and upper back
+- Single-arm dumbbell shoulder press - Shoulders - delts (triceps assist)
+- Single-arm lat prayer - Back - lats (biceps assist where elbows flex)
+- Single-leg Romanian deadlift - Hamstrings / glutes / spinal erectors
+- Sissy squat - Quadriceps
+- Sit-Up - Core (abdominals and trunk stabilizers)
+- Skull crusher - Triceps
+- Sled drag - Full body / power
+- Sled push - Full body / power
+- Smith machine bench press - Chest - pectorals (triceps and front delts assist)
+- Smith Machine Bulgarian Split Squat - Legs (quadriceps and glutes)
+- Smith machine calf raise - Calves
+- Smith machine deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Smith Machine Front Squat - Legs (quadriceps and glutes)
+- Smith Machine Hip Thrust - Glutes
+- Smith Machine Incline Bench Press - Chest - upper pectorals (front delts and triceps assist)
+- Smith machine incline press - Chest - upper pectorals (front delts and triceps assist)
+- Smith machine JM press - Triceps
+- Smith Machine Landmine Press - Shoulders - delts (triceps assist)
+- Smith machine lunge - Legs (quadriceps and glutes)
+- Smith Machine One-Handed Row - Back - lats and upper back
+- Smith machine overhead press - Shoulders - delts (triceps assist)
+- Smith Machine Reverse Grip Bench Press - Chest - pectorals (triceps and front delts assist)
+- Smith machine reverse lunge - Legs (quadriceps and glutes)
+- Smith machine Romanian deadlift - Hamstrings / glutes / spinal erectors
+- Smith Machine Skull Crushers - Triceps
+- Smith machine squat - Legs (quadriceps and glutes)
+- Snatch - Full body / power
+- Snatch Grip Behind the Neck Press - Shoulders - delts (triceps assist)
+- Snatch Grip Deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Spider curl - Biceps
+- Split Jerk - Full body / power
+- Split squat - Legs (quadriceps and glutes)
+- Spoto press - Chest - pectorals (triceps and front delts assist)
+- Squat Jerk - Legs (quadriceps and glutes)
+- Standing Cable Chest Fly - Chest - pectorals
+- Standing Cable Leg Extension - Quadriceps
+- Standing calf machine - Calves
+- Standing calf raise - Calves
+- Standing Glute Kickback in Machine - Glutes
+- Standing Glute Push Down - Glutes
+- Standing Hip Abduction Against Band - Hip abductors (glute medius/minimus)
+- Standing Hip Flexor Raise - Hip flexors
+- Standing Leg Curl - Hamstrings
+- Standing leg curl machine - Hamstrings
+- Standing Resistance Band Chest Fly - Chest - pectorals
+- Stationary Bike - Cardio / lower-body endurance
+- Step-up - Legs (quadriceps and glutes)
+- Stiff-leg deadlift - Hamstrings / glutes / spinal erectors
+- Stiff-Legged Deadlift - Hamstrings / glutes / spinal erectors
+- Straight Arm Lat Pulldown - Back - lats (biceps assist where elbows flex)
+- Straight-arm pulldown - Back - lats (biceps assist where elbows flex)
+- Stretch-mediated calf raise - Calves
+- Suitcase carry - Full body / grip and core
+- Sumo deadlift - Posterior chain - glutes, adductors, hamstrings and spinal erectors
+- Superman Raise - Spinal erectors (glutes and hamstrings assist)
+- Supine Neck Bridge - Neck extensors and stabilizers
+- Supported recline curl - Biceps
+- Tate Press - Triceps
+- T-bar row - Back - lats and upper back
+- Thruster - Full body / power
+- Tibialis Band Pull - Tibialis anterior
+- Tibialis Raise - Tibialis anterior
+- Toe touch - Core (abdominals and trunk stabilizers)
+- Towel Pull-Up - Back - lats (biceps assist where elbows flex)
+- Towel Row - Back - lats and upper back
+- Trap Bar Deadlift With High Handles - Legs / posterior chain - quadriceps, glutes and spinal erectors
+- Trap Bar Deadlift With Low Handles - Legs / posterior chain - quadriceps, glutes and spinal erectors
+- Trap-bar deadlift - Posterior chain - glutes, hamstrings and spinal erectors
+- Tricep Bodyweight Extension - Triceps
+- Tricep Pushdown With Bar - Triceps
+- Tricep Pushdown With Rope - Triceps
+- Triceps dip - Triceps
+- Triceps pushdown - Triceps
+- Turkish Get-Up - Full body / power
+- Upper-back-biased cable row - Upper back - traps, rhomboids and rear delts
+- Upper-back-biased chest-supported row - Upper back - traps, rhomboids and rear delts
+- Upright row - Back - upper back and lats
+- Vertical leg press - Legs (quadriceps and glutes)
+- V-squat machine - Legs (quadriceps and glutes)
+- Waiter carry - Full body / grip and core
+- Walking - Cardio / lower-body endurance
+- Walking lunge - Legs (quadriceps and glutes)
+- Wall sit - Legs (quadriceps and glutes)
+- Wall Walk - Shoulders - delts (triceps assist)
+- Weighted Plank - Core (abdominals and trunk stabilizers)
+- Wide-grip barbell row - Upper back - traps, rhomboids and rear delts
+- Wide-grip pulldown - Back - lats (biceps assist where elbows flex)
+- Wrist curl - Forearms (wrist flexors)
+- Wrist Roller - Forearms / grip
+- Z Press - Shoulders - delts (triceps assist)
+- Zercher squat - Legs (quadriceps and glutes)
+- Zombie Squat - Legs (quadriceps and glutes)
+- Zottman curl - Elbow flexors - brachialis/brachioradialis and biceps

@@ -1,0 +1,62 @@
+import { defineConfig } from "oxlint";
+
+export default defineConfig({
+  categories: {
+    correctness: "off",
+    nursery: "off",
+    pedantic: "off",
+    perf: "off",
+    restriction: "off",
+    style: "off",
+    suspicious: "off",
+  },
+  ignorePatterns: [
+    "dist/**",
+    ".next/**",
+    "app/dist/**",
+    "app/_sites-preview/**",
+    "build/**",
+    "backups/**",
+    "work/**",
+    "outputs/**",
+    "_zip-inspect/**",
+    "excluded_from_project/**",
+    ".wrangler/**",
+    ".vinext/**",
+    ".agent/**",
+    ".agents/**",
+    ".claude/**",
+    ".codex/**",
+    ".continue/**",
+    ".cursor/**",
+    ".gemini/**",
+    ".opencode/**",
+    ".pi/**",
+    ".roo/**",
+    ".windsurf/**",
+    "tools/oxlint/anti-slop/**",
+  ],
+  jsPlugins: [
+    { name: "anti-slop", specifier: "./tools/oxlint/anti-slop/index.ts" },
+  ],
+  rules: {
+    "anti-slop/no-chained-type-assertions": "error",
+    "anti-slop/no-conditional-empty-object-spread": "error",
+    "anti-slop/no-known-value-widening": "error",
+    "anti-slop/no-module-mocking": "error",
+    "anti-slop/no-object-parameters": "error",
+    "anti-slop/no-reflect-apply": "error",
+    "anti-slop/no-reflect-get": "error",
+    // Runtime `typeof` is still rejected everywhere except a named TypeScript
+    // type guard, where it is the boundary check that establishes the domain
+    // contract used by the rest of the function.
+    "anti-slop/no-runtime-typeof": ["error", { allowInTypeGuards: true }],
+    "anti-slop/no-shape-in-symbol-names": "error",
+    "anti-slop/no-unknown-parameters": "error",
+    "anti-slop/no-unknown-returns": "error",
+    "anti-slop/no-unknown-type-aliases": "error",
+    "anti-slop/no-unsafe-dictionary-type": "error",
+    "anti-slop/no-widen-then-assert": "error",
+    "anti-slop/require-safety-comment-for-type-assertion": "error",
+  },
+});

@@ -1,0 +1,1355 @@
+.calendar-detail-scrollbar-thumb:hover,
+.calendar-detail-scrollbar-thumb:focus-visible,
+.calendar-detail-scrollbar-thumb:active {
+  background: var(--ink);
+  opacity: 1;
+}
+.calendar-detail-exercise-info {
+  animation: detail-panel-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes detail-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 600px) {
+  .calendar-detail-header {
+    padding-right: 40px;
+  }
+  .calendar-detail-scrollbar {
+    right: -1px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .calendar-detail-exercise-info {
+    animation: none;
+  }
+}
+
+/* The workout detail is a settings-style modal.  Keep the backdrop fixed so
+   the document can never grow a second scrollbar; the detail content and its
+   app-owned rail remain the only scrollable surface. */
+.calendar-detail-backdrop {
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+}
+.calendar-detail-modal {
+  overflow: hidden;
+  max-height: calc(100dvh - 36px);
+}
+.calendar-detail-scroll-wrap,
+.calendar-detail-scroll {
+  min-height: 0;
+}
+.calendar-detail-scroll {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Give tablet and desktop viewports the same generous footprint as the
+   Settings popup. Collapsed exercises then fit in two balanced columns, so a
+   normal workout can be reviewed at a glance instead of forcing a drag. */
+@media (min-width: 700px) {
+  .calendar-detail-modal {
+    width: min(940px, calc(100vw - 32px));
+    height: min(680px, calc(100dvh - 32px));
+    max-height: calc(100dvh - 32px);
+    padding: 28px;
+  }
+  .calendar-detail-exercise-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+    align-items: start;
+  }
+  .calendar-detail-exercise-row {
+    padding-top: 7px;
+    padding-bottom: 7px;
+  }
+}
+
+/* Workout history opens above the entire application, not inside the animated
+   calendar container. The panel uses the full viewport while its readable
+   content remains centered and comfortably sized. */
+.calendar-detail-backdrop {
+  z-index: 5000;
+  width: 100vw;
+  height: 100dvh;
+  min-height: 100svh;
+  padding: 0 !important;
+  place-items: stretch !important;
+  background: rgba(0, 0, 0, 0.82);
+}
+.calendar-detail-modal {
+  width: 100vw !important;
+  height: 100dvh !important;
+  max-width: none !important;
+  max-height: none !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: var(--surface);
+  box-shadow: none;
+}
+.calendar-detail-modal > .calendar-detail-scroll-wrap {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 100%;
+}
+.calendar-detail-scroll {
+  width: min(1120px, 100%);
+  height: 100%;
+  margin: 0 auto;
+  padding: max(34px, env(safe-area-inset-top)) clamp(22px, 6vw, 72px) max(42px, env(safe-area-inset-bottom));
+}
+.calendar-detail-close {
+  position: fixed;
+  z-index: 3;
+  top: max(18px, env(safe-area-inset-top));
+  right: max(18px, env(safe-area-inset-right));
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+}
+.calendar-detail-scrollbar {
+  position: fixed;
+  z-index: 2;
+  top: max(14px, env(safe-area-inset-top));
+  right: 6px;
+  bottom: max(14px, env(safe-area-inset-bottom));
+}
+@media (max-width: 699px) {
+  .calendar-detail-scroll {
+    padding: max(68px, calc(22px + env(safe-area-inset-top))) max(18px, env(safe-area-inset-right))
+      max(34px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  }
+  .calendar-detail-exercise-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Workout-detail rows use equal side controls so the exercise name remains
+   visually centered regardless of the expand button on the right. */
+.calendar-detail-exercise-row {
+  grid-template-columns: 27px minmax(0, 1fr) 27px;
+}
+.calendar-detail-exercise-copy {
+  grid-column: 2;
+  text-align: center;
+  justify-items: center;
+}
+.calendar-detail-expand {
+  grid-column: 3;
+}
+.calendar-detail-total {
+  margin: 16px 0 0;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.calendar-detail-notes {
+  margin-top: 0;
+  padding-top: 16px;
+  border-top: 0;
+}
+@media (max-width: 600px) {
+  .calendar-detail-exercise-row {
+    grid-template-columns: 25px minmax(0, 1fr) 25px;
+  }
+}
+
+/* Strength rank view ----------------------------------------------------- */
+.rank-screen {
+  width: min(980px, 100%);
+  margin: 0 auto;
+  padding-bottom: 28px;
+  animation: content-arrive 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rank-title-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 0;
+}
+.rank-title-row h1 {
+  margin: 0;
+  font-size: clamp(30px, 4vw, 46px);
+  letter-spacing: -0.04em;
+}
+.rank-title-row p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.rank-map-toggle {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+.rank-map-toggle button {
+  min-width: 58px;
+  height: 31px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.rank-map-toggle button:hover,
+.rank-map-toggle button.selected {
+  background: var(--subtle);
+  color: var(--ink);
+}
+.rank-hero-card {
+  margin-top: 26px;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background: linear-gradient(145deg, var(--raised), var(--soft));
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.12);
+}
+.rank-hero-card.is-overview {
+  display: block;
+  padding: 28px;
+  animation: rank-overview-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rank-map-pair {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(30px, 7vw, 88px);
+  width: 100%;
+}
+.rank-map-pair .rank-map-wrap {
+  flex: 0 1 250px;
+  animation: rank-map-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rank-map-pair .rank-map-wrap:nth-child(2) {
+  animation-delay: 0.045s;
+}
+.rank-map-pair .rank-body-map {
+  width: min(100%, 250px);
+}
+.rank-hero-card.is-focused {
+  display: grid;
+  grid-template-columns: minmax(220px, 300px) minmax(0, 1fr);
+  gap: 32px;
+  align-items: center;
+  padding: 25px 28px;
+  animation: rank-focus-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.rank-hero-card.is-focused .rank-selected-detail {
+  margin-top: 0;
+}
+.rank-map-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 0;
+}
+.rank-body-map {
+  width: min(100%, 290px);
+  height: auto;
+  overflow: visible;
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.2));
+}
+.rank-neutral-parts {
+  fill: color-mix(in srgb, var(--ink) 30%, var(--raised));
+  stroke: color-mix(in srgb, var(--ink) 52%, var(--line));
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+.rank-anatomy-separators {
+  fill: none;
+  stroke: color-mix(in srgb, var(--surface) 80%, var(--line));
+  stroke-width: 1.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.78;
+  pointer-events: none;
+}
+.rank-body-region {
+  stroke: color-mix(in srgb, var(--surface) 86%, var(--line));
+  stroke-width: 1.55;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
+  transform-origin: center;
+}
+.rank-body-region:hover,
+.rank-body-region:focus {
+  filter: brightness(1.18) drop-shadow(0 0 4px color-mix(in srgb, currentColor 24%, transparent));
+  stroke-width: 1.95;
+  outline: none;
+}
+.rank-body-region:focus-visible {
+  filter: brightness(1.2) drop-shadow(0 0 5px color-mix(in srgb, currentColor 34%, transparent));
+}
+.rank-map-hint {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 10px;
+}
+.rank-hero-copy {
+  min-width: 0;
+}
+.rank-kicker {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.rank-hero-copy h2 {
+  margin: 10px 0 8px;
+  font-size: 22px;
+  letter-spacing: -0.025em;
+}
+.rank-hero-copy > p {
+  max-width: 580px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.rank-selected-detail {
+  margin-top: 22px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  overflow: hidden;
+}
+.rank-selected-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+}
+.rank-selected-heading > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.rank-selected-detail strong {
+  font-size: 12px;
+}
+.rank-selected-detail small {
+  color: var(--muted);
+  font-size: 11px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-selected-dot {
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  margin-top: 3px;
+  border-radius: 50%;
+  background: var(--rank-tone-color, var(--muted));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rank-tone-color, var(--muted)) 12%, transparent);
+}
+.rank-tone-newbie {
+  --rank-tone-color: #f5f5f5;
+}
+.rank-tone-intermediate {
+  --rank-tone-color: #f4c542;
+}
+.rank-tone-gym-bro {
+  --rank-tone-color: #9b6cff;
+}
+.rank-tone-advanced {
+  --rank-tone-color: #ff914d;
+}
+.rank-tone-elite {
+  --rank-tone-color: #ef4444;
+}
+.rank-tone-needs-data,
+.rank-tone-untracked {
+  --rank-tone-color: #737373;
+}
+.rank-selected-list {
+  display: grid;
+  border-top: 1px solid var(--line);
+}
+.rank-selected-exercise {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  min-width: 0;
+  padding: 11px 14px;
+}
+.rank-selected-exercise + .rank-selected-exercise {
+  border-top: 1px solid var(--line);
+}
+.rank-selected-name {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+}
+.rank-selected-set {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.rank-selected-name strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rank-selected-name .rank-unilateral-note {
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 650;
+}
+.rank-correction-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px 12px;
+}
+.rank-category-control {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.rank-category-control select {
+  height: 30px;
+  min-width: 104px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--raised);
+  color: var(--ink);
+  padding: 0 26px 0 9px;
+  font: inherit;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+@media (min-width: 701px) {
+  .rank-selected-exercise {
+    grid-template-columns: minmax(0, 1fr) max-content;
+    grid-template-rows: auto auto;
+    grid-template-areas: "name set" "controls controls";
+    align-items: start;
+    row-gap: 8px;
+  }
+  .rank-selected-name {
+    display: contents;
+  }
+  .rank-selected-name > strong {
+    grid-area: name;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+  .rank-selected-set {
+    grid-area: set;
+    align-self: start;
+    text-align: right;
+  }
+  .rank-correction-controls {
+    grid-area: controls;
+    justify-content: flex-start;
+  }
+}
+.undo-toast-positioner {
+  position: fixed;
+  z-index: 3200;
+  left: 50%;
+  bottom: calc(var(--track-bottom-tab-edge) + var(--track-bottom-tab-height) + 12px + var(--track-safe-bottom));
+  width: min(360px, calc(100vw - 28px));
+  opacity: 1;
+  transform: translate3d(calc(-50% + var(--undo-drag-x, 0px)), 0, 0);
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.2s ease;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+.undo-toast-positioner.is-dragging {
+  transition: none;
+}
+.undo-toast-positioner.dismiss-left {
+  opacity: 0;
+  transform: translate3d(calc(-50% - 110vw), 0, 0);
+  transition:
+    transform var(--undo-dismiss-duration, 360ms) cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease;
+}
+.undo-toast-positioner.dismiss-right {
+  opacity: 0;
+  transform: translate3d(calc(-50% + 110vw), 0, 0);
+  transition:
+    transform var(--undo-dismiss-duration, 360ms) cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 280ms ease;
+}
+.undo-toast-positioner.is-mobile-sidebar-open {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(24px) scale(0.98);
+}
+@media (min-width: 1201px) {
+  .undo-toast-positioner:not(.is-sidebar-collapsed) {
+    left: calc(var(--track-sidebar-width) + (100vw - var(--track-sidebar-width)) / 2);
+  }
+  .undo-toast-positioner.is-sidebar-collapsed {
+    left: 50vw;
+  }
+}
+.undo-toast {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 10px 12px 10px 16px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--raised) 96%, transparent);
+  color: var(--ink);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  animation: undo-toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  pointer-events: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  user-select: none;
+}
+.undo-toast-message {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 650;
+}
+.undo-toast button {
+  flex: 0 0 auto;
+  min-width: 58px;
+  height: 34px;
+  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  border-radius: 9px;
+  background: var(--control);
+  color: var(--control-ink);
+  padding: 0 13px;
+  font-size: 12px;
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background-color 0.18s ease,
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.undo-toast button:hover {
+  background: color-mix(in srgb, var(--control) 90%, var(--muted));
+}
+.undo-toast button:active {
+  transform: scale(0.96);
+}
+@keyframes undo-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes rank-overview-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes rank-map-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes rank-focus-enter {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Mobile Safari can retain an animated or backdrop-filtered ancestor as a
+   downscaled texture. Avoid those compositor layers on iOS so persistent
+   headers and full-screen sheets remain crisp. */
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 1200px) {
+    .content,
+    .content-exit,
+    .timer-screen,
+    .calendar-screen,
+    .rank-screen {
+      animation: none !important;
+      transform: none !important;
+      translate: none !important;
+      filter: none !important;
+      -webkit-filter: none !important;
+      will-change: auto !important;
+    }
+    /* Safari can keep text in a softly rasterized GPU layer when a safe-area
+       header sits beside filter/transform animations. Keep the persistent
+       header on the normal paint surface so its logo, text and controls stay
+       pixel-sharp after scrolling and after closing overlays. */
+    .mobile-header {
+      position: relative;
+      z-index: 90;
+      isolation: auto;
+      background: var(--surface);
+      animation: none !important;
+      transform: none !important;
+      translate: none !important;
+      scale: 1 !important;
+      filter: none !important;
+      -webkit-filter: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      will-change: auto !important;
+      backface-visibility: visible;
+      -webkit-font-smoothing: auto;
+      text-rendering: auto;
+    }
+    .mobile-header *,
+    .admin-users-header,
+    .admin-users-header * {
+      transform: none !important;
+      translate: none !important;
+      filter: none !important;
+      -webkit-filter: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+      will-change: auto !important;
+      backface-visibility: visible;
+    }
+
+    /* A fixed backdrop-filter plus a scaled modal is the same WebKit failure
+       mode inside the member directory. An opaque scrim still separates the
+       window cleanly, while an opacity-only entrance avoids blurry headings. */
+    .admin-users-backdrop {
+      background: rgba(0, 0, 0, 0.86);
+      animation: none !important;
+      backdrop-filter: none !important;
+      -webkit-backdrop-filter: none !important;
+    }
+    .admin-users-modal,
+    .admin-users-preview {
+      animation: none !important;
+      transform: none !important;
+      translate: none !important;
+      scale: 1 !important;
+      filter: none !important;
+      -webkit-filter: none !important;
+      will-change: auto !important;
+      backface-visibility: visible;
+    }
+  }
+}
+.rank-selected-set {
+  text-align: right;
+}
+.rank-selected-set small:last-child {
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 650;
+}
+.rank-selected-empty {
+  padding: 14px;
+  color: var(--muted);
+  font-size: 11px;
+}
+.rank-untracked-note {
+  margin-top: 22px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.rank-section-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin: 34px 0 13px;
+}
+.rank-section-heading h2 {
+  margin: 7px 0 0;
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+.rank-method {
+  color: var(--muted);
+  font-size: 11px;
+}
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.rank-card {
+  display: grid;
+  gap: 13px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--raised);
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    background-color 0.2s ease;
+}
+.rank-card:hover,
+.rank-card.selected {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ink) 35%, var(--line));
+  background: var(--hover);
+}
+.rank-card-top,
+.rank-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.rank-card-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+.rank-card-level {
+  color: var(--rank-tone-color, var(--ink));
+  font-size: 11px;
+  font-weight: 700;
+}
+.rank-meter {
+  display: block;
+  height: 6px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--subtle);
+}
+.rank-meter i {
+  display: block;
+  width: var(--rank-progress, 0%);
+  height: 100%;
+  min-width: 3px;
+  border-radius: inherit;
+  background: var(--rank-tone-color, var(--muted));
+  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.rank-card-bottom {
+  color: var(--muted);
+  font-size: 10px;
+}
+.rank-card-bottom b {
+  color: var(--ink);
+  font-size: 11px;
+}
+.rank-legend {
+  margin-top: 22px;
+  padding: 16px;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+}
+.rank-legend-title {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+.rank-legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 13px 18px;
+  margin-top: 12px;
+}
+.rank-legend-items span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+}
+.rank-legend-items i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--rank-tone-color, var(--muted));
+}
+.rank-legend p {
+  margin: 13px 0 0;
+  font-size: 10px;
+}
+@media (max-width: 700px) {
+  .rank-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .rank-map-toggle {
+    align-self: stretch;
+  }
+  .rank-map-toggle button {
+    flex: 1;
+  }
+  .rank-hero-card.is-overview {
+    padding: 18px 8px;
+  }
+  .rank-map-pair {
+    align-items: flex-end;
+    gap: 2px;
+  }
+  .rank-map-pair .rank-map-wrap {
+    flex: 1 1 50%;
+    min-width: 0;
+  }
+  .rank-map-pair .rank-body-map {
+    width: min(100%, 210px);
+  }
+  .rank-hero-card.is-focused {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 20px 16px;
+  }
+  .rank-body-map {
+    width: min(250px, 78vw);
+  }
+  .rank-hero-copy h2 {
+    font-size: 20px;
+  }
+  .rank-selected-exercise {
+    grid-template-columns: 1fr;
+    gap: 7px;
+  }
+  .rank-selected-name {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 7px;
+  }
+  .rank-correction-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    justify-content: stretch;
+    gap: 7px;
+  }
+  .rank-category-control {
+    justify-content: space-between;
+  }
+  .rank-category-control select {
+    min-width: 126px;
+  }
+  .rank-selected-set {
+    text-align: left;
+  }
+  .rank-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .rank-grid {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rank-screen,
+  .rank-body-region,
+  .rank-card,
+  .rank-meter i {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Shared UI polish: calmer workout surfaces, clearer feedback, and one page language. */
+.workout-page {
+  width: min(920px, 100%);
+  margin: 0 auto;
+}
+.workout-page .composer {
+  margin-top: 28px;
+  background: var(--soft);
+  box-shadow: none;
+}
+.workout-page .composer:focus-within {
+  background: var(--raised);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.workout-page .task-list {
+  margin-top: 24px;
+}
+.workout-page .task {
+  margin-top: 7px;
+  border-color: color-mix(in srgb, var(--line) 72%, transparent);
+  background: var(--soft);
+  box-shadow: none;
+}
+.workout-page .task:hover {
+  background: var(--hover);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+  transform: translateY(-1px) scale(1.002);
+}
+.workout-page .task.collapsed {
+  background: transparent;
+}
+.workout-page .task.collapsed:hover {
+  background: var(--soft);
+}
+.workout-page .set-number {
+  background: var(--raised);
+}
+.workout-page .set-input > input {
+  background: var(--raised);
+}
+.workout-page .add-set {
+  border-style: solid;
+  background: transparent;
+}
+@media (min-width: 1201px) {
+  /* Keep the workout heading on the same top rhythm as the fixed sidebar brand. */
+  .content:has(.workout-page) {
+    padding-top: 28px;
+  }
+}
+.finish-button.is-saving {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--muted);
+  box-shadow: none;
+}
+.finish-button.is-saved {
+  border: 1px solid rgba(52, 199, 89, 0.28);
+  background: rgba(52, 199, 89, 0.12);
+  color: #48b875;
+  box-shadow: none;
+}
+
+.sync-status {
+  min-width: 0;
+  max-width: 100%;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.sync-status > i {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
+}
+.sync-status-saved {
+  border-color: color-mix(in srgb, var(--track-accent-online) 28%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-online) 9%, var(--soft));
+  color: var(--track-accent-online-ink);
+}
+.sync-status-busy {
+  border-color: color-mix(in srgb, #ffb340 32%, var(--line));
+  background: color-mix(in srgb, #ffb340 9%, var(--soft));
+  color: #d4932d;
+}
+.sync-status-warning {
+  border-color: color-mix(in srgb, #ff9f0a 34%, var(--line));
+  background: color-mix(in srgb, #ff9f0a 10%, var(--soft));
+  color: #d98a1c;
+}
+.sync-status-error {
+  border-color: color-mix(in srgb, #ff453a 34%, var(--line));
+  background: color-mix(in srgb, #ff453a 9%, var(--soft));
+  color: #d9655d;
+}
+.account-status {
+  min-height: 24px;
+}
+.mobile-actions .sync-status {
+  max-width: min(230px, calc(100vw - 132px));
+}
+
+.calendar-title-copy {
+  min-width: 0;
+}
+.calendar-title-copy > .settings-kicker {
+  margin: 0 0 14px;
+}
+.calendar-title-row h1,
+.settings-title-row h2 {
+  font-weight: 650;
+  letter-spacing: -0.7px;
+}
+.calendar-card,
+.settings-modal {
+  border-color: color-mix(in srgb, var(--line) 88%, transparent);
+  box-shadow: 0 22px 65px rgba(0, 0, 0, 0.12);
+}
+.calendar-card {
+  background: var(--raised);
+}
+.calendar-cell {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--soft) 86%, var(--surface));
+}
+.calendar-cell:hover:not(:disabled) {
+  background: var(--hover);
+}
+.calendar-cell.workout-day {
+  box-shadow: inset 0 0 0 1px rgba(52, 199, 89, 0.24);
+}
+.settings-modal {
+  background: var(--raised);
+}
+.settings-content {
+  background: var(--raised);
+}
+.settings-nav {
+  background: var(--soft);
+}
+.settings-nav button.active {
+  box-shadow: inset 2px 0 0 var(--ink);
+}
+.setting-section {
+  padding-top: 24px;
+  padding-bottom: 24px;
+}
+.calendar-detail-modal {
+  background: var(--raised);
+}
+.calendar-detail-stats div {
+  border-radius: 10px;
+  background: var(--soft);
+}
+
+.undo-toast {
+  position: relative;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--line) 92%, transparent);
+  background: var(--raised);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.undo-toast-icon {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--track-accent-online);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--track-accent-online) 14%, transparent);
+}
+.undo-toast-icon i {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: inherit;
+  background: var(--track-accent-online);
+}
+.undo-toast::after {
+  content: "";
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--control);
+  transform-origin: left center;
+  animation: undo-toast-progress var(--undo-duration) linear both;
+  opacity: 0.32;
+  pointer-events: none;
+}
+@keyframes undo-toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 1200px) {
+  .workout-page {
+    width: 100%;
+  }
+  .workout-page .composer {
+    margin-top: 24px;
+  }
+  .workout-page .task {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .settings-content {
+    padding: 30px 28px 38px;
+  }
+}
+
+@media (max-width: 700px) {
+  .workout-page .task-list {
+    margin-top: 20px;
+  }
+  .workout-page .task {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
+  .workout-page .task.collapsed {
+    padding-top: 11px;
+    padding-bottom: 11px;
+  }
+  .calendar-title-row {
+    align-items: flex-start;
+  }
+  .calendar-title-row .calendar-today {
+    margin-top: 1px;
+  }
+  .settings-content {
+    padding: 24px 20px 32px;
+  }
+  .settings-title-row {
+    padding-bottom: 20px;
+  }
+}
+
+/* A phone or tablet can rotate while the slide-out drawer is open. Keep the
+   workout beside the drawer in landscape so its split and exercises stay visible. */
+@media (max-width: 1200px) and (orientation: landscape) {
+  .app-shell {
+    --landscape-drawer-width: min(62vw, 280px);
+  }
+  .sidebar,
+  .sidebar-collapsed .sidebar {
+    width: var(--landscape-drawer-width);
+  }
+  .app-shell.mobile-sidebar-visible .workspace {
+    width: calc(100% - var(--landscape-drawer-width));
+    margin-left: var(--landscape-drawer-width);
+  }
+  .app-shell.mobile-sidebar-visible .mobile-sidebar-backdrop {
+    display: none;
+  }
+  .sidebar .brand-row {
+    flex-shrink: 0;
+    margin-bottom: 8px;
+  }
+  .sidebar .new-button {
+    height: 32px;
+    min-height: 32px;
+    flex: 0 0 auto;
+  }
+  .sidebar .timer-nav {
+    height: 30px;
+    min-height: 30px;
+    margin-top: 2px;
+    flex: 0 0 auto;
+  }
+  .sidebar .recents-label {
+    margin: 8px 12px 4px;
+    flex: 0 0 auto;
+  }
+  .sidebar .recents {
+    min-height: 34px;
+    flex: 1 1 auto;
+  }
+  .sidebar .recent {
+    height: 34px;
+    min-height: 34px;
+    flex: 0 0 auto;
+  }
+  .sidebar > .account-panel {
+    gap: 5px;
+    padding: 8px 8px 0;
+  }
+  .sidebar > .account-panel .settings-button {
+    width: 30px;
+    height: 30px;
+  }
+}
+
+@media (max-width: 1200px) and (orientation: landscape) and (max-height: 360px) {
+  .sidebar .brand-row {
+    margin-bottom: 4px;
+  }
+  .sidebar .new-button {
+    height: 28px;
+    min-height: 28px;
+  }
+  .sidebar .timer-nav {
+    height: 25px;
+    min-height: 25px;
+    margin-top: 2px;
+  }
+  .sidebar .recents-label {
+    margin-top: 4px;
+    margin-bottom: 3px;
+  }
+  .sidebar .recents {
+    min-height: 32px;
+  }
+  .sidebar .recent {
+    height: 32px;
+    min-height: 32px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workout-page .task,
+  .finish-button,
+  .undo-toast::after,
+  .bottom-tab-active-indicator {
+    animation: none;
+    transition: none;
+  }
+  .undo-toast::after {
+    transform: scaleX(1);
+  }
+}
+
+/* v3.1 clarity system: one visual language for action, surface, state, and empty space. */
+.ui-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--raised);
+  color: var(--ink);
+  padding: 0 13px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  line-height: 1;
+  transition:
+    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+.ui-button:hover:not(:disabled) {
+  background: var(--hover);
+  border-color: color-mix(in srgb, var(--ink) 20%, var(--line));
+  transform: translateY(-1px);
+}
+.ui-button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.ui-button:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ink) 42%, transparent);
+  outline-offset: 2px;
+}
+.ui-button:disabled {
+  cursor: default;
+  opacity: 0.52;
+}
+.ui-button-primary {
+  border-color: var(--control);
+  background: var(--control);
+  color: var(--control-ink);
+  box-shadow: 0 4px 13px rgba(0, 0, 0, 0.1);
+}
+.ui-button-primary:hover:not(:disabled) {
+  border-color: var(--control);
+  background: var(--control);
+  color: var(--control-ink);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
+}
+.ui-button-secondary {
+  background: var(--soft);
+}
+.ui-button-quiet {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+.ui-button-quiet:hover:not(:disabled) {
+  border-color: transparent;
+  background: var(--soft);
+  color: var(--ink);
+  box-shadow: none;
+}
+.ui-button-danger {
+  border-color: color-mix(in srgb, #ff453a 38%, var(--line));
+  background: color-mix(in srgb, #ff453a 9%, var(--raised));
+  color: #db625a;
+  box-shadow: none;
+}
+.ui-button-danger:hover:not(:disabled) {
+  border-color: color-mix(in srgb, #ff453a 58%, var(--line));
+  background: color-mix(in srgb, #ff453a 14%, var(--raised));
+  color: #e04f47;
+}
+.ui-panel {
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  background: var(--raised);
+}
+.settings-modal.ui-panel {
+  border-radius: 20px;
+}
+.calendar-card.ui-panel {
+  border-radius: 18px;
+}

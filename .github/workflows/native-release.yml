@@ -64,7 +64,7 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk release-assets/Track-II-android-test.apk
 
       - name: Upload Android artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: track-ii-android
           path: release-assets/Track-II-android-test.apk
@@ -103,7 +103,7 @@ jobs:
       - name: Build unsigned iOS app
         run: |
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
@@ -121,7 +121,7 @@ jobs:
           ditto -c -k --sequesterRsrc --keepParent Payload release-assets/Track-II-ios-unsigned.ipa
 
       - name: Upload iOS artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: track-ii-ios
           path: release-assets/Track-II-ios-unsigned.ipa
@@ -148,7 +148,7 @@ jobs:
         uses: actions/checkout@v5
 
       - name: Download native artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: track-ii-*
           path: release-assets

@@ -24,6 +24,7 @@ export function useSettingsState() {
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | "unsupported">(
     "default",
   );
+  const [notificationSettingsAvailable, setNotificationSettingsAvailable] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState("");
   const [adminUsersOpen, setAdminUsersOpen] = useState(false);
   const [announcementComposerOpen, setAnnouncementComposerOpen] = useState(false);
@@ -77,6 +78,8 @@ export function useSettingsState() {
     setNotificationRequestBusy,
     notificationPermission,
     setNotificationPermission,
+    notificationSettingsAvailable,
+    setNotificationSettingsAvailable,
     notificationMessage,
     setNotificationMessage,
     adminUsersOpen,

@@ -2,6 +2,7 @@
 
 import { haptic } from "../haptics";
 import { TRACK_RELEASES_URL } from "../trackConfig";
+import { createPortal } from "react-dom";
 
 type UpdateNotificationProps = {
   nativeApp: boolean;
@@ -18,7 +19,8 @@ export function UpdateNotification({ nativeApp, updateVersion, onDismiss }: Upda
     window.location.replace(refreshUrl.toString());
   };
 
-  return (
+  if (!globalThis.document) return null;
+  return createPortal(
     <aside className="track-notification track-update-notification" aria-live="assertive">
       <span className="notification-logo update-notification-logo">
         <span className="update-notification-mark">↻</span>
@@ -47,6 +49,7 @@ export function UpdateNotification({ nativeApp, updateVersion, onDismiss }: Upda
       <button onClick={onDismiss} aria-label="Dismiss update notice">
         ×
       </button>
-    </aside>
+    </aside>,
+    document.body,
   );
 }

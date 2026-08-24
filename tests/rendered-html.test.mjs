@@ -637,7 +637,7 @@ test("mobile pages share a lower crisp surface and blur-free overlays", async ()
   assert.match(css, /\.timer-screen \{ padding-top:0; \}/);
   assert.match(
     css,
-    /\.settings-content \{ padding-top:calc\(36px \+ env\(safe-area-inset-top\)\) !important; padding-bottom:calc\(42px \+ env\(safe-area-inset-bottom\)\) !important; \}/,
+    /\.settings-content \{[^}]*padding-top:22px !important;[^}]*padding-bottom:calc\(56px \+ env\(safe-area-inset-bottom\)\) !important;[^}]*\}/,
   );
   assert.match(css, /\.content, \.content-exit, \.timer-screen, \.calendar-screen, \.rank-screen,/);
   assert.match(css, /\.settings-view\[class\*="view-"\] > \.setting-section/);
@@ -1171,6 +1171,22 @@ test("Settings exposes a user-facing GitHub release check", async () => {
   assert.doesNotMatch(page, /window\.location\.assign\(TRACK_RELEASES_URL\)/);
 });
 
+test("native updates and notification permissions use native-safe paths", async () => {
+  const [releaseManager, interactions, settings, updateNotification] = await Promise.all([
+    read("app/hooks/useReleaseManager.ts"),
+    read("app/hooks/useTrackAppInteractions.ts"),
+    read("app/components/SettingsViewContent.tsx"),
+    read("app/components/UpdateNotification.tsx"),
+  ]);
+
+  assert.match(releaseManager, /!nativeApp\s*&&\s*remoteRelease\.buildId/);
+  assert.match(interactions, /AppLauncher\.openUrl\(\{\s*url:\s*"app-settings:"\s*\}\)/);
+  assert.match(settings, /notificationSettingsAvailable/);
+  assert.match(settings, /Open Settings/);
+  assert.match(updateNotification, /createPortal/);
+  assert.match(updateNotification, /document\.body/);
+});
+
 test("new persistence and privacy paths avoid scans, plaintext snapshots, and inline boot scripts", async () => {
   const [
     api,
@@ -1285,7 +1301,10 @@ test("native Capacitor configuration packages the shared app with haptics, notif
 
   assert.match(capacitor, /webDir: "work\/cloudflare-pages"/);
   assert.match(packageJson, /"@capacitor\/haptics": "\^8/);
+  assert.match(packageJson, /"@capacitor\/app-launcher": "\^8/);
+  assert.match(packageJson, /"@capacitor\/assets": "\^3/);
   assert.match(packageJson, /"@capacitor\/local-notifications": "\^8/);
+  assert.match(packageJson, /"generate:native-icons"/);
   assert.match(page, /LocalNotifications\.schedule/);
   assert.match(trackConfig, /NEXT_PUBLIC_TRACK_WEB_ORIGIN/);
   assert.doesNotMatch(trackConfig, /trackz\.pages\.dev/i);
@@ -1307,6 +1326,8 @@ test("native releases publish a SideStore source from the built IPA metadata", a
 
   assert.match(packageJson, /"generate:sidestore-source"/);
   assert.match(workflow, /Generate SideStore source/);
+  assert.match(workflow, /Generate Android app icons/);
+  assert.match(workflow, /Generate iOS app icons/);
   assert.match(workflow, /CFBundleShortVersionString/);
   assert.match(workflow, /CFBundleIdentifier/);
   assert.match(workflow, /MARKETING_VERSION/);

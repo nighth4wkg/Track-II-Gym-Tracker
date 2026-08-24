@@ -28,6 +28,7 @@ export type SettingsViewContentProps = {
   notificationMessage: string;
   notificationPermission: NotificationState;
   notificationRequestBusy: boolean;
+  notificationSettingsAvailable: boolean;
   personalHeightInput: string;
   personalInfoMessage: string;
   personalInfoSaving: boolean;
@@ -80,6 +81,7 @@ export function SettingsViewContent(props: SettingsViewContentProps) {
     notificationMessage,
     notificationPermission,
     notificationRequestBusy,
+    notificationSettingsAvailable,
     personalHeightInput,
     personalInfoMessage,
     personalInfoSaving,
@@ -229,7 +231,9 @@ export function SettingsViewContent(props: SettingsViewContentProps) {
               {notificationMessage && <small className="notification-setting-message">{notificationMessage}</small>}
               {notificationPermission === "denied" && (
                 <small className="notification-setting-help">
-                  Notifications are blocked by the browser. Allow Track II in this site’s permissions, then try again.
+                  {notificationSettingsAvailable
+                    ? "Open Settings, choose Track II, and turn on Allow Notifications."
+                    : "Notifications are blocked by the browser. Allow Track II in this site’s permissions, then try again."}
                 </small>
               )}
               {notificationPermission === "unsupported" && (
@@ -239,14 +243,20 @@ export function SettingsViewContent(props: SettingsViewContentProps) {
             <button
               className="permission-button ui-button ui-button-secondary"
               onClick={() => void onNotificationRequest()}
-              disabled={notificationPermission === "granted" || notificationRequestBusy}
+              disabled={
+                notificationPermission === "granted" ||
+                notificationPermission === "unsupported" ||
+                notificationRequestBusy
+              }
             >
               {notificationRequestBusy
                 ? "Opening…"
                 : notificationPermission === "granted"
                   ? "Enabled"
                   : notificationPermission === "denied"
-                    ? "Blocked"
+                    ? notificationSettingsAvailable
+                      ? "Open Settings"
+                      : "Blocked"
                     : notificationPermission === "unsupported"
                       ? "Unavailable"
                       : "Enable"}

@@ -195,8 +195,12 @@ export function useReleaseManager({
           TRACK_BUILD_ID !== "__TRACK_BUILD_ID__"
             ? TRACK_BUILD_ID
             : (document.querySelector<HTMLMetaElement>('meta[name="track-build"]')?.content?.trim() ?? "");
+        // Native packages are versioned independently from the hosted Pages
+        // bundle. A newer Pages build must not tell an already-current IPA or
+        // APK that a native update is available.
         const hasNewBuild = Boolean(
-          remoteRelease.buildId &&
+          !nativeApp &&
+            remoteRelease.buildId &&
             currentBuildId &&
             currentBuildId !== "__TRACK_BUILD_ID__" &&
             remoteRelease.buildId !== currentBuildId,

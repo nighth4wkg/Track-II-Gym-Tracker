@@ -59,6 +59,7 @@ export function createSettingsContextValue({
     notificationMessage: settings.notificationMessage,
     notificationPermission: settings.notificationPermission,
     notificationRequestBusy: settings.notificationRequestBusy,
+    notificationSettingsAvailable: settings.notificationSettingsAvailable,
     personalHeightInput: identity.personalHeightInput,
     personalInfoMessage: identity.personalInfoMessage,
     personalInfoSaving: identity.personalInfoSaving,

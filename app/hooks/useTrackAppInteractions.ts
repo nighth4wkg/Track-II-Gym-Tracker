@@ -1,4 +1,5 @@
 import { Capacitor } from "@capacitor/core";
+import { AppLauncher } from "@capacitor/app-launcher";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import type { Dispatch, FormEvent, MutableRefObject, RefObject, SetStateAction } from "react";
 import { supabase } from "../supabase";
@@ -36,6 +37,7 @@ export type TrackAppInteractionsOptions = {
   setNotificationPermission: StateSetter<NotificationPermission | "unsupported">;
   setNotificationPrompt: StateSetter<boolean>;
   setNotificationRequestBusy: StateSetter<boolean>;
+  setNotificationSettingsAvailable: StateSetter<boolean>;
   setPendingExerciseName: StateSetter<string>;
   setSearchQuery: StateSetter<string>;
   setSettingsClosing: StateSetter<boolean>;
@@ -78,6 +80,7 @@ export function useTrackAppInteractions({
   setNotificationPermission,
   setNotificationPrompt,
   setNotificationRequestBusy,
+  setNotificationSettingsAvailable,
   setPendingExerciseName,
   setSearchQuery,
   setSettingsClosing,
@@ -165,6 +168,8 @@ export function useTrackAppInteractions({
     setNotificationMessage("");
     try {
       const nativeApp = Capacitor.isNativePlatform();
+      const appSettingsAvailable = nativeApp && Capacitor.isPluginAvailable("AppLauncher");
+      setNotificationSettingsAvailable(appSettingsAvailable);
       if (nativeApp) {
         setNotificationPrompt(false);
         if (!nativeLocalNotificationsAvailable()) {
@@ -173,7 +178,24 @@ export function useTrackAppInteractions({
           return;
         }
         let permission = await promiseWithTimeout(LocalNotifications.checkPermissions(), 4000);
-        if (permission.display !== "granted" && permission.display !== "denied")
+        if (permission.display === "denied") {
+          setNotificationPermission("denied");
+          safeStorageSet("track-notification-prompt", "denied");
+          if (appSettingsAvailable) {
+            const result = await promiseWithTimeout(AppLauncher.openUrl({ url: "app-settings:" }), 8000);
+            setNotificationMessage(
+              result.completed
+                ? "Notifications are blocked. Open Track II in Settings and turn on Allow Notifications."
+                : "Notifications are blocked. Open iPhone Settings, choose Track II, and turn on Allow Notifications.",
+            );
+          } else {
+            setNotificationMessage(
+              "Notifications are blocked. Open iPhone Settings, choose Track II, and enable them.",
+            );
+          }
+          return;
+        }
+        if (permission.display !== "granted")
           permission = await promiseWithTimeout(LocalNotifications.requestPermissions(), 8000);
         const normalizedPermission: NotificationPermission =
           permission.display === "granted" ? "granted" : permission.display === "denied" ? "denied" : "default";
@@ -185,8 +207,20 @@ export function useTrackAppInteractions({
         if (normalizedPermission === "granted") {
           setNotificationMessage("Notifications are enabled on this device.");
           void showSystemNotification("Announcements are now enabled on this device.", "permission-enabled");
-        } else if (normalizedPermission === "denied")
-          setNotificationMessage("Notifications are blocked. You can enable them in your device settings.");
+        } else if (normalizedPermission === "denied") {
+          if (appSettingsAvailable) {
+            const result = await promiseWithTimeout(AppLauncher.openUrl({ url: "app-settings:" }), 8000);
+            setNotificationMessage(
+              result.completed
+                ? "Notifications are blocked. Open Track II in Settings and turn on Allow Notifications."
+                : "Notifications are blocked. Open iPhone Settings, choose Track II, and turn on Allow Notifications.",
+            );
+          } else {
+            setNotificationMessage(
+              "Notifications are blocked. Open iPhone Settings, choose Track II, and enable them.",
+            );
+          }
+        }
         return;
       }
       if (!("Notification" in window)) {

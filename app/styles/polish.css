@@ -479,8 +479,10 @@
   /* Move every settings category down with the page content, including Admin,
      while retaining a scrollable full-screen sheet on short phones. */
   .settings-content {
-    padding-top: calc(36px + env(safe-area-inset-top)) !important;
-    padding-bottom: calc(42px + env(safe-area-inset-bottom)) !important;
+    /* The tab strip already owns the top safe area. Adding it again here
+       pushed the title and notification controls far below the tabs. */
+    padding-top: 22px !important;
+    padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important;
   }
 
   /* Keep modal text sharp in Safari/PWA and avoid a filtered fixed ancestor
@@ -1011,6 +1013,25 @@
 }
 .settings-content {
   scrollbar-gutter: stable;
+}
+
+@media (max-width: 1200px) {
+  .notification-setting-row {
+    min-height: 0;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .notification-setting-row > div:first-child {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+  .notification-setting-row .permission-button {
+    margin-top: 0;
+  }
+  .notification-setting-help,
+  .notification-setting-message {
+    max-width: none;
+  }
 }
 
 @media (max-width: 560px) {

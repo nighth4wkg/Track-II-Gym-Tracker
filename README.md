@@ -44,7 +44,7 @@ npm.cmd run validate:release
 npm.cmd run package:pages:release
 ```
 
-The release command creates a Cloudflare Pages upload ZIP plus a rollback archive of the previous verified web build in `releases/`. Upload the release ZIP in the Cloudflare Pages dashboard, or deploy `work/cloudflare-pages` with Wrangler.
+The release command creates a Cloudflare Pages upload ZIP plus a rollback archive of the previous verified web build in `release-artifacts/`. Upload the release ZIP in the Cloudflare Pages dashboard, or deploy `work/cloudflare-pages` with Wrangler.
 
 ## Native builds
 
@@ -53,9 +53,10 @@ npm.cmd run build:pages
 npx.cmd cap add android
 npx.cmd cap add ios
 npx.cmd cap sync
+npm.cmd run generate:native-icons
 ```
 
-Android builds require Android Studio/JDK. iOS builds require macOS and Xcode. The included Native Release workflow produces an installable, debug-signed Android test APK and an unsigned iOS IPA; an App Store/TestFlight IPA still requires Apple signing.
+Android builds require Android Studio/JDK. iOS builds require macOS and Xcode. The included Native Release workflow produces an installable, debug-signed Android test APK and an unsigned iOS IPA; an App Store/TestFlight IPA still requires Apple signing. The shared `assets/icon-only.png` source generates the native icon resources.
 
 ## SideStore and AltStore
 

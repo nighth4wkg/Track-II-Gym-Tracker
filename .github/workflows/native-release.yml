@@ -52,6 +52,9 @@ jobs:
           npx cap add android
           npx cap sync android
 
+      - name: Generate Android app icons
+        run: npm run generate:native-icons
+
       - name: Build debug-signed APK
         working-directory: android
         run: |
@@ -100,6 +103,9 @@ jobs:
         run: |
           npx cap add ios
           npx cap sync ios
+
+      - name: Generate iOS app icons
+        run: npm run generate:native-icons
 
       - name: Build unsigned iOS app
         run: |

@@ -41,7 +41,10 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@capacitor/android": "^8.5.0",
     "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@cloudflare/vite-plugin": "1.53.0",
     "@oxlint/plugins": "^1.79.0",
     "@playwright/test": "1.62.1",

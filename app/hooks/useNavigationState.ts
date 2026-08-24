@@ -15,3 +15,5 @@ export function useNavigationState() {
     setShowRank,
   };
 }
+
+export type NavigationState = ReturnType<typeof useNavigationState>;

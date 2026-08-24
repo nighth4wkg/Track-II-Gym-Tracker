@@ -25,6 +25,7 @@ export type SettingsViewContentProps = {
   exportBusy: ExportFormat | null;
   exportMessage: string;
   isAdmin: boolean;
+  nativeApp: boolean;
   notificationMessage: string;
   notificationPermission: NotificationState;
   notificationRequestBusy: boolean;
@@ -52,10 +53,10 @@ export type SettingsViewContentProps = {
   onCheckForUpdates: () => Promise<void>;
   onCompletionEnabledChange: (enabled: boolean) => void;
   onExportWorkoutData: (format: ExportFormat) => Promise<void>;
+  onFakeUpdateNotification: () => void;
   onForceUpdateCheck: () => void;
   onImportWorkoutImage: (file?: File) => Promise<void>;
   onNotificationRequest: () => Promise<void>;
-  onOpenAdminUsers: () => void;
   onPersonalHeightChange: (value: string) => void;
   onPersonalWeightChange: (value: string) => void;
   onRememberExercisesChange: (enabled: boolean) => void;

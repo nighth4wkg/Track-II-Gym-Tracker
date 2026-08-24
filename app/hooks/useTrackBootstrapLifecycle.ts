@@ -154,14 +154,28 @@ export function useTrackBootstrapLifecycle({
   useEffect(() => {
     if (!user) return;
     let cancelled = false;
-    void readNotificationPermission().then((permission) => {
+    const applyNotificationPermission = (permission: NotificationPermission | "unsupported") => {
       if (cancelled) return;
       setNotificationPermission(permission);
+      if (permission === "granted" || permission === "unsupported") setNotificationPrompt(false);
       if (permission === "default" && safeStorageGet("track-notification-prompt") !== "dismissed")
         setNotificationPrompt(true);
-    });
+    };
+    const refreshNotificationPermission = () => {
+      if (document.hidden) return;
+      void readNotificationPermission().then(applyNotificationPermission);
+    };
+    const refreshWhenActive = () => refreshNotificationPermission();
+
+    refreshNotificationPermission();
+    window.addEventListener("focus", refreshWhenActive);
+    window.addEventListener("pageshow", refreshWhenActive);
+    document.addEventListener("visibilitychange", refreshWhenActive);
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", refreshWhenActive);
+      window.removeEventListener("pageshow", refreshWhenActive);
+      document.removeEventListener("visibilitychange", refreshWhenActive);
     };
   }, [setNotificationPermission, setNotificationPrompt, user]);
 

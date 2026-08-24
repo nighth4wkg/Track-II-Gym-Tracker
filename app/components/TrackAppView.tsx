@@ -31,7 +31,7 @@ import type { useSplitActions } from "../hooks/useSplitActions";
 import type { useWorkoutImportActions } from "../hooks/useWorkoutImportActions";
 import type { AiExercise, Checklist } from "../trackTypes";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
-import { TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
+import { POPULAR_QUICK_PICK_EXERCISES, TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 import { exerciseSearchScore } from "../exerciseSearch";
 import { haptic } from "../haptics";
 import { safeStorageSet, syncStatusTone } from "../trackUtils";
@@ -46,6 +46,16 @@ type AppState = {
   rank: ReturnType<typeof useRankCalendarState>;
   timer: ReturnType<typeof useTimerState>;
 };
+
+function buildExerciseSuggestions(exerciseNames: readonly string[], query: string) {
+  if (!query) return [];
+  return exerciseNames
+    .map((name) => ({ name, score: exerciseSearchScore(name, query) }))
+    .filter((result) => Number.isFinite(result.score))
+    .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
+    .slice(0, TRACK_INTERACTION.maxExerciseSuggestions)
+    .map((result) => result.name);
+}
 
 export type AppLocalState = {
   aiBusy: boolean;
@@ -137,9 +147,10 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     splitName,
     workoutActionsExiting,
   } = workout;
-  const { user, updateReady, availableUpdateVersion, personalInfo, exerciseNames, isAdmin } = {
+  const { user, updateReady, debugUpdateNotification, availableUpdateVersion, personalInfo, exerciseNames, isAdmin } = {
     user: identity.user,
     updateReady: identity.updateReady,
+    debugUpdateNotification: identity.debugUpdateNotification,
     availableUpdateVersion: identity.availableUpdateVersion,
     personalInfo: identity.personalInfo,
     exerciseNames: identity.exerciseNames,
@@ -163,20 +174,19 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     workoutEditor,
   } = controllers;
 
-  const visible = useMemo(
-    () => tasks.filter((task) => (filter === "open" ? !task.done : filter === "done" ? task.done : true)),
-    [filter, tasks],
-  );
-  const openCount = tasks.filter((task) => !task.done).length;
-  const exerciseSuggestions = searchQuery.trim()
-    ? exerciseNames
-        .map((name) => ({ name, score: exerciseSearchScore(name, searchQuery) }))
-        .filter((result) => Number.isFinite(result.score))
-        .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
-        .slice(0, TRACK_INTERACTION.maxExerciseSuggestions)
-        .map((result) => result.name)
-    : [];
-  const searchQueryActive = searchQuery.trim().length > 0;
+  const { visible, openCount } = useMemo(() => {
+    const nextVisible: Checklist["tasks"] = [];
+    let nextOpenCount = 0;
+    for (const task of tasks) {
+      if (!task.done) nextOpenCount += 1;
+      if (filter === "all" || (filter === "open" && !task.done) || (filter === "done" && task.done))
+        nextVisible.push(task);
+    }
+    return { visible: nextVisible, openCount: nextOpenCount };
+  }, [filter, tasks]);
+  const searchQueryTerm = searchQuery.trim();
+  const exerciseSuggestions = buildExerciseSuggestions(exerciseNames, searchQueryTerm);
+  const searchQueryActive = searchQueryTerm.length > 0;
   const activeBottomTab: BottomTabId = showRank ? "rank" : showCalendar ? "calendar" : showTimer ? "timer" : "workout";
   const accountUsername = String(user?.user_metadata?.username ?? "").trim() || "username";
   const accountRoleLabel = isAdmin ? "Admin" : "User";
@@ -187,10 +197,12 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     identity.cloudReady &&
     tasks.length > 0 &&
     (dirtySplits.has(activeSplitId) || progressFading || workoutActionsExiting);
-  const headerStatus = siteUpdateSeconds === null ? syncLabel : `Update in ${siteUpdateSeconds}s`;
-  const syncStatusClass = `sync-status ui-status sync-status-${syncStatusTone(headerStatus)}${siteUpdateSeconds === null ? "" : " site-update-status"}`;
-  const releaseAvailable = Boolean(availableUpdateVersion || updateReady);
+  const nativeUpdateCountdownActive = nativeApp && siteUpdateSeconds !== null;
+  const headerStatus = nativeUpdateCountdownActive ? `Update in ${siteUpdateSeconds}s` : syncLabel;
+  const syncStatusClass = `sync-status ui-status sync-status-${syncStatusTone(headerStatus)}${nativeUpdateCountdownActive ? " site-update-status" : ""}`;
+  const releaseAvailable = nativeApp && Boolean(availableUpdateVersion || updateReady);
   const updateVersion = availableUpdateVersion ?? updateReady?.remoteVersion ?? "";
+  const debugUpdateVisible = nativeApp && isAdmin && debugUpdateNotification;
 
   const { savePersonalInfo, savePasswordReset, saveUsername, updateRankCategoryOverride, updateRankEquipmentOverride } =
     accountActions;
@@ -243,6 +255,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     active,
     tasks,
     isAdmin,
+    nativeApp,
     releaseAvailable,
     updateVersion,
     identity,
@@ -353,6 +366,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     filter,
     openCount,
     exerciseSuggestions,
+    quickPickExercises: POPULAR_QUICK_PICK_EXERCISES,
     value: searchQuery,
     showSuggestions,
     searchQueryActive,
@@ -543,11 +557,16 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
           : undefined
       }
       updateNotificationProps={
-        updateReady
+        nativeApp && (updateReady || debugUpdateVisible)
           ? {
+              debug: debugUpdateVisible,
+              isAdmin,
               nativeApp,
-              updateVersion,
-              onDismiss: () => identity.setUpdateReady(null),
+              updateVersion: debugUpdateVisible ? "" : updateVersion,
+              onDismiss: () => {
+                if (debugUpdateVisible) identity.setDebugUpdateNotification(false);
+                else identity.setUpdateReady(null);
+              },
             }
           : undefined
       }

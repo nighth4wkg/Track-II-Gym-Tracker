@@ -2,13 +2,26 @@
 
 import { useRef, type Dispatch, type SetStateAction, type PointerEvent as ReactPointerEvent } from "react";
 import type { Checklist } from "../trackTypes";
-import { TRACK_INTERACTION } from "../trackConstants";
+import { TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 
 type SplitReorderOptions = {
   setLists: Dispatch<SetStateAction<Checklist[]>>;
   setDraggingSplit: Dispatch<SetStateAction<string | null>>;
   setSplitMenu: Dispatch<SetStateAction<{ id: string; x: number; y: number } | null>>;
 };
+
+function splitMenuPosition(rect: DOMRect) {
+  return {
+    x: Math.max(
+      TRACK_INTERACTION.splitMenuOffsetX + 2,
+      Math.min(rect.left + TRACK_INTERACTION.splitMenuOffsetX, window.innerWidth - TRACK_INTERACTION.splitMenuWidthPx),
+    ),
+    y: Math.min(
+      rect.bottom + TRACK_INTERACTION.splitMenuOffsetY,
+      window.innerHeight - TRACK_INTERACTION.splitMenuBottomInsetPx,
+    ),
+  };
+}
 
 export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMenu }: SplitReorderOptions) {
   const splitHoldTimer = useRef<number | null>(null);
@@ -18,12 +31,16 @@ export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMen
   const splitDragActive = useRef(false);
   const splitDragMoved = useRef(false);
   const splitDragId = useRef<string | null>(null);
+  const splitHoldTarget = useRef<HTMLButtonElement | null>(null);
+  const splitHoldMenuOpened = useRef(false);
 
   function cancelSplitHold() {
     if (splitHoldTimer.current !== null) window.clearTimeout(splitHoldTimer.current);
     splitHoldTimer.current = null;
     splitHoldStart.current = null;
     splitDragArmed.current = false;
+    splitHoldTarget.current = null;
+    splitHoldMenuOpened.current = false;
   }
 
   function beginSplitHold(event: ReactPointerEvent<HTMLButtonElement>, id: string) {
@@ -33,12 +50,22 @@ export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMen
     splitDragActive.current = false;
     splitDragMoved.current = false;
     splitDragId.current = id;
+    splitHoldTarget.current = event.currentTarget;
+    splitHoldMenuOpened.current = false;
     splitHoldStart.current = { x: event.clientX, y: event.clientY };
+    setSplitMenu(null);
     splitHoldTimer.current = window.setTimeout(() => {
       splitDragArmed.current = true;
       splitHoldTimer.current = null;
-      if (event.pointerType !== "mouse") navigator.vibrate?.(20);
-    }, 420);
+      splitHoldMenuOpened.current = true;
+      splitHoldTriggered.current = true;
+      setDraggingSplit(id);
+      const rect = splitHoldTarget.current?.getBoundingClientRect();
+      if (rect) {
+        setSplitMenu({ id, ...splitMenuPosition(rect) });
+      }
+      if (event.pointerType !== "mouse") navigator.vibrate?.(TRACK_INTERACTION.splitHoldHapticMs);
+    }, TRACK_TIMING.splitHoldMenuMs);
   }
 
   function reorderSplitAtPoint(id: string, x: number, y: number) {
@@ -64,10 +91,12 @@ export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMen
       if (distance > TRACK_INTERACTION.dragMovementThreshold) cancelSplitHold();
       return;
     }
-    if (!splitDragActive.current && splitDragArmed.current && distance > 8) {
+    if (!splitDragActive.current && splitDragArmed.current && distance > TRACK_INTERACTION.splitHoldMoveThreshold) {
       splitDragActive.current = true;
       splitDragMoved.current = true;
       splitHoldTriggered.current = true;
+      splitHoldMenuOpened.current = false;
+      setSplitMenu(null);
       setDraggingSplit(splitDragId.current);
       try {
         event.currentTarget.setPointerCapture(event.pointerId);
@@ -83,6 +112,7 @@ export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMen
     const armed = splitDragArmed.current;
     const activeDrag = splitDragActive.current;
     const moved = splitDragMoved.current;
+    const menuOpened = splitHoldMenuOpened.current;
     const rect = event.currentTarget.getBoundingClientRect();
     cancelSplitHold();
     splitDragActive.current = false;
@@ -93,13 +123,9 @@ export function useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMen
       splitHoldTriggered.current = true;
       return;
     }
-    if (armed) {
+    if (armed && !menuOpened) {
       splitHoldTriggered.current = true;
-      setSplitMenu({
-        id,
-        x: Math.max(12, Math.min(rect.left + 10, window.innerWidth - 180)),
-        y: Math.min(rect.bottom + 5, window.innerHeight - 156),
-      });
+      setSplitMenu({ id, ...splitMenuPosition(rect) });
     }
   }
 

@@ -2,7 +2,7 @@ import { calendarDateKey } from "../calendarTypes";
 import { rankHistoryGroupKey, type RankHistoryRow } from "../historyKeys";
 import { supabase } from "../supabase";
 import type { RankTask } from "../rankData";
-import { TRACK_LIMITS } from "../trackConstants";
+import { MILLISECONDS_PER_DAY, TRACK_LIMITS } from "../trackConstants";
 import type { Checklist, JsonValue, TrackSaveResult, WeightUnit, WorkoutSaveResult } from "../trackTypes";
 import {
   convertWeight,
@@ -217,7 +217,7 @@ export async function fetchWorkoutDateKeys(userId: string) {
 }
 
 export async function fetchRecentRankTasks(userId: string): Promise<RankTask[]> {
-  const cutoff = new Date(Date.now() - TRACK_LIMITS.rankHistoryDays * 86_400_000).toISOString();
+  const cutoff = new Date(Date.now() - TRACK_LIMITS.rankHistoryDays * MILLISECONDS_PER_DAY).toISOString();
   const { rows, error } = await fetchAllPages<RankHistoryRow>((from, to) =>
     supabase
       .from("workout_set_logs")
@@ -349,6 +349,7 @@ export async function fetchOnlineLists(
           reps: String(set.reps),
           rir: String(set.rir),
           lastWeight,
+          lastWeightUnit: lastWeight === undefined ? undefined : unit,
           lastReps: previous?.reps,
           lastRir: previous?.rir,
         };

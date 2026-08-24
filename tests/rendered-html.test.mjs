@@ -37,6 +37,8 @@ const readPageSource = async () =>
     "app/hooks/useTrackTimerLifecycle.ts",
     "app/hooks/useTrackUiLifecycle.ts",
     "app/hooks/useTrackAppInteractions.ts",
+    "app/hooks/useTrackAppRuntime.ts",
+    "app/hooks/useTrackAppLocalState.ts",
     "app/hooks/useTrackAppWorkoutActions.ts",
     "app/hooks/useTrackExportActions.ts",
     "app/hooks/useWorkoutFinishAction.ts",
@@ -129,6 +131,8 @@ const readAppSource = async () => {
     "app/hooks/useTrackTimerLifecycle.ts",
     "app/hooks/useTrackUiLifecycle.ts",
     "app/hooks/useTrackAppInteractions.ts",
+    "app/hooks/useTrackAppRuntime.ts",
+    "app/hooks/useTrackAppLocalState.ts",
     "app/hooks/useTrackAppRuntimeLifecycle.ts",
     "app/hooks/useTrackAppWorkoutActions.ts",
     "app/hooks/useTrackExportActions.ts",
@@ -160,7 +164,7 @@ test("Track source exposes the shared app and current release", async () => {
   assert.match(pagesEntry, /<title>Track II<\/title>/);
   assert.doesNotMatch(pagesEntry, /Lifting session tracker/);
   assert.match(layout, /apple-touch-icon\.png/);
-  assert.match(packageJson, /"name": "track-ii-gym-tracker"/);
+  assert.match(packageJson, /"name": "track-lifting"/);
   assert.match(packageJson, /"build:pages"/);
 });
 
@@ -220,7 +224,8 @@ test("exercise search supports short equipment aliases, partial words, and typos
   assert.match(search, /bb: "barbell"/);
   assert.match(search, /orderedSequenceScore/);
   assert.match(search, /letterSkeleton/);
-  assert.match(page, /exerciseSearchScore\(name, searchQuery\)/);
+  assert.match(page, /buildExerciseSuggestions/);
+  assert.match(page, /exerciseSearchScore\(name, query\)/);
 
   assert.ok(Number.isFinite(exerciseSearchScore("Lat Pulldown", "ltpldwn")));
   assert.ok(Number.isFinite(exerciseSearchScore("Lat Pulldown", "latpullodwn")));
@@ -241,6 +246,28 @@ test("exercise search suggestions fill the composer and use an add affordance", 
     /\.suggestions \{[\s\S]*?z-index:\s*140;[\s\S]*?top:\s*calc\(100%\s*\+\s*8px\);[\s\S]*?right:\s*0;[\s\S]*?left:\s*0;[\s\S]*?width:\s*auto;/,
   );
   assert.match(css, /\.suggestions \{[\s\S]*?box-shadow:\s*0 24px 52px rgba\(0,\s*0,\s*0,?\.?34\)/);
+});
+
+test("beta UX surfaces expose concise summaries and useful empty states", async () => {
+  const [workout, calendar, rank, base, css] = await Promise.all([
+    read("app/components/WorkoutPage.tsx"),
+    read("app/components/CalendarScreen.tsx"),
+    read("app/components/RankScreen.tsx"),
+    read("app/styles/base.css"),
+    readCssSource(),
+  ]);
+
+  assert.doesNotMatch(workout, /workout-session-summary|workout-progress-track|role="progressbar"/);
+  assert.match(workout, /quickPickExercises/);
+  assert.match(workout, /className="empty-action ui-button ui-button-secondary"/);
+  assert.match(await read("app/trackConstants.ts"), /POPULAR_QUICK_PICK_EXERCISES/);
+  assert.match(calendar, /className="calendar-insight-strip"/);
+  assert.match(calendar, /className="calendar-empty-note ui-empty"/);
+  assert.match(rank, /className="rank-insight-strip"/);
+  assert.match(rank, /className="rank-empty-note"/);
+  assert.match(base, /var\(--font-geist-sans\),[\s\S]*?-apple-system,[\s\S]*?BlinkMacSystemFont/);
+  assert.match(base, /-webkit-font-smoothing: antialiased/);
+  assert.match(css, /\.calendar-insight-card,[\s\S]*?\.rank-insight-card/);
 });
 
 test("release notes stay external and the web app has no Changelog tab", async () => {
@@ -265,9 +292,9 @@ test("1.0 release metadata identifies the current web and native package", async
   ]);
 
   assert.match(trackConfig, /export const TRACK_VERSION = "1\.0"/);
-  assert.match(packageJson, /"version": "1\.0\.0"/);
-  assert.match(packageLock, /"version": "1\.0\.0"/);
-  assert.match(notes, /Track II 1\.0/);
+  assert.match(packageJson, /"version": "1\.0"/);
+  assert.match(packageLock, /"version": "1\.0"/);
+  assert.match(notes, /Track II v1\.0/);
   assert.match(notes, /distributed database-backed limiter/);
   assert.match(packageJson, /"@capacitor\/core": "\^8/);
   assert.match(packageJson, /"@capacitor\/haptics": "\^8/);
@@ -491,7 +518,7 @@ test("mobile page tabs stay fixed and hold-slide to a target page", async () => 
     css,
     /\.bottom-tab-bar \{[^}]*bottom:calc\(var\(--track-bottom-tab-edge\) \+ var\(--track-safe-bottom\)\) !important[^}]*inset-block-end:calc\(var\(--track-bottom-tab-edge\) \+ var\(--track-safe-bottom\)\) !important[^}]*margin:0 !important/,
   );
-  assert.match(css, /\.bottom-tab-track \{ width:100%; height:58px; \}/);
+  assert.match(css, /\.bottom-tab-track \{[^}]*width:100%;[^}]*height:58px;/);
   assert.match(css, /background:color-mix\(in srgb,var\(--surface\) 70%,transparent\)/);
   assert.match(tabBar, /sidebarCollapsed/);
   assert.match(tabBar, /mobileSidebarOpen/);
@@ -503,6 +530,7 @@ test("mobile page tabs stay fixed and hold-slide to a target page", async () => 
   assert.match(css, /\.bottom-tab-bar\.is-sidebar-collapsed \{[^}]*left:50vw/);
   assert.match(css, /bottom-tab-sidebar-dismiss/);
   assert.match(css, /bottom-tab-sidebar-return/);
+  assert.match(css, /\.bottom-tab-bar \{[\s\S]*?left 0\.42s cubic-bezier/);
   assert.doesNotMatch(page, /timer-nav|rank-nav-icon/);
   assert.doesNotMatch(css, /bottom-tab-drag-ghost|bottom-tab-dragging/);
   assert.doesNotMatch(css, /dragging-bottom-tab-active/);
@@ -608,11 +636,98 @@ test("settings touch targets do not inherit Safari focus or blur interference", 
   );
   assert.match(settingsNavigation, /type="button"/);
   assert.match(settingsNavigation, /<SettingsIcon name=\{item\.icon\} \/>/);
+  assert.match(settingsNavigation, /<span>\{item\.label\}<\/span>/);
   assert.doesNotMatch(settingsNavigation, /icon: "[◐◎◈↻◇↓✦○ⓘ⌘]"/);
   assert.match(
     css,
     /\.settings-nav-icon \{[\s\S]*?stroke-width:1\.65;[\s\S]*?stroke-linecap:round;[\s\S]*?stroke-linejoin:round;/,
   );
+  assert.match(settingsNavigation, /const mobileItems = desktopItems/);
+  assert.match(
+    css,
+    /@media \(max-width: 699px\)[\s\S]*?\.settings-mobile-tabs \{[\s\S]*?display: flex;[\s\S]*?overflow-x: auto;/,
+  );
+});
+
+test("responsive workout controls keep one aligned grid and remove native number chrome", async () => {
+  const [taskCard, css, motion, settings] = await Promise.all([
+    read("app/components/TaskCard.tsx"),
+    readCssSource(),
+    read("app/domMotion.ts"),
+    read("app/components/SettingsSpecialViews.tsx"),
+  ]);
+
+  assert.match(taskCard, /className="set-row set-heading"/);
+  assert.match(
+    css,
+    /@media \(max-width:700px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;[\s\S]*?grid-template-columns:34px repeat\(3,minmax\(0,1fr\)\) 30px;/,
+  );
+  assert.match(
+    css,
+    /@media \(max-width:700px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) \{[\s\S]*?grid-template-columns:34px repeat\(3,minmax\(0,1fr\)\) 30px;/,
+  );
+  assert.match(css, /--workout-set-grid:34px repeat\(3,minmax\(0,1fr\)\) 30px;/);
+  assert.match(
+    css,
+    /\.workout-page \.set-row \.set-input:nth-child\(3\)::after,[\s\S]*?content:none;[\s\S]*?display:none;/,
+  );
+  assert.match(css, /\.workout-page \.title-row \{[\s\S]*?align-items:flex-start;/);
+  assert.match(css, /\.workout-page \.add-set \{[\s\S]*?width:100%;/);
+  assert.match(css, /input\[type="number"\] \{[\s\S]*?appearance:textfield;/);
+  assert.match(css, /::-webkit-inner-spin-button/);
+  assert.match(css, /--track-logo-surface:#101010/);
+  assert.match(css, /\.welcome-mark,[\s\S]*?\.password-reset-mark,[\s\S]*?\.auth-logo/);
+  assert.match(settings, /TRACK_DISCORD_HANDLE/);
+  assert.match(motion, /prefers-reduced-motion: reduce/);
+  assert.match(motion, /cubic-bezier\(\.22,1,\.36,1\)/);
+});
+
+test("beta workout flow keeps logging keyboard-friendly and mobile actions reachable", async () => {
+  const [taskCard, workoutPage, workspace, finishButton, splitGesture, css] = await Promise.all([
+    read("app/components/TaskCard.tsx"),
+    read("app/components/WorkoutPage.tsx"),
+    read("app/components/WorkspaceContent.tsx"),
+    read("app/components/FinishWorkoutButton.tsx"),
+    read("app/hooks/useSplitReorderGesture.ts"),
+    readCssSource(),
+  ]);
+
+  assert.match(taskCard, /data-set-field="weight"/);
+  assert.match(taskCard, /data-set-field="reps"/);
+  assert.match(taskCard, /data-set-field="rir"/);
+  assert.match(taskCard, /focusNextSetInput\(event, "reps"\)/);
+  assert.match(taskCard, /focusNextSetInput\(event, "rir"\)/);
+  assert.match(taskCard, /inputMode="decimal"[\s\S]*?enterKeyHint="next"/);
+  assert.match(taskCard, /inputMode="numeric"[\s\S]*?enterKeyHint="done"/);
+  assert.match(workoutPage, /className="workout-start-steps"/);
+  assert.match(workspace, /className="welcome-start-steps"/);
+  assert.match(finishButton, /aria-haspopup="dialog"/);
+  assert.match(finishButton, /Finish this workout\?/);
+  assert.match(finishButton, /Keep logging/);
+  assert.match(workoutPage, /className="mobile-search-toggle"/);
+  assert.match(workoutPage, /is-mobile-search-open/);
+  assert.match(taskCard, /className=\{togglingUnitId === set\.id/);
+  assert.match(taskCard, /set\.unit\.toUpperCase\(\)/);
+  assert.match(splitGesture, /splitHoldMenuOpened/);
+  assert.match(splitGesture, /function splitMenuPosition/);
+  assert.match(splitGesture, /splitMenuOffsetY/);
+  assert.match(splitGesture, /splitHoldMenuMs/);
+  assert.match(
+    css,
+    /@media \(max-width:700px\)[\s\S]*?\.workout-page \.exercise-composer \{[\s\S]*?position:relative;[\s\S]*?max-height:0;/,
+  );
+  assert.match(css, /\.workout-page \.exercise-composer\.is-mobile-search-open \{[\s\S]*?max-height:96px;/);
+  assert.match(css, /\.workout-page \.exercise-composer \.suggestions \{[\s\S]*?left:0;[\s\S]*?right:0;/);
+  assert.match(css, /\.workout-page \.exercise-composer \.suggestions \{[\s\S]*?top:calc\(100% \+ 8px\);/);
+  assert.doesNotMatch(css, /\.workout-page \.exercise-composer \{ position:fixed;/);
+  assert.doesNotMatch(css, /undo-toast-positioner \{[\s\S]*?\+ 82px/);
+  assert.match(css, /\.weight-unit-toggle\.is-toggling/);
+  assert.match(css, /@keyframes weight-unit-toggle/);
+  assert.match(css, /grid-template-columns:minmax\(0,1fr\) 34px/);
+  assert.match(css, /\.workout-page \.set-delta \{[\s\S]*?transform:translateY\(-100%\);/);
+  assert.match(css, /--workout-set-grid/);
+  assert.match(css, /@keyframes finish-confirm-in/);
+  assert.match(css, /@keyframes undo-toast-in/);
 });
 
 test("mobile settings stay balanced and boot reconciliation stays quiet", async () => {
@@ -651,7 +766,7 @@ test("mobile pages share a lower crisp surface and blur-free overlays", async ()
   );
   assert.match(
     css,
-    /\.calendar-detail-scroll \{ padding-top:max\(80px,calc\(34px \+ env\(safe-area-inset-top\)\)\); \}/,
+    /\.calendar-detail-scroll \{ padding-top:max\(54px,calc\(18px \+ env\(safe-area-inset-top\)\)\); \}/,
   );
   assert.match(
     css,
@@ -731,6 +846,7 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
     css,
     /\.undo-toast-positioner\.dismiss-left \{[\s\S]*?transform:translate3d\([\s\S]*?var\(--undo-dismiss-duration,360ms\)/,
   );
+  assert.match(css, /\.undo-toast-positioner \{[\s\S]*?left 0\.42s cubic-bezier/);
   assert.match(css, /\.rank-body-map \{[\s\S]*?shape-rendering:geometricPrecision;/);
   assert.match(css, /\.rank-anatomy-separators \{/);
   assert.match(taskCard, /className="sets-table"/);
@@ -742,7 +858,7 @@ test("page headers share one rhythm and scroll shortcuts sit just above the tab 
   assert.match(css, /\.content \{ width:min\(1120px, calc\(100% - 72px\)\); margin:0 auto; padding:28px 0 36px; \}/);
   assert.match(css, /\.rank-title-row \{[\s\S]*?margin-top:0;[\s\S]*?\}/);
   assert.match(css, /\.calendar-title-copy > \.settings-kicker \{ margin:0 0 14px; \}/);
-  assert.match(css, /\.scroll-shortcuts \{ bottom:calc\(112px \+ var\(--track-safe-bottom\)\); \}/);
+  assert.match(css, /\.scroll-shortcuts \{ right:16px; bottom:calc\(96px \+ var\(--track-safe-bottom\)\); \}/);
   assert.match(css, /\.scroll-shortcuts \{ bottom:112px; \}/);
   assert.doesNotMatch(css, /has-workout-actions|workout-actions/);
 });
@@ -1071,26 +1187,39 @@ test("owner RLS keeps child rows attached to owner-controlled parents", async ()
   assert.match(rlsMigration, /to authenticated/);
 });
 
-test("admin member directory is username-gated, private, and supports safe role changes", async () => {
-  const [page, panel, memberViewer, adminFunction, adminHelper, trackConfig, adminMigration, pagesStyles] =
-    await Promise.all([
-      readAppSource(),
-      read("app/components/AdminUsersPanel.tsx"),
-      read("app/components/AdminMemberViewer.tsx"),
-      read("supabase/functions/admin-member-data/index.ts"),
-      read("supabase/functions/_shared/admin.ts"),
-      read("app/trackConfig.ts"),
-      read("supabase/migrations/20260820_admin_users.sql"),
-      readCssSource(),
-    ]);
+test("admin member directory is username-gated, private, and stays outside the Admin Panel controls", async () => {
+  const [
+    page,
+    panel,
+    memberViewer,
+    settingsModal,
+    adminFunction,
+    adminHelper,
+    trackConfig,
+    adminMigration,
+    pagesStyles,
+  ] = await Promise.all([
+    readAppSource(),
+    read("app/components/AdminUsersPanel.tsx"),
+    read("app/components/AdminMemberViewer.tsx"),
+    read("app/components/SettingsModal.tsx"),
+    read("supabase/functions/admin-member-data/index.ts"),
+    read("supabase/functions/_shared/admin.ts"),
+    read("app/trackConfig.ts"),
+    read("supabase/migrations/20260820_admin_users.sql"),
+    readCssSource(),
+  ]);
 
   assert.match(page, /adminUsersPanelProps\?\.open && <AdminUsersPanel/);
   assert.match(page, /isAdmin: adminAuthorized/);
   assert.match(page, /SETTINGS_CONTENT_VIEWS\.includes\(settingsView\)/);
   assert.match(page, /settingsView === "about"[\s\S]*<section className="about-page"/);
   assert.match(page, /settingsView === "admin" && isAdmin[\s\S]*<section className="admin-page"/);
-  assert.match(page, /<strong>Manage members<\/strong>/);
-  assert.match(page, /Open directory/);
+  assert.match(page, /\[debug\] Fake update notification/);
+  assert.match(page, /showFakeUpdateNotification/);
+  assert.doesNotMatch(page, /<strong>Manage members<\/strong>/);
+  assert.doesNotMatch(page, /Open directory/);
+  assert.doesNotMatch(settingsModal, /AdminMemberViewer/);
   assert.doesNotMatch(trackConfig, /ADMIN_USERNAME|TRACK_ADMIN_USERNAME|TRACK_ADMIN_USER_ID/i);
   assert.match(panel, /Last online/);
   assert.match(panel, /export function isMemberOnline/);
@@ -1172,19 +1301,29 @@ test("Settings exposes a user-facing GitHub release check", async () => {
 });
 
 test("native updates and notification permissions use native-safe paths", async () => {
-  const [releaseManager, interactions, settings, updateNotification] = await Promise.all([
+  const [releaseManager, interactions, settings, settingsSpecial, trackUtils, updateNotification] = await Promise.all([
     read("app/hooks/useReleaseManager.ts"),
     read("app/hooks/useTrackAppInteractions.ts"),
     read("app/components/SettingsViewContent.tsx"),
+    read("app/components/SettingsSpecialViews.tsx"),
+    read("app/trackUtils.ts"),
     read("app/components/UpdateNotification.tsx"),
   ]);
 
-  assert.match(releaseManager, /!nativeApp\s*&&\s*remoteRelease\.buildId/);
-  assert.match(interactions, /AppLauncher\.openUrl\(\{\s*url:\s*"app-settings:"\s*\}\)/);
+  assert.match(releaseManager, /nativeApp\s*&&\s*remoteRelease\.buildId/);
+  assert.match(releaseManager, /if \(!nativeApp\)/);
+  assert.match(trackUtils, /openNativeNotificationSettings/);
+  assert.match(trackUtils, /AppLauncher\.openUrl\(\{\s*url\s*\}\)/);
+  assert.match(trackUtils, /"app-settings:"/);
+  assert.match(trackUtils, /foreground:\s*true/);
+  assert.match(interactions, /showFakeUpdateNotification/);
   assert.match(settings, /notificationSettingsAvailable/);
   assert.match(settings, /Open Settings/);
+  assert.match(settingsSpecial, /\[debug\] Fake update notification/);
   assert.match(updateNotification, /createPortal/);
   assert.match(updateNotification, /document\.body/);
+  assert.match(updateNotification, /debug && !isAdmin/);
+  assert.match(updateNotification, /!nativeApp \|\| !globalThis\.document/);
 });
 
 test("new persistence and privacy paths avoid scans, plaintext snapshots, and inline boot scripts", async () => {
@@ -1314,26 +1453,4 @@ test("native Capacitor configuration packages the shared app with haptics, notif
   assert.match(headers, /Access-Control-Allow-Origin: \*/);
   assert.match(page, /promiseWithTimeout/);
   assert.match(page, /notificationRequestBusy/);
-});
-
-test("native releases publish a SideStore source from the built IPA metadata", async () => {
-  const [workflow, generator, packageJson, readme] = await Promise.all([
-    read(".github/workflows/native-release.yml"),
-    read("scripts/generate-sidestore-source.mjs"),
-    read("package.json"),
-    read("README.md"),
-  ]);
-
-  assert.match(packageJson, /"generate:sidestore-source"/);
-  assert.match(workflow, /Generate SideStore source/);
-  assert.match(workflow, /Generate Android app icons/);
-  assert.match(workflow, /Generate iOS app icons/);
-  assert.match(workflow, /CFBundleShortVersionString/);
-  assert.match(workflow, /CFBundleIdentifier/);
-  assert.match(workflow, /MARKETING_VERSION/);
-  assert.match(workflow, /altstore-source\.json/);
-  assert.match(generator, /bundleIdentifier/);
-  assert.match(generator, /releases\/latest\/download\/altstore-source\.json/);
-  assert.match(generator, /Track-II-ios-unsigned\.ipa/);
-  assert.match(readme, /SideStore and AltStore/);
 });

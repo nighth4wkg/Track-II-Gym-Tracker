@@ -1,8 +1,9 @@
 import type { EquipmentType } from "./rankTypes.ts";
 import { bodyweightMovementFactor, RANK_META } from "./rankBenchmarks.ts";
 import type { EvidenceContext, RankLevel, RankSet } from "./rankModels.ts";
+import { WEIGHT_CONVERSION_FACTOR } from "./trackConstants.ts";
 
-const KG_PER_LB = 1 / 2.2046226218;
+const KG_PER_LB = 1 / WEIGHT_CONVERSION_FACTOR;
 
 export function numberValue(value: string | number | undefined, fallback = 0) {
   const parsed = Number.parseFloat(String(value ?? ""));

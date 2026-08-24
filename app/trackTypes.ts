@@ -7,6 +7,7 @@ export type SetEntry = {
   reps: string;
   rir: string;
   lastWeight?: number;
+  lastWeightUnit?: WeightUnit;
   lastReps?: number;
   lastRir?: number;
 };
@@ -23,6 +24,7 @@ export type Task = {
   collapsed?: boolean;
   lastReps?: number;
   lastWeight?: number;
+  lastWeightUnit?: WeightUnit;
 };
 
 export type Checklist = {

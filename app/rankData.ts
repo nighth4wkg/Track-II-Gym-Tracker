@@ -1,12 +1,15 @@
 import { detectExerciseTargets } from "./exerciseClassifier.js";
 import { MUSCLE_GROUPS, type MuscleGroup } from "./rankTypes.ts";
+import { MILLISECONDS_PER_DAY } from "./trackConstants.ts";
 import {
   RANK_META,
   FREE_WEIGHT_UNILATERAL_MULTIPLIER,
   equipmentAdjustedBenchmark,
   exerciseBenchmark,
   detectEquipmentType,
+  explicitExerciseEquipment,
   exerciseFamilyKey,
+  exerciseMovementCoreKey,
 } from "./rankBenchmarks.ts";
 import {
   clamp,
@@ -35,7 +38,9 @@ export {
   RANK_META,
   FREE_WEIGHT_UNILATERAL_MULTIPLIER,
   detectEquipmentType,
+  explicitExerciseEquipment,
   exerciseFamilyKey,
+  exerciseMovementCoreKey,
 } from "./rankBenchmarks.ts";
 export { nextRankLabel, rankPercent } from "./rankScoring.ts";
 export type { EquipmentType, MuscleGroup } from "./rankTypes.ts";
@@ -72,15 +77,30 @@ function formatBestSet(set: RankSet) {
   return `${weight} ${unit} x ${reps} reps - ${rir} RIR`;
 }
 
+function preferredContribution(existing: RankContribution, candidate: RankContribution) {
+  // The active split is the editable source of truth. Historical logs still
+  // contribute recency/confidence, but they must not make an old heavier set
+  // replace a current value after a user edits weight, reps, or RIR.
+  const sourcePriority = (row: RankContribution) =>
+    row.source === "current" && row.hasWeightedData ? 2 : row.source === "history" && row.hasWeightedData ? 1 : 0;
+  const existingPriority = sourcePriority(existing);
+  const candidatePriority = sourcePriority(candidate);
+  if (candidatePriority !== existingPriority) return candidatePriority > existingPriority ? candidate : existing;
+  if (candidate.score > existing.score || (!existing.hasWeightedData && candidate.hasWeightedData)) return candidate;
+  return existing;
+}
+
 export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {}): RankSummary[] {
   const bodyWeightKg = Math.max(0, numberValue(options.bodyWeightKg));
   const recentDays = clamp(numberValue(options.recentDays, 84), 7, 365);
-  const cutoff = Date.now() - recentDays * 86_400_000;
+  const cutoff = Date.now() - recentDays * MILLISECONDS_PER_DAY;
   type PreparedTask = {
     task: RankTask;
     detection: ReturnType<typeof detectExerciseTargets>;
     familyKey: string;
     detectedFamilyKey: string;
+    movementCoreKey: string;
+    explicitEquipment: ReturnType<typeof explicitExerciseEquipment>;
     identityKey: string;
     order: number;
   };
@@ -93,6 +113,8 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
       detection,
       familyKey: exerciseFamilyKey(task.text, detection.matchedName),
       detectedFamilyKey: detection.matchedName ? exerciseFamilyKey(detection.matchedName) : "",
+      movementCoreKey: exerciseMovementCoreKey(task.text),
+      explicitEquipment: explicitExerciseEquipment(task.text),
       identityKey: task.exerciseId ? `id:${task.exerciseId}` : `task:${index}`,
       order: index,
     };
@@ -121,6 +143,27 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
   const currentByDetectedFamily = uniqueCurrentLookup((item) =>
     item.detection.confidence >= 0.8 ? item.detectedFamilyKey : "",
   );
+  const currentByMovementCore = new Map<string, PreparedTask[]>();
+  for (const item of currentTasks) {
+    if (!item.movementCoreKey) continue;
+    const bucket = currentByMovementCore.get(item.movementCoreKey) ?? [];
+    bucket.push(item);
+    currentByMovementCore.set(item.movementCoreKey, bucket);
+  }
+
+  const compatibleCurrent = (historyTask: PreparedTask) => {
+    const candidates = currentByMovementCore.get(historyTask.movementCoreKey) ?? [];
+    if (candidates.length === 1) return candidates[0];
+    if (historyTask.explicitEquipment) {
+      const equipmentMatches = candidates.filter(
+        (candidate) => candidate.explicitEquipment === historyTask.explicitEquipment,
+      );
+      if (equipmentMatches.length === 1) return equipmentMatches[0];
+      return undefined;
+    }
+    const genericMatches = candidates.filter((candidate) => !candidate.explicitEquipment);
+    return genericMatches.length === 1 ? genericMatches[0] : undefined;
+  };
 
   for (const preparedTask of prepared) {
     const task = preparedTask.task;
@@ -131,7 +174,7 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
       task.source === "history" && preparedTask.detection.confidence >= 0.8
         ? currentByDetectedFamily.get(preparedTask.detectedFamilyKey)
         : undefined;
-    const currentMatch = exactCurrent ?? familyCurrent ?? detectedCurrent;
+    const currentMatch = exactCurrent ?? familyCurrent ?? detectedCurrent ?? compatibleCurrent(preparedTask);
 
     // Rank describes the exercises in the active split. Historical rows are
     // supporting evidence only: if an old id/name can no longer be resolved
@@ -181,6 +224,8 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
         exerciseId: currentMatch?.task.exerciseId ?? task.exerciseId,
         identityKey: currentMatch?.identityKey ?? preparedTask.identityKey,
         familyKey: currentMatch?.familyKey ?? preparedTask.familyKey,
+        movementCoreKey: currentMatch?.movementCoreKey ?? preparedTask.movementCoreKey,
+        explicitEquipment: currentMatch?.explicitEquipment ?? preparedTask.explicitEquipment,
         order: currentMatch?.order ?? preparedTask.order,
         set: bestSet,
         targets,
@@ -205,22 +250,44 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
     const deduplicated = new Map<string, RankContribution>();
     for (const row of allRows) {
       const existing = deduplicated.get(row.identityKey);
-      if (!existing || row.score > existing.score || (!existing.hasWeightedData && row.hasWeightedData))
-        deduplicated.set(row.identityKey, row);
+      if (!existing) deduplicated.set(row.identityKey, row);
+      else deduplicated.set(row.identityKey, preferredContribution(existing, row));
     }
 
     // Older workout logs may not have exercise_id. Merge those legacy rows
     // into an id-backed current exercise when their movement family matches.
+    // A generic old name may have a different strict family key from a newer
+    // equipment-qualified name, so use the softer movement key only when the
+    // equipment is unspecified on one side or explicitly matches. This keeps
+    // cable, machine, and free-weight variants distinct when users genuinely
+    // track more than one of them.
     const byFamily = new Map<string, RankContribution>();
+    const movementRows: RankContribution[] = [];
     for (const row of deduplicated.values()) {
       const existing = byFamily.get(row.familyKey);
-      if (!existing || row.score > existing.score || (!existing.hasWeightedData && row.hasWeightedData))
-        byFamily.set(row.familyKey, row);
+      if (existing) {
+        byFamily.set(row.familyKey, preferredContribution(existing, row));
+        continue;
+      }
+      const compatibleIndex = movementRows.findIndex(
+        (candidate) =>
+          candidate.movementCoreKey === row.movementCoreKey &&
+          (!candidate.explicitEquipment ||
+            !row.explicitEquipment ||
+            candidate.explicitEquipment === row.explicitEquipment),
+      );
+      if (compatibleIndex >= 0) {
+        movementRows[compatibleIndex] = preferredContribution(movementRows[compatibleIndex], row);
+      } else {
+        movementRows.push(row);
+      }
+      byFamily.set(row.familyKey, row);
     }
+    const mergedRows = movementRows;
     // Keep the exercise list anchored to the active split's source order.
     // Classification and equipment corrections may change score or muscle
     // group, but should never make a row jump to the top of the list.
-    const rows = [...byFamily.values()].sort((a, b) => a.order - b.order);
+    const rows = mergedRows.sort((a, b) => a.order - b.order);
     // The presentation order must not affect the strength calculation. Use
     // the strongest weighted rows for the score while keeping `rows` stable
     // for the exercise list shown in the UI.

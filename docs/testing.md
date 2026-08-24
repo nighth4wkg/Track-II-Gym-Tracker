@@ -17,7 +17,7 @@ two-context realtime tests require a dedicated non-production test account:
 
 ```powershell
 $env:E2E_USERNAME = "test-user"
-$env:E2E_PASSWORD = "test-password"
+$env:E2E_PASSWORD = Read-Host "Dedicated test account password"
 npm.cmd run validate:production
 ```
 

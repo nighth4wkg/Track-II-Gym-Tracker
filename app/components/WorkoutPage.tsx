@@ -2,7 +2,7 @@
 
 import { useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { ConnectedTaskCard } from "./TaskCard";
-import { FILTER_LABELS, FILTER_OPTIONS, TRACK_INTERACTION, TRACK_UI_COPY } from "../trackConstants";
+import { FILTER_LABELS, FILTER_OPTIONS, TRACK_INTERACTION } from "../trackConstants";
 import type { Checklist, Filter, Task } from "../trackTypes";
 
 type WorkoutPageProps = {
@@ -16,6 +16,7 @@ type WorkoutPageProps = {
   progressFading: boolean;
   searchQueryActive: boolean;
   showSuggestions: boolean;
+  quickPickExercises: readonly string[];
   tasks: Task[];
   value: string;
   visible: Task[];
@@ -35,6 +36,7 @@ export function WorkoutPage({
   inputRef,
   openCount,
   progressFading,
+  quickPickExercises,
   searchQueryActive,
   showSuggestions,
   tasks,
@@ -48,7 +50,19 @@ export function WorkoutPage({
 }: WorkoutPageProps) {
   const suggestionListId = useId();
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const suggestionsVisible = showSuggestions && searchQueryActive && exerciseSuggestions.length > 0;
+
+  const toggleMobileSearch = () => {
+    const nextOpen = !mobileSearchOpen;
+    setMobileSearchOpen(nextOpen);
+    if (nextOpen) {
+      window.requestAnimationFrame(() => inputRef.current?.focus());
+      return;
+    }
+    setActiveSuggestionIndex(-1);
+    onShowSuggestionsChange(false);
+  };
 
   const chooseSuggestion = (index: number) => {
     const suggestion = exerciseSuggestions[index];
@@ -90,15 +104,27 @@ export function WorkoutPage({
           <p>
             {tasks.length === 0
               ? "Add an exercise to start."
-              : !completionEnabled
-                ? `${tasks.length} ${tasks.length === 1 ? "exercise" : "exercises"}`
-                : openCount === 0
-                  ? "Workout complete."
-                  : `${openCount} ${openCount === 1 ? "exercise" : "exercises"} remaining`}
+              : `${tasks.length} ${tasks.length === 1 ? "exercise" : "exercises"}`}
           </p>
         </div>
+        <button
+          type="button"
+          className="mobile-search-toggle"
+          aria-label={mobileSearchOpen ? "Hide exercise search" : "Search exercises"}
+          aria-expanded={mobileSearchOpen}
+          onClick={toggleMobileSearch}
+        >
+          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+            <circle cx="10.8" cy="10.8" r="6.4" />
+            <path d="m15.6 15.6 4.2 4.2" />
+          </svg>
+        </button>
       </div>
-      <form ref={composerRef} className="composer exercise-composer" onSubmit={onAddTask}>
+      <form
+        ref={composerRef}
+        className={`composer exercise-composer${mobileSearchOpen ? " is-mobile-search-open" : ""}`}
+        onSubmit={onAddTask}
+      >
         <div className="exercise-search">
           <span className="search-icon">⌕</span>
           <input
@@ -110,7 +136,10 @@ export function WorkoutPage({
               onSearchValueChange(nextValue);
               onShowSuggestionsChange(Boolean(nextValue.trim()));
             }}
-            onFocus={() => searchQueryActive && onShowSuggestionsChange(true)}
+            onFocus={() => {
+              setMobileSearchOpen(true);
+              if (searchQueryActive) onShowSuggestionsChange(true);
+            }}
             onBlur={() =>
               window.setTimeout(() => {
                 setActiveSuggestionIndex(-1);
@@ -192,8 +221,78 @@ export function WorkoutPage({
             <div className="empty-mark">
               <span className="dumbbell-icon" />
             </div>
-            <h2>{filter === "done" ? TRACK_UI_COPY.empty.filtered : TRACK_UI_COPY.empty.exercises}</h2>
-            <p>{filter === "done" ? TRACK_UI_COPY.empty.filteredHint : TRACK_UI_COPY.empty.exercisesHint}</p>
+            <h2>
+              {tasks.length === 0
+                ? "Your first exercise starts here"
+                : filter === "done"
+                  ? "No completed exercises yet"
+                  : "All exercises are complete"}
+            </h2>
+            <p>
+              {tasks.length === 0
+                ? "Search the exercise library above to build this split."
+                : filter === "done"
+                  ? "Finish an exercise to see it appear in this view."
+                  : "Switch to All exercises to review the full split."}
+            </p>
+            {tasks.length === 0 && (
+              <ol className="workout-start-steps" aria-label="How to start this workout">
+                <li className="is-complete">
+                  <span className="workout-start-step-index" aria-hidden="true">
+                    ✓
+                  </span>
+                  <span>
+                    <strong>Create a split</strong>
+                    <small>Done</small>
+                  </span>
+                </li>
+                <li className="is-current">
+                  <span className="workout-start-step-index" aria-hidden="true">
+                    2
+                  </span>
+                  <span>
+                    <strong>Add an exercise</strong>
+                    <small>Search above or choose a quick pick.</small>
+                  </span>
+                </li>
+                <li>
+                  <span className="workout-start-step-index" aria-hidden="true">
+                    3
+                  </span>
+                  <span>
+                    <strong>Log your first set</strong>
+                    <small>Enter weight, reps, and RIR.</small>
+                  </span>
+                </li>
+              </ol>
+            )}
+            {tasks.length === 0 && quickPickExercises.length > 0 && (
+              <div className="empty-quick-picks" aria-label="Quick add exercises">
+                <span className="empty-quick-picks-label">Quick add</span>
+                <div className="empty-quick-picks-list">
+                  {quickPickExercises.map((name) => (
+                    <button type="button" className="quick-pick-chip" key={name} onClick={() => onAddExercise(name)}>
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <button
+              type="button"
+              className="empty-action ui-button ui-button-secondary"
+              onClick={() => {
+                if (tasks.length === 0) {
+                  setMobileSearchOpen(true);
+                  window.requestAnimationFrame(() => {
+                    inputRef.current?.focus();
+                    onShowSuggestionsChange(true);
+                  });
+                } else onFilterChange("all");
+              }}
+            >
+              {tasks.length === 0 ? "Browse exercise library" : "Show all exercises"}
+            </button>
           </div>
         )}
       </div>

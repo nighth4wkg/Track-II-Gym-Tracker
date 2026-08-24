@@ -1,9 +1,5 @@
-import type { CapacitorConfig } from "@capacitor/cli";
-
-const config: CapacitorConfig = {
-  // Replace this example identifier with a reverse-domain ID you control
-  // before publishing through an app store.
-  appId: "com.example.trackii",
+const config = {
+  appId: "com.track.lifting",
   appName: "Track II",
   webDir: "work/cloudflare-pages",
 };

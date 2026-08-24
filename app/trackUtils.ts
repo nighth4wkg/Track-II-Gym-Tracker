@@ -1,7 +1,17 @@
+import { AppLauncher } from "@capacitor/app-launcher";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { EQUIPMENT_TYPES, type EquipmentType, type MuscleGroup } from "./rankTypes.ts";
-import { MUSCLE_GROUPS, ACCOUNT_LOCAL_KEYS, TRACK_LIMITS } from "./trackConstants.ts";
+import {
+  ACCOUNT_LOCAL_KEYS,
+  MILLISECONDS_PER_DAY,
+  MUSCLE_GROUPS,
+  REST_PRESET_SECONDS,
+  TRACK_LIMITS,
+  TRACK_TIMING,
+  WEIGHT_CONVERSION_FACTOR,
+} from "./trackConstants.ts";
+import { TRACK_ASSET_QUERY } from "./trackConfig.ts";
 import type {
   Checklist,
   JsonObject,
@@ -36,7 +46,7 @@ export function isBooleanValue(value: JsonValue | undefined): value is boolean {
   return typeof value === "boolean";
 }
 
-const MAX_TIMER_RUNTIME_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_TIMER_RUNTIME_MS = TRACK_LIMITS.maxTimerRuntimeDays * MILLISECONDS_PER_DAY;
 
 export function normalizeTimerRuntime(value: JsonValue | undefined): TimerRuntimeState | null {
   if (!isJsonObject(value)) return null;
@@ -49,7 +59,7 @@ export function normalizeTimerRuntime(value: JsonValue | undefined): TimerRuntim
   const laps = Array.isArray(value.laps)
     ? value.laps
         .filter((lap): lap is number => finiteNumber(lap) && lap >= 0 && lap <= MAX_TIMER_RUNTIME_MS)
-        .slice(-100)
+        .slice(-TRACK_LIMITS.maxTimerLaps)
     : [];
   if (!finiteNumber(value.updatedAt) || value.updatedAt < 0) return null;
   return {
@@ -110,15 +120,38 @@ export function parsedPersonalInfo(
 
 export function convertWeight(weight: number, from: WeightUnit, to: WeightUnit) {
   if (from === to || !Number.isFinite(weight)) return weight;
-  const converted = from === "kg" ? weight * 2.2046226218 : weight / 2.2046226218;
+  const converted = from === "kg" ? weight * WEIGHT_CONVERSION_FACTOR : weight / WEIGHT_CONVERSION_FACTOR;
   return Math.round(converted * 100) / 100;
 }
 
 export function convertSetUnit(set: SetEntry, unit: WeightUnit): SetEntry {
   if (set.unit === unit) return set;
   const weight = convertWeight(Number(set.weight), set.unit, unit);
-  const lastWeight = set.lastWeight === undefined ? undefined : convertWeight(set.lastWeight, set.unit, unit);
-  return { ...set, unit, weight: Number.isFinite(weight) ? String(weight) : set.weight, lastWeight };
+  const lastWeight =
+    set.lastWeight === undefined ? undefined : convertWeight(set.lastWeight, set.lastWeightUnit ?? set.unit, unit);
+  return {
+    ...set,
+    unit,
+    weight: Number.isFinite(weight) ? String(weight) : set.weight,
+    lastWeight,
+    lastWeightUnit: lastWeight === undefined ? undefined : unit,
+  };
+}
+
+/**
+ * Return a unit-safe delta against the most recent completed set. Older
+ * clients did not store the baseline unit, so suppressing that ambiguous
+ * metadata is safer than showing a fabricated progression value.
+ */
+export function weightProgressionDelta(
+  set: Pick<SetEntry, "weight" | "unit" | "lastWeight" | "lastWeightUnit"> | undefined,
+) {
+  if (!set || set.lastWeight === undefined || !set.lastWeightUnit) return null;
+  const currentWeight = Number(set.weight);
+  const previousWeight = convertWeight(set.lastWeight, set.lastWeightUnit, set.unit);
+  if (!Number.isFinite(currentWeight) || !Number.isFinite(previousWeight)) return null;
+  const delta = Number((currentWeight - previousWeight).toFixed(2));
+  return Math.abs(delta) < 0.01 ? null : delta;
 }
 
 export function sanitizeDecimalInput(input: string, maxChars: number) {
@@ -215,6 +248,21 @@ export function nativeLocalNotificationsAvailable() {
   );
 }
 
+const NATIVE_NOTIFICATION_SETTINGS_URLS = ["app-settings:", "app-settings://"] as const;
+
+export async function openNativeNotificationSettings() {
+  if (!globalThis.window || !Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable("AppLauncher")) return false;
+  for (const url of NATIVE_NOTIFICATION_SETTINGS_URLS) {
+    try {
+      const result = await promiseWithTimeout(AppLauncher.openUrl({ url }), 8000);
+      if (result.completed) return true;
+    } catch {
+      // Some iOS builds accept only one of the equivalent Settings URL forms.
+    }
+  }
+  return false;
+}
+
 export async function readNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
   if (!globalThis.window) return "unsupported";
   if (nativeLocalNotificationsAvailable()) {
@@ -249,7 +297,8 @@ export async function showSystemNotification(message: string, id: string) {
             id: notificationIdFromKey(`track-${id}`),
             title: "Track II",
             body: message,
-            schedule: { at: new Date(Date.now() + 1000) },
+            schedule: { at: new Date(Date.now() + TRACK_TIMING.notificationScheduleDelayMs) },
+            foreground: true,
             extra: { id },
           },
         ],
@@ -261,13 +310,13 @@ export async function showSystemNotification(message: string, id: string) {
       const registration = await navigator.serviceWorker.ready;
       await registration.showNotification("Track II", {
         body: message,
-        icon: "/icon-192.png?v=3.0.2",
-        badge: "/notification-badge.png?v=3.0.2",
+        icon: `/icon-192.png${TRACK_ASSET_QUERY}`,
+        badge: `/notification-badge.png${TRACK_ASSET_QUERY}`,
         tag: `track-${id}`,
       });
       return true;
     }
-    new Notification("Track II", { body: message, icon: "/icon-192.png?v=3.0.2", tag: `track-${id}` });
+    new Notification("Track II", { body: message, icon: `/icon-192.png${TRACK_ASSET_QUERY}`, tag: `track-${id}` });
     return true;
   } catch {
     /* keep the in-app announcement when system notifications are unavailable */ return false;
@@ -277,7 +326,7 @@ export async function showSystemNotification(message: string, id: string) {
 export function restSecondsFromMinutes(input: string): number {
   const minutes = Number(input);
   if (!Number.isFinite(minutes)) return 60;
-  return Math.min(3600, Math.max(6, Math.round(minutes * 60)));
+  return Math.min(TRACK_LIMITS.maxRestSeconds, Math.max(TRACK_LIMITS.minRestSeconds, Math.round(minutes * 60)));
 }
 
 export function restMinutesInputFromSeconds(seconds: number): string {
@@ -326,7 +375,7 @@ export function normalizePreferences(value: JsonValue | undefined): TrackPrefere
     defaultUnit: raw.defaultUnit === "lb" ? "lb" : "kg",
     timerMode,
     restSeconds,
-    restCustom: isBooleanValue(raw.restCustom) ? raw.restCustom : ![60, 90, 120].includes(restSeconds),
+    restCustom: isBooleanValue(raw.restCustom) ? raw.restCustom : !REST_PRESET_SECONDS.includes(restSeconds),
     rememberExercisesAcrossSplits: raw.rememberExercisesAcrossSplits === true,
     completionEnabled: raw.completionEnabled === true,
   };
@@ -334,7 +383,7 @@ export function normalizePreferences(value: JsonValue | undefined): TrackPrefere
   return preferences;
 }
 
-export function preferencesSignature(preferences: TrackPreferences) {
+function createSignatureHasher() {
   let hashA = 0x811c9dc5;
   let hashB = 0x9e3779b1;
   const addToken = (token: string) => {
@@ -344,9 +393,17 @@ export function preferencesSignature(preferences: TrackPreferences) {
       hashB = Math.imul(hashB ^ (code + index), 0x85ebca6b);
     }
   };
-  const addText = (value: string) => addToken("s" + value.length + ":" + value + "\u001f");
-  const addNumber = (value: number) => addToken("n" + value + "\u001f");
-  const addBoolean = (value: boolean) => addToken("b" + (value ? 1 : 0) + "\u001f");
+  return {
+    addToken,
+    addText: (value: string) => addToken(`s${value.length}:${value}\u001f`),
+    addNumber: (value: number) => addToken(`n${value}\u001f`),
+    addBoolean: (value: boolean) => addToken(`b${value ? 1 : 0}\u001f`),
+    value: () => `${hashA >>> 0}:${hashB >>> 0}`,
+  };
+}
+
+export function preferencesSignature(preferences: TrackPreferences) {
+  const { addText, addNumber, addBoolean, value } = createSignatureHasher();
 
   addText(preferences.defaultUnit);
   addText(preferences.timerMode);
@@ -367,7 +424,7 @@ export function preferencesSignature(preferences: TrackPreferences) {
     addNumber(runtime.laps.length);
     runtime.laps.forEach(addNumber);
   }
-  return (hashA >>> 0) + ":" + (hashB >>> 0);
+  return value();
 }
 
 function sortedStringRecordSignature(record: Record<string, string>) {
@@ -402,7 +459,15 @@ export function accountMetadataSignature(metadata: JsonValue | undefined) {
 }
 
 export function normalizeTask(task: Task): Task {
-  if (task.sets?.length) return task;
+  if (task.sets?.length)
+    return {
+      ...task,
+      sets: task.sets.map((set) =>
+        set.lastWeight !== undefined && !set.lastWeightUnit
+          ? { ...set, lastWeight: undefined, lastWeightUnit: undefined }
+          : set,
+      ),
+    };
   return {
     ...task,
     sets: [
@@ -412,7 +477,8 @@ export function normalizeTask(task: Task): Task {
         unit: task.unit ?? "kg",
         reps: /^\d+$/.test(task.reps) ? task.reps : "8",
         rir: task.rir || "0",
-        lastWeight: task.lastWeight,
+        lastWeight: task.lastWeightUnit ? task.lastWeight : undefined,
+        lastWeightUnit: task.lastWeightUnit,
         lastReps: task.lastReps,
       },
     ],
@@ -426,13 +492,14 @@ export function restoreLocalCollapseState(remote: Checklist[], local: Checklist[
   if (!local?.length)
     return remote.map((list) => ({ ...list, tasks: list.tasks.map((task) => ({ ...task, collapsed: false })) }));
   const localStates = new Map<string, boolean>();
-  const localSetMetadata = new Map<string, Pick<SetEntry, "lastWeight" | "lastReps" | "lastRir">>();
+  const localSetMetadata = new Map<string, Pick<SetEntry, "lastWeight" | "lastWeightUnit" | "lastReps" | "lastRir">>();
   for (const list of local)
     for (const task of list.tasks) {
       localStates.set(task.id, Boolean(task.collapsed));
       for (const set of task.sets ?? [])
         localSetMetadata.set(set.id, {
           lastWeight: set.lastWeight,
+          lastWeightUnit: set.lastWeightUnit,
           lastReps: set.lastReps,
           lastRir: set.lastRir,
         });
@@ -447,7 +514,11 @@ export function restoreLocalCollapseState(remote: Checklist[], local: Checklist[
         return localMetadata
           ? {
               ...set,
-              lastWeight: set.lastWeight ?? localMetadata.lastWeight,
+              lastWeight:
+                set.lastWeightUnit || !localMetadata.lastWeightUnit
+                  ? set.lastWeight
+                  : convertWeight(localMetadata.lastWeight ?? 0, localMetadata.lastWeightUnit, set.unit),
+              lastWeightUnit: set.lastWeightUnit ?? (localMetadata.lastWeightUnit ? set.unit : undefined),
               lastReps: set.lastReps ?? localMetadata.lastReps,
               lastRir: set.lastRir ?? localMetadata.lastRir,
             }
@@ -463,18 +534,7 @@ export function cloudListSignature(lists: Checklist[]) {
   // must not make a save look new after a remote refresh. Hashing the persisted
   // fields avoids rebuilding and stringifying a complete snapshot on every
   // keystroke while retaining deterministic ordering for conflict checks.
-  let hashA = 0x811c9dc5;
-  let hashB = 0x9e3779b1;
-  const addToken = (token: string) => {
-    for (let index = 0; index < token.length; index += 1) {
-      const code = token.charCodeAt(index);
-      hashA = Math.imul(hashA ^ code, 0x01000193);
-      hashB = Math.imul(hashB ^ (code + index), 0x85ebca6b);
-    }
-  };
-  const addText = (value: string) => addToken(`s${value.length}:${value}\u001f`);
-  const addNumber = (value: number) => addToken(`n${value}\u001f`);
-  const addBoolean = (value: boolean) => addToken(`b${value ? 1 : 0}\u001f`);
+  const { addText, addNumber, addBoolean, value } = createSignatureHasher();
 
   addNumber(lists.length);
   lists.forEach((list, position) => {
@@ -500,7 +560,7 @@ export function cloudListSignature(lists: Checklist[]) {
       });
     });
   });
-  return `${lists.length}:${hashA >>> 0}:${hashB >>> 0}`;
+  return `${lists.length}:${value()}`;
 }
 
 export function workoutValueSignature(list: Checklist | undefined) {
@@ -508,17 +568,7 @@ export function workoutValueSignature(list: Checklist | undefined) {
   // This signature is used for the finished-workout guard. Keep its exact
   // persisted fields, but hash them incrementally so a repeated realtime read
   // does not allocate and stringify a complete workout snapshot.
-  let hashA = 0x811c9dc5;
-  let hashB = 0x9e3779b1;
-  const addToken = (token: string) => {
-    for (let index = 0; index < token.length; index += 1) {
-      const code = token.charCodeAt(index);
-      hashA = Math.imul(hashA ^ code, 0x01000193);
-      hashB = Math.imul(hashB ^ (code + index), 0x85ebca6b);
-    }
-  };
-  const addText = (value: string) => addToken(`s${value.length}:${value}\u001f`);
-  const addNumber = (value: number) => addToken(`n${value}\u001f`);
+  const { addText, addNumber, value } = createSignatureHasher();
 
   addText(list.id);
   addText(list.title);
@@ -536,7 +586,7 @@ export function workoutValueSignature(list: Checklist | undefined) {
       addText(String(set.rir));
     }
   }
-  return `${hashA >>> 0}:${hashB >>> 0}`;
+  return value();
 }
 
 function setValueChanged<T>(base: T | undefined, value: T | undefined) {
@@ -571,6 +621,24 @@ function persistedListChanged(base: Checklist | undefined, value: Checklist | un
   return cloudListSignature([base]) !== cloudListSignature([value]);
 }
 
+function resolveWeightBaseline(
+  local: SetEntry | undefined,
+  remote: SetEntry | undefined,
+  unit: WeightUnit,
+): Pick<SetEntry, "lastWeight" | "lastWeightUnit"> {
+  const source =
+    local?.lastWeight !== undefined && local.lastWeightUnit
+      ? local
+      : remote?.lastWeight !== undefined && remote.lastWeightUnit
+        ? remote
+        : undefined;
+  if (!source) return { lastWeight: undefined, lastWeightUnit: undefined };
+  return {
+    lastWeight: convertWeight(source.lastWeight!, source.lastWeightUnit!, unit),
+    lastWeightUnit: unit,
+  };
+}
+
 export function mergeTrackLists(remote: Checklist[], local: Checklist[], base: Checklist[] = []): Checklist[] {
   const remoteById = new Map(remote.map((list) => [list.id, list]));
   const localById = new Map(local.map((list) => [list.id, list]));
@@ -586,15 +654,16 @@ export function mergeTrackLists(remote: Checklist[], local: Checklist[], base: C
       const remoteSet = remoteBySetId.get(localSet.id);
       const baseSet = baseBySetId.get(localSet.id);
       if (!remoteSet && baseSet && !persistedSetChanged(baseSet, localSet)) return [];
+      const unit = mergeValue(baseSet?.unit, remoteSet?.unit, localSet.unit) ?? localSet.unit;
       return [
         {
           ...remoteSet,
           ...localSet,
           weight: mergeValue(baseSet?.weight, remoteSet?.weight, localSet.weight) ?? localSet.weight,
-          unit: mergeValue(baseSet?.unit, remoteSet?.unit, localSet.unit) ?? localSet.unit,
+          unit,
           reps: mergeValue(baseSet?.reps, remoteSet?.reps, localSet.reps) ?? localSet.reps,
           rir: mergeValue(baseSet?.rir, remoteSet?.rir, localSet.rir) ?? localSet.rir,
-          lastWeight: localSet.lastWeight ?? remoteSet?.lastWeight,
+          ...resolveWeightBaseline(localSet, remoteSet, unit),
           lastReps: localSet.lastReps ?? remoteSet?.lastReps,
           lastRir: localSet.lastRir ?? remoteSet?.lastRir,
         },
@@ -616,7 +685,7 @@ export function mergeTrackLists(remote: Checklist[], local: Checklist[], base: C
         return {
           ...remoteSet,
           ...set,
-          lastWeight: set.lastWeight ?? remoteSet?.lastWeight,
+          ...resolveWeightBaseline(set, remoteSet, set.unit),
           lastReps: set.lastReps ?? remoteSet?.lastReps,
           lastRir: set.lastRir ?? remoteSet?.lastRir,
         };

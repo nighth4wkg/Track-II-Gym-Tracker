@@ -3,7 +3,13 @@ import test from "node:test";
 
 import { rankHistoryGroupKey } from "../app/historyKeys.ts";
 import { formatPersonalInput, toMetricPersonalInput } from "../app/personalMeasurements.ts";
-import { mergeTrackLists, normalizeWeightInputOnBlur, sanitizeDecimalInput } from "../app/trackUtils.ts";
+import {
+  convertSetUnit,
+  mergeTrackLists,
+  normalizeWeightInputOnBlur,
+  sanitizeDecimalInput,
+  weightProgressionDelta,
+} from "../app/trackUtils.ts";
 
 const setEntry = (id: string, weight: string) => ({ id, weight, unit: "kg" as const, reps: "8", rir: "2" });
 const task = (id: string, sets = [setEntry(`${id}-set`, "10")]) => ({
@@ -46,6 +52,25 @@ test("weight editing accepts temporary decimal syntax but never persists an inva
   assert.equal(normalizeWeightInputOnBlur("1."), "1");
   assert.equal(normalizeWeightInputOnBlur("."), null);
   assert.equal(normalizeWeightInputOnBlur(""), null);
+});
+
+test("weight progression compares the latest baseline in the current unit", () => {
+  const previousPounds = {
+    id: "set-1",
+    weight: "71.65",
+    unit: "lb" as const,
+    reps: "7",
+    rir: "1",
+    lastWeight: 71.65,
+    lastWeightUnit: "lb" as const,
+  };
+  const currentKg = convertSetUnit(previousPounds, "kg");
+
+  assert.equal(currentKg.weight, "32.5");
+  assert.equal(currentKg.lastWeight, 32.5);
+  assert.equal(weightProgressionDelta(currentKg), null);
+  assert.equal(weightProgressionDelta({ ...currentKg, weight: "30" }), -2.5);
+  assert.equal(weightProgressionDelta({ ...currentKg, lastWeightUnit: undefined }), null);
 });
 
 test("personal measurements convert height and bodyweight in the correct direction", () => {

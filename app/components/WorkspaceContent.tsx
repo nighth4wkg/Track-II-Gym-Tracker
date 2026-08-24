@@ -28,6 +28,7 @@ type WorkspaceContentProps = {
   filter: Filter;
   openCount: number;
   exerciseSuggestions: string[];
+  quickPickExercises: readonly string[];
   value: string;
   showSuggestions: boolean;
   searchQueryActive: boolean;
@@ -97,6 +98,7 @@ export function WorkspaceContent({
   filter,
   openCount,
   exerciseSuggestions,
+  quickPickExercises,
   value,
   showSuggestions,
   searchQueryActive,
@@ -215,6 +217,35 @@ export function WorkspaceContent({
           <div className="eyebrow">TRACK</div>
           <h1>Let’s get started</h1>
           <p>Create a split, then add exercises.</p>
+          <ol className="welcome-start-steps" aria-label="Track II setup steps">
+            <li className="is-current">
+              <span className="workout-start-step-index" aria-hidden="true">
+                1
+              </span>
+              <span>
+                <strong>Create a split</strong>
+                <small>Start with a plan for today.</small>
+              </span>
+            </li>
+            <li>
+              <span className="workout-start-step-index" aria-hidden="true">
+                2
+              </span>
+              <span>
+                <strong>Add an exercise</strong>
+                <small>Choose from the library.</small>
+              </span>
+            </li>
+            <li>
+              <span className="workout-start-step-index" aria-hidden="true">
+                3
+              </span>
+              <span>
+                <strong>Log your first set</strong>
+                <small>Track weight, reps, and RIR.</small>
+              </span>
+            </li>
+          </ol>
           <button className="welcome-button ui-button ui-button-primary" onClick={onCreateChecklist}>
             <span>＋</span> Create a new split
           </button>
@@ -230,6 +261,7 @@ export function WorkspaceContent({
             inputRef={inputRef}
             openCount={openCount}
             progressFading={progressFading}
+            quickPickExercises={quickPickExercises}
             searchQueryActive={searchQueryActive}
             showSuggestions={showSuggestions}
             tasks={tasks}

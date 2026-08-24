@@ -82,6 +82,32 @@ const FAMILY_MODIFIERS = new Set([
 
 const FAMILY_SIDE_WORDS = new Set(["arm", "hand", "leg", "side"]);
 
+const MOVEMENT_EQUIPMENT_WORDS = new Set([
+  "assisted",
+  "band",
+  "banded",
+  "barbell",
+  "bodyweight",
+  "cable",
+  "dumbbell",
+  "ez",
+  "kettlebell",
+  "machine",
+  "plate",
+  "resistance",
+  "selectorized",
+  "smith",
+  "weighted",
+]);
+
+const EXPLICIT_EQUIPMENT_RULES: readonly { type: EquipmentType; pattern: RegExp }[] = [
+  { type: "smith-machine", pattern: /\bsmith\b/ },
+  { type: "bodyweight", pattern: /\b(?:bodyweight|body weight|assisted|push ?up|pull ?up|chin ?up|dip)\b/ },
+  { type: "cable", pattern: /\b(?:cable|pulley)\b/ },
+  { type: "machine", pattern: /\b(?:machine|selectorized|lever)\b/ },
+  { type: "free-weight", pattern: /\b(?:barbell|dumbbell|kettlebell|ez bar|plate)\b/ },
+];
+
 /**
  * Stable identity for renamed and historical versions of the same movement.
  * Load-side wording is intentionally ignored so a unilateral edit does not
@@ -115,6 +141,24 @@ export function exerciseFamilyKey(name: string, matchedName = "") {
     .replace(/^reverse machine fly$/, "reverse fly machine");
 
   return family || normalizedName(matchedName || name);
+}
+
+/**
+ * A softer identity used only when reconciling renamed Rank history. The
+ * strict family key intentionally keeps equipment variants separate; this
+ * key lets an old generic name such as "Chest Fly" follow a current
+ * "Machine Chest Fly" when there is no competing equipment variant.
+ */
+export function exerciseMovementCoreKey(name: string) {
+  const tokens = normalizedName(name)
+    .split(/\s+/)
+    .filter((token) => token && !MOVEMENT_EQUIPMENT_WORDS.has(token));
+  return exerciseFamilyKey(tokens.join(" "));
+}
+
+export function explicitExerciseEquipment(name: string): EquipmentType | null {
+  const normalized = normalizedName(name);
+  return EXPLICIT_EQUIPMENT_RULES.find(({ pattern }) => pattern.test(normalized))?.type ?? null;
 }
 
 const GROUP_FALLBACK_BENCHMARKS = {

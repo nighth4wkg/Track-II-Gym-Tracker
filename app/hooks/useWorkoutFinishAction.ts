@@ -147,6 +147,7 @@ export function useWorkoutFinishAction({
               ...set,
               lastReps: Number.isFinite(Number(set.reps)) ? Number(set.reps) : set.lastReps,
               lastWeight: Number.isFinite(Number(set.weight)) ? Number(set.weight) : set.lastWeight,
+              lastWeightUnit: Number.isFinite(Number(set.weight)) ? set.unit : set.lastWeightUnit,
               lastRir: Number.isFinite(Number(set.rir)) ? Number(set.rir) : set.lastRir,
             }));
             return {
@@ -154,6 +155,7 @@ export function useWorkoutFinishAction({
               sets,
               lastReps: Number.isFinite(currentReps) ? currentReps : task.lastReps,
               lastWeight: Number.isFinite(currentWeight) ? currentWeight : task.lastWeight,
+              lastWeightUnit: Number.isFinite(currentWeight) ? task.sets?.[0]?.unit : task.lastWeightUnit,
               done: false,
               collapsed: false,
             };

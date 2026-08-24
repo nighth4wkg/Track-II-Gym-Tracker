@@ -1,4 +1,8 @@
 export const TRACK_VERSION = "1.0";
+// Static assets use an independent cache token so a new icon can be deployed
+// without pretending that the public app version changed.
+export const TRACK_ASSET_VERSION = "3.0.2";
+export const TRACK_ASSET_QUERY = `?v=${TRACK_ASSET_VERSION}`;
 // Keep the installed-app label aligned with the release identifier used by
 // the update checker and native release workflow.
 export const TRACK_DISPLAY_VERSION = TRACK_VERSION;
@@ -11,10 +15,13 @@ export const TRACK_BUILD_ID = "__TRACK_BUILD_ID__";
 const configuredTrackWebOrigin = process.env.NEXT_PUBLIC_TRACK_WEB_ORIGIN ?? "";
 const configuredTrackReleasesUrl = process.env.NEXT_PUBLIC_TRACK_RELEASES_URL ?? "";
 const configuredTrackIssuesUrl = process.env.NEXT_PUBLIC_TRACK_ISSUES_URL ?? "";
+const configuredTrackDiscordHandle = process.env.NEXT_PUBLIC_TRACK_DISCORD_HANDLE ?? "n1ghthawq";
 
 export const TRACK_WEB_ORIGIN = configuredTrackWebOrigin.trim();
 export const TRACK_RELEASES_URL = configuredTrackReleasesUrl.trim();
 export const TRACK_ISSUES_URL = configuredTrackIssuesUrl.trim();
+// Public support contact; deployments can replace it without editing source.
+export const TRACK_DISCORD_HANDLE = configuredTrackDiscordHandle.trim().replace(/^@/, "");
 
 export function isNewerTrackVersion(remoteVersion: string, currentVersion = TRACK_VERSION) {
   const parse = (value: string) => {

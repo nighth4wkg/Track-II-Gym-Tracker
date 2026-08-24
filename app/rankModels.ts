@@ -83,6 +83,8 @@ export type RankContribution = {
   exerciseId?: string;
   identityKey: string;
   familyKey: string;
+  movementCoreKey: string;
+  explicitEquipment: EquipmentType | null;
   order: number;
   set: RankSet;
   targets: MuscleTarget[];

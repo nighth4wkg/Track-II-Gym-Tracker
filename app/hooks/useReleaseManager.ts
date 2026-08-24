@@ -2,20 +2,13 @@
 
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { haptic } from "../haptics";
-import { TRACK_BUILD_ID, TRACK_WEB_ORIGIN, isNewerTrackVersion } from "../trackConfig";
-import {
-  SITE_UPDATE_COUNTDOWN_SECONDS,
-  SITE_UPDATE_POLL_MS,
-  SITE_UPDATE_RELOAD_GUARD_KEY,
-  TRACK_TIMING,
-} from "../trackConstants";
+import { TRACK_BUILD_ID, TRACK_RELEASES_URL, TRACK_WEB_ORIGIN, isNewerTrackVersion } from "../trackConfig";
+import { SITE_UPDATE_COUNTDOWN_SECONDS, SITE_UPDATE_POLL_MS, TRACK_TIMING } from "../trackConstants";
 import type { JsonValue, ReleaseSignal, RemoteRelease, UpdateCheckResult } from "../trackTypes";
 import {
   isJsonObject,
   isStringValue,
   promiseWithTimeout,
-  safeSessionStorageGet,
-  safeSessionStorageSet,
   safeStorageGet,
   safeStorageSet,
   showSystemNotification,
@@ -34,24 +27,33 @@ type UseReleaseManagerOptions = {
   isSaveInFlight: () => boolean;
 };
 
-function hasAttemptedReleaseReload(identity: string) {
-  const raw = safeSessionStorageGet(SITE_UPDATE_RELOAD_GUARD_KEY);
-  if (!raw) return false;
-  try {
-    const parsed: JsonValue = JSON.parse(raw);
-    return (
-      isJsonObject(parsed) &&
-      isStringValue(parsed.identity) &&
-      parsed.identity === identity &&
-      Number.isFinite(Number(parsed.at))
-    );
-  } catch {
-    return false;
-  }
+function parseRemoteReleasePayload(payload: JsonValue): RemoteRelease | null {
+  if (!isJsonObject(payload)) return null;
+  const version = isStringValue(payload.version)
+    ? payload.version.trim()
+    : isStringValue(payload.tag_name)
+      ? payload.tag_name.trim()
+      : "";
+  if (!version) return null;
+  const buildId = isStringValue(payload.buildId)
+    ? payload.buildId.trim()
+    : isStringValue(payload.build_id)
+      ? payload.build_id.trim()
+      : "";
+  return buildId ? { version, buildId } : { version };
 }
 
-function rememberReleaseReloadAttempt(identity: string) {
-  safeSessionStorageSet(SITE_UPDATE_RELOAD_GUARD_KEY, JSON.stringify({ identity, at: Date.now() }));
+function githubLatestReleaseApiUrl(releasesUrl: string) {
+  try {
+    const url = new URL(releasesUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (url.hostname !== "github.com" || segments.length < 4) return null;
+    const [owner, repository, releases, latest] = segments;
+    if (releases !== "releases" || latest !== "latest") return null;
+    return `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/releases/latest`;
+  } catch {
+    return null;
+  }
 }
 
 export function useReleaseManager({
@@ -79,39 +81,20 @@ export function useReleaseManager({
     updateReadyRef.current = updateReady;
   }, [siteUpdateSeconds, updateReady]);
 
-  const startReleaseCountdown = useCallback(
-    (seconds: number, detectedAt = Date.now()) => {
-      const duration = Math.max(1, Number(seconds) || SITE_UPDATE_COUNTDOWN_SECONDS);
-      releaseDeadline.current = Math.max(Date.now(), Number(detectedAt) || Date.now()) + duration * 1000;
-      setSiteUpdateSeconds(Math.max(0, Math.ceil((releaseDeadline.current - Date.now()) / 1000)));
-    },
-    [setSiteUpdateSeconds],
-  );
-
   const presentReleaseSignal = useCallback(
     (payload: ReleaseSignal) => {
       const releaseIdentity = `${payload.remoteVersion}:${payload.remoteBuildId ?? ""}`;
       releaseIdentitySeen.current = releaseIdentity;
       releaseSignalPayload.current = payload;
       setAvailableUpdateVersion(payload.remoteVersion);
-      const notificationMessage = nativeApp
-        ? "A new Track II update is ready. Download the latest IPA or APK and install it over Track II."
-        : "A new Track II update is ready. Refresh Track II to load the latest version.";
-
-      if (
-        nativeApp ||
-        hasAttemptedReleaseReload(releaseIdentity) ||
-        releaseReloadIdentity.current === releaseIdentity
-      ) {
-        releaseDeadline.current = null;
-        setSiteUpdateSeconds(null);
-        setUpdateReady(payload);
-      } else {
-        rememberReleaseReloadAttempt(releaseIdentity);
-        startReleaseCountdown(payload.countdownSeconds ?? SITE_UPDATE_COUNTDOWN_SECONDS, payload.detectedAt);
-      }
+      if (!nativeApp) return;
+      releaseDeadline.current = null;
+      setSiteUpdateSeconds(null);
+      setUpdateReady(payload);
 
       void (async () => {
+        const notificationMessage =
+          "A new Track II update is ready. Download the latest IPA or APK and install it over Track II.";
         const permission = await readNotificationPermission();
         if (permission !== "granted") return;
         const notificationKey = `track-update-notified:${releaseIdentity}`;
@@ -123,7 +106,7 @@ export function useReleaseManager({
         if (delivered) safeStorageSet(notificationKey, "sent");
       })();
     },
-    [nativeApp, setAvailableUpdateVersion, setSiteUpdateSeconds, setUpdateReady, startReleaseCountdown],
+    [nativeApp, setAvailableUpdateVersion, setSiteUpdateSeconds, setUpdateReady],
   );
 
   const checkForSiteUpdate = useCallback(
@@ -133,6 +116,23 @@ export function useReleaseManager({
 
   useEffect(() => {
     let cancelled = false;
+    if (!nativeApp) {
+      setSiteUpdateSeconds(null);
+      setUpdateReady(null);
+      setAvailableUpdateVersion(null);
+      checkRef.current = async (manual = false) => {
+        if (manual) {
+          setUpdateCheckBusy(false);
+          setUpdateCheckMessage("Updates are checked in the installed APK or IPA.");
+        }
+        return "current";
+      };
+      return () => {
+        cancelled = true;
+        checkRef.current = async () => "error";
+      };
+    }
+
     const signalRelease = (remoteVersion: string, remoteBuildId?: string) => {
       const releaseIdentity = `${remoteVersion}:${remoteBuildId ?? ""}`;
       if (!remoteVersion || releaseIdentitySeen.current === releaseIdentity) return;
@@ -147,30 +147,47 @@ export function useReleaseManager({
       presentReleaseSignal(payload);
     };
     const requestHeaders = { "cache-control": "no-cache, no-store, must-revalidate", pragma: "no-cache" };
+    const nativeRequestOptions: RequestInit = {
+      cache: "no-store",
+      credentials: "omit",
+      headers: requestHeaders,
+    };
+    const readJsonRelease = async (url: string, options: RequestInit): Promise<RemoteRelease | null> => {
+      try {
+        const response = await fetch(url, options);
+        if (!response.ok) return null;
+        return parseRemoteReleasePayload(await response.json());
+      } catch {
+        return null;
+      }
+    };
     const readRemoteRelease = async (): Promise<RemoteRelease | null> => {
       const cacheBust = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const releaseOrigin = nativeApp ? TRACK_WEB_ORIGIN : window.location.origin;
-      const credentials: RequestCredentials = nativeApp ? "omit" : "same-origin";
-      const requestOptions: RequestInit = { cache: "no-store", credentials };
-      if (!nativeApp) requestOptions.headers = requestHeaders;
+      const githubApiUrl = githubLatestReleaseApiUrl(TRACK_RELEASES_URL);
+      if (githubApiUrl) {
+        const githubRelease = await readJsonRelease(githubApiUrl, {
+          ...nativeRequestOptions,
+          headers: { ...requestHeaders, accept: "application/vnd.github+json" },
+        });
+        if (githubRelease) return githubRelease;
+      } else if (TRACK_RELEASES_URL) {
+        const configuredRelease = await readJsonRelease(TRACK_RELEASES_URL, nativeRequestOptions);
+        if (configuredRelease) return configuredRelease;
+      }
+
+      if (!TRACK_WEB_ORIGIN) return null;
+      const releaseOrigin = TRACK_WEB_ORIGIN;
       try {
         const manifestUrl = new URL("/track-release.json", releaseOrigin);
         manifestUrl.searchParams.set("v", cacheBust);
-        const manifestResponse = await fetch(manifestUrl, requestOptions);
-        if (manifestResponse.ok) {
-          const manifest: JsonValue = await manifestResponse.json();
-          if (isJsonObject(manifest) && isStringValue(manifest.version) && manifest.version)
-            return {
-              version: manifest.version,
-              buildId: isStringValue(manifest.buildId) ? manifest.buildId : undefined,
-            };
-        }
+        const manifest = await readJsonRelease(manifestUrl.toString(), nativeRequestOptions);
+        if (manifest) return manifest;
       } catch {
         /* Older deployments do not have the manifest; use HTML below. */
       }
       const htmlUrl = new URL("/index.html", releaseOrigin);
       htmlUrl.searchParams.set("track_version_check", cacheBust);
-      const response = await fetch(htmlUrl, requestOptions);
+      const response = await fetch(htmlUrl, nativeRequestOptions);
       if (!response.ok) return null;
       const html = await response.text();
       const parsedDocument = new DOMParser().parseFromString(html, "text/html");
@@ -195,11 +212,8 @@ export function useReleaseManager({
           TRACK_BUILD_ID !== "__TRACK_BUILD_ID__"
             ? TRACK_BUILD_ID
             : (document.querySelector<HTMLMetaElement>('meta[name="track-build"]')?.content?.trim() ?? "");
-        // Native packages are versioned independently from the hosted Pages
-        // bundle. A newer Pages build must not tell an already-current IPA or
-        // APK that a native update is available.
         const hasNewBuild = Boolean(
-          !nativeApp &&
+          nativeApp &&
             remoteRelease.buildId &&
             currentBuildId &&
             currentBuildId !== "__TRACK_BUILD_ID__" &&
@@ -264,6 +278,7 @@ export function useReleaseManager({
   ]);
 
   useEffect(() => {
+    if (!nativeApp) return;
     if (siteUpdateSeconds === null) return;
     const deadline = releaseDeadline.current ?? Date.now() + siteUpdateSeconds * 1000;
     releaseDeadline.current = deadline;
@@ -295,7 +310,7 @@ export function useReleaseManager({
     refreshUrl.searchParams.delete("track_version_check");
     refreshUrl.searchParams.set("track_updated", String(Date.now()));
     window.location.replace(refreshUrl.toString());
-  }, [isSaveInFlight, setSiteUpdateSeconds, setUpdateReady, siteUpdateSeconds]);
+  }, [isSaveInFlight, nativeApp, setSiteUpdateSeconds, setUpdateReady, siteUpdateSeconds]);
 
   return { checkForSiteUpdate };
 }

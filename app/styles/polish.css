@@ -163,8 +163,6 @@
   .bottom-tab-track {
     width: 100%;
     height: 58px;
-  }
-  .bottom-tab-track {
     min-height: var(--bottom-tab-track-height);
     max-height: var(--bottom-tab-track-height);
   }
@@ -202,7 +200,8 @@
     padding-bottom: calc(120px + var(--track-safe-bottom));
   }
   .scroll-shortcuts {
-    bottom: calc(112px + var(--track-safe-bottom));
+    right: 16px;
+    bottom: calc(96px + var(--track-safe-bottom));
   }
 }
 
@@ -279,8 +278,6 @@
   }
   .bottom-tab-track {
     height: 44px;
-  }
-  .bottom-tab-track {
     min-height: var(--bottom-tab-track-height);
     max-height: var(--bottom-tab-track-height);
   }
@@ -1294,4 +1291,1148 @@
   .mobile-actions .header-finish-button {
     padding: 0 8px;
   }
+}
+
+.empty-action {
+  margin-top: 4px;
+}
+
+.calendar-insight-strip,
+.rank-insight-strip {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+.calendar-insight-card,
+.rank-insight-card {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--raised) 76%, var(--soft));
+}
+.calendar-insight-card > span,
+.rank-insight-card > span {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.1em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.calendar-insight-card strong,
+.rank-insight-card strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calendar-insight-card small,
+.rank-insight-card small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.calendar-empty-note,
+.rank-empty-note {
+  display: grid;
+  gap: 4px;
+  margin: 12px auto 0;
+  padding: 12px 14px;
+  border: 1px dashed color-mix(in srgb, var(--line) 92%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--soft) 72%, transparent);
+  text-align: center;
+}
+.calendar-empty-note strong,
+.rank-empty-note strong {
+  color: var(--ink);
+  font-size: 12px;
+}
+.calendar-empty-note span,
+.rank-empty-note span {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.rank-empty-note {
+  width: min(440px, 100%);
+  margin-top: 18px;
+}
+
+@media (max-width: 1200px) {
+  :root {
+    --track-bottom-tab-height: 68px;
+    --track-bottom-tab-edge: 10px;
+  }
+  .mobile-header {
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--line) 82%, transparent);
+  }
+  .bottom-tab-bar {
+    width: min(var(--track-bottom-tab-width), calc(100vw - 20px));
+    padding: 5px;
+    border-radius: 20px;
+    background: color-mix(in srgb, var(--surface) 82%, var(--raised));
+  }
+  .bottom-tab-track {
+    height: 58px;
+    min-height: 58px;
+    max-height: 58px;
+  }
+  .bottom-tab {
+    gap: 3px;
+    font-size: 9px;
+  }
+  .bottom-tab-icon svg {
+    width: 17px;
+    height: 17px;
+  }
+}
+
+@media (max-width: 560px) {
+  .calendar-insight-strip,
+  .rank-insight-strip {
+    gap: 6px;
+  }
+  .calendar-insight-card,
+  .rank-insight-card {
+    padding: 11px 10px;
+  }
+  .calendar-insight-card strong,
+  .rank-insight-card strong {
+    font-size: 15px;
+  }
+  .calendar-insight-card > span,
+  .rank-insight-card > span {
+    font-size: 8px;
+    letter-spacing: 0.07em;
+  }
+}
+
+/* Beta review refinements: keep empty states useful without introducing a
+   second sticky control that can compete with the bottom navigation. */
+.workout-page .composer {
+  border-color: var(--track-interactive-border);
+  background: var(--track-interactive-surface);
+}
+.workout-page .composer:focus-within {
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--track-interactive-border));
+  background: var(--track-interactive-surface);
+}
+.workout-page .empty {
+  margin-top: 18px;
+  padding: 28px 18px 24px;
+  border: 1px solid var(--track-interactive-border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--track-interactive-surface) 74%, transparent);
+}
+.workout-page .empty h2 {
+  color: var(--ink);
+}
+.workout-page .empty p {
+  color: var(--muted);
+}
+.workout-page .empty-action {
+  min-height: 36px;
+  border-color: color-mix(in srgb, var(--track-empty-action-surface) 70%, var(--line));
+  background: var(--track-empty-action-surface);
+  color: var(--track-empty-action-ink);
+  font-weight: 700;
+}
+.empty-quick-picks {
+  display: grid;
+  gap: 8px;
+  margin: 16px auto 2px;
+  max-width: 620px;
+}
+.empty-quick-picks-label {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.empty-quick-picks-list {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-start;
+  max-width: 100%;
+  padding: 1px 2px 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  gap: 7px;
+}
+.empty-quick-picks-list::-webkit-scrollbar {
+  display: none;
+}
+.quick-pick-chip {
+  flex: 0 0 auto;
+  max-width: 220px;
+  min-height: 32px;
+  padding: 6px 10px;
+  overflow: hidden;
+  border: 1px solid var(--track-interactive-border);
+  border-radius: 999px;
+  background: var(--track-interactive-surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.quick-pick-chip:hover,
+.quick-pick-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--track-interactive-border));
+  background: var(--hover);
+  outline: none;
+}
+.quick-pick-chip:active {
+  transform: scale(0.98);
+}
+.mobile-header .brand-beta {
+  display: none;
+}
+
+/* Workout logging controls: keep small labels readable without making the
+   numeric fields compete with the values being entered. */
+.workout-page .task {
+  border-color: var(--track-workout-input-border);
+  background: var(--track-workout-card-surface);
+}
+.workout-page .task:hover,
+.workout-page .task.collapsed:hover {
+  background: color-mix(in srgb, var(--track-workout-card-surface) 88%, var(--hover));
+}
+.workout-page .set-input > input {
+  border-color: var(--track-workout-input-border);
+  background: var(--raised);
+}
+.workout-page .weight-set-input > button,
+.workout-page .weight-set-input::after,
+.workout-page .set-row .set-input:nth-child(3)::after,
+.workout-page .set-row .set-input:nth-child(4)::after {
+  color: var(--track-input-label);
+  font-size: 12px;
+  font-weight: 650;
+}
+.workout-page .set-input > input {
+  padding-right: 38px;
+}
+.workout-page .weight-set-input > input {
+  padding-right: 42px;
+}
+.workout-page .add-set {
+  border-style: solid;
+  border-color: color-mix(in srgb, var(--track-input-label) 50%, var(--line));
+  background: color-mix(in srgb, var(--track-workout-card-surface) 65%, transparent);
+  color: var(--track-input-label);
+  font-weight: 650;
+}
+.workout-page .add-set:hover,
+.workout-page .add-set:focus-visible {
+  border-color: var(--track-input-label);
+  background: color-mix(in srgb, var(--track-input-label) 10%, var(--track-workout-card-surface));
+  color: var(--ink);
+  outline: none;
+}
+.workout-page .remove-set {
+  display: grid;
+  place-items: center;
+  color: var(--track-input-label);
+  opacity: 1;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+.workout-page .remove-set:hover,
+.workout-page .remove-set:focus-visible {
+  background: color-mix(in srgb, #dc5656 18%, transparent);
+  color: #ff7770;
+  outline: none;
+}
+.workout-page .remove-set:disabled {
+  color: var(--track-input-label);
+  opacity: 0.55;
+}
+
+@media (max-width: 560px) {
+  .workout-page .empty {
+    margin-top: 14px;
+    padding: 22px 14px 20px;
+  }
+  .empty-quick-picks {
+    margin-top: 13px;
+  }
+  .workout-page .set-input > input {
+    padding-right: 38px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .workout-page .composer {
+    margin-top: 24px;
+  }
+  .workout-page .weight-set-input > input {
+    padding-right: 38px;
+  }
+}
+
+/* Keep the two floating surfaces spatially continuous when their anchor
+   changes with sidebar state, safe-area insets, or responsive layout. */
+.bottom-tab-bar {
+  transition:
+    opacity 0.24s ease,
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    left 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    inset-block-end 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.undo-toast-positioner {
+  transition:
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.2s ease,
+    left 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.undo-toast-positioner.is-dragging {
+  transition: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottom-tab-bar,
+  .undo-toast-positioner {
+    transition: none;
+  }
+}
+
+/* Native-sized mobile controls keep the same editable set model as desktop:
+   the weight unit remains a real button, while Reps and RIR keep readable
+   suffixes instead of disappearing into tiny pseudo-labels. */
+.workout-page .set-input > input {
+  font-weight: 600;
+}
+.workout-page .set-heading {
+  font-weight: 600;
+}
+@media (max-width: 1200px) {
+  .workout-page .weight-set-input > button {
+    display: grid;
+    top: 50%;
+    right: 4px;
+    width: 38px;
+    height: 28px;
+    min-height: 28px;
+    place-items: center;
+    transform: translateY(-50%);
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--track-input-label);
+    padding: 0;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .workout-page .weight-set-input.has-history > button {
+    top: 50%;
+  }
+  .workout-page .weight-set-input > button:hover,
+  .workout-page .weight-set-input > button:focus-visible {
+    background: var(--subtle);
+    color: var(--ink);
+    outline: none;
+  }
+  .workout-page .weight-set-input::after {
+    display: none;
+  }
+  .workout-page .set-row .set-input:nth-child(3)::after,
+  .workout-page .set-row .set-input:nth-child(4)::after {
+    position: absolute;
+    top: 50%;
+    right: 6px;
+    display: block;
+    transform: translateY(-50%);
+    color: var(--track-input-label);
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1;
+    pointer-events: none;
+  }
+  .workout-page .set-row .set-input:nth-child(3)::after {
+    content: "REPS";
+  }
+  .workout-page .set-row .set-input:nth-child(4)::after {
+    content: "RIR";
+  }
+}
+
+/* Short phones should place workout details immediately below the close
+   control. The larger 80px inset was safe but left an unnecessary void. */
+@media (max-width: 699px) {
+  .calendar-detail-scroll {
+    padding-top: max(54px, calc(18px + env(safe-area-inset-top)));
+  }
+}
+
+/* Stable workout grids: every set uses the same track widths, inset, and
+   trailing action gutter at every responsive size. */
+.workout-page .set-row,
+.workout-page .set-row > * {
+  min-width: 0;
+}
+.workout-page .set-input > input {
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.workout-page .weight-set-input > button,
+.workout-page .set-row .set-input:nth-child(3)::after,
+.workout-page .set-row .set-input:nth-child(4)::after {
+  line-height: 1;
+}
+.workout-page .add-set {
+  width: 100%;
+}
+
+@media (min-width: 701px) {
+  .workout-page .set-row {
+    grid-template-columns: 48px minmax(0, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) 36px;
+    column-gap: 10px;
+    padding-inline: 2px;
+  }
+  .workout-page .set-heading span {
+    text-align: center;
+  }
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    justify-self: center;
+    margin-right: 4px;
+  }
+}
+
+@media (max-width: 700px) {
+  .workout-page .set-heading {
+    display: grid;
+    grid-template-columns: 34px repeat(3, minmax(0, 1fr)) 30px;
+    column-gap: 6px;
+    min-height: 16px;
+    padding: 0 6px 4px 0;
+  }
+  .workout-page .set-heading span {
+    min-width: 0;
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .workout-page .set-row:not(.set-heading) {
+    grid-template-columns: 34px repeat(3, minmax(0, 1fr)) 30px;
+    column-gap: 6px;
+    padding: 7px 6px 7px 0;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-number {
+    width: 34px;
+    justify-self: center;
+    text-align: center;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input {
+    width: 100%;
+  }
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    width: 26px;
+    height: 30px;
+    justify-self: center;
+    margin: 0;
+  }
+  .workout-page .set-input > input {
+    padding-right: 40px;
+  }
+}
+
+/* Number steppers are browser chrome, not part of the Track II control. They
+   overlap the unit suffix on compact profile cards, especially on iOS. */
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  -webkit-appearance: none;
+}
+.personal-info-fields input {
+  padding-right: 48px;
+}
+.personal-info-fields label > div {
+  min-width: 0;
+}
+
+/* Keep the workout heading rhythm intentional instead of leaving the search
+   composer in a second, visually unrelated vertical group. */
+.workout-page > .eyebrow {
+  margin-bottom: 10px;
+}
+.workout-page .title-row h1 {
+  line-height: 1.1;
+}
+.workout-page .title-row p {
+  margin-top: 8px;
+}
+.workout-page .composer {
+  margin-top: 16px;
+}
+
+/* Mobile settings returns to the compact, horizontally scrollable tab strip.
+   It keeps the original thumb-friendly navigation while the desktop sidebar
+   remains icon-based at wider widths. */
+@media (max-width: 699px) {
+  .settings-modal > .settings-mobile-tabs-wrap {
+    display: block;
+    margin-top: 18px;
+    padding: calc(18px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) 0
+      max(20px, env(safe-area-inset-left));
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs {
+    display: flex;
+    gap: 3px;
+    width: auto;
+    margin: 0 -4px;
+    padding: 3px var(--track-settings-tabs-more-space) 3px 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border: 1px solid var(--line);
+    border-radius: 11px;
+    background: var(--soft);
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs button {
+    min-width: max-content;
+    min-height: 0;
+    height: 34px;
+    display: block;
+    flex: 0 0 auto;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 8px;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 650;
+    line-height: 34px;
+    text-align: center;
+    white-space: nowrap;
+    scroll-snap-align: center;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs button.active {
+    background: var(--raised);
+    color: var(--ink);
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.12);
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-nav-icon {
+    display: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more {
+    position: absolute;
+    z-index: 2;
+    top: 50%;
+    right: 1px;
+    width: 34px;
+    height: 34px;
+    display: grid !important;
+    place-items: center;
+    transform: translateY(-50%);
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more.is-hidden {
+    display: none !important;
+  }
+  .settings-modal > .settings-content {
+    padding-top: 22px !important;
+  }
+}
+
+/* Tablets and landscape phones can use the actual desktop sidebar without
+   squeezing the content into a horizontal tab strip. Narrow phones keep the
+   original horizontally scrollable category tabs. */
+@media (min-width: 700px) and (max-width: 1200px) {
+  .settings-modal {
+    display: grid;
+    grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+    flex-direction: initial;
+  }
+  .settings-modal > .settings-nav {
+    grid-column: 1;
+    grid-row: 1;
+    display: flex;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap {
+    display: none;
+  }
+  .settings-modal > .settings-content {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 30px 32px 36px !important;
+  }
+}
+
+/* One logo surface is used for the header and empty-state mark so the brand
+   does not change polarity as users move through the app. */
+:root {
+  --track-logo-surface: #101010;
+  --track-logo-ink: #f7f7f4;
+}
+.brand-mark,
+.empty > .empty-mark,
+.username-prompt-mark,
+.welcome-mark,
+.password-reset-mark,
+.auth-logo,
+.exercise-confirm-mark,
+.notification-logo {
+  background: var(--track-logo-surface);
+  color: var(--track-logo-ink);
+}
+
+/* Apple-like motion with cheap compositing: animate opacity and transforms,
+   avoid blur/backdrop repaints on frequently moving mobile surfaces, and keep
+   the browser's compositor responsible for the frame pacing. */
+.content {
+  transition:
+    opacity 0.34s ease,
+    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.content-exit {
+  filter: none;
+}
+.bottom-tab-bar,
+.undo-toast-positioner,
+.settings-modal {
+  contain: layout paint;
+}
+@media (max-width: 1200px) {
+  .bottom-tab-bar,
+  .undo-toast,
+  .track-notification {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    background: color-mix(in srgb, var(--surface) 96%, var(--raised)) !important;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bottom-tab-bar,
+  .undo-toast-positioner,
+  .settings-modal {
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes progress-fade {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-7px) scale(0.82);
+  }
+}
+@keyframes welcome-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes timer-mode-forward {
+  from {
+    opacity: 0;
+    transform: translateX(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+@keyframes timer-mode-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* A short, visible setup path turns an empty split into the next three
+   actions without introducing a separate onboarding state to persist. */
+.workout-start-steps,
+.welcome-start-steps {
+  display: grid;
+  gap: 8px;
+  margin: 18px auto 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+}
+.workout-start-steps {
+  width: min(520px, 100%);
+}
+.welcome-start-steps {
+  width: min(320px, 100%);
+  margin-top: 22px;
+}
+.workout-start-steps li,
+.welcome-start-steps li {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--line) 72%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--soft) 68%, transparent);
+  color: var(--muted);
+}
+.workout-start-steps li.is-current,
+.welcome-start-steps li.is-current {
+  border-color: color-mix(in srgb, var(--ink) 24%, var(--line));
+  background: color-mix(in srgb, var(--raised) 82%, transparent);
+  color: var(--ink);
+}
+.workout-start-steps li.is-complete {
+  color: color-mix(in srgb, var(--track-accent-online) 72%, var(--ink));
+}
+.workout-start-step-index {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 750;
+  line-height: 1;
+}
+.workout-start-steps strong,
+.welcome-start-steps strong {
+  display: block;
+  color: currentColor;
+  font-size: 12px;
+  font-weight: 700;
+}
+.workout-start-steps small,
+.welcome-start-steps small {
+  display: block;
+  margin-top: 2px;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Keep exercise search compact on mobile until the user asks for it. The
+   expanded composer stays in the workout flow, so it cannot cover cards or
+   drift away from the split title at unusual viewport sizes. */
+.workout-page .exercise-composer .suggestions {
+  left: 0;
+  right: 0;
+  width: auto;
+  top: calc(100% + 8px);
+  margin-top: 0;
+  border: 1px solid var(--track-interactive-border);
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.52);
+}
+.mobile-search-toggle {
+  display: none;
+}
+@media (max-width: 700px) {
+  .workout-page .title-row {
+    align-items: flex-start;
+  }
+  .mobile-search-toggle {
+    align-self: flex-start;
+    margin-top: 0;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    flex: 0 0 40px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--raised);
+    color: var(--ink);
+    padding: 0;
+    cursor: pointer;
+    transition:
+      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      background-color 0.24s ease,
+      border-color 0.24s ease;
+  }
+  .mobile-search-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mobile-search-toggle[aria-expanded="true"] {
+    background: var(--subtle);
+    transform: rotate(-8deg) scale(0.96);
+  }
+  .mobile-search-toggle:active {
+    transform: scale(0.92);
+  }
+  .workout-page .exercise-composer {
+    position: relative;
+    z-index: 10;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    width: 100%;
+    min-height: 0;
+    max-height: 0;
+    margin-top: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    overflow: hidden;
+    transform: translateY(-6px) scale(0.98);
+    transition:
+      max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      margin-top 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      padding 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.2s ease,
+      transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 0.2s ease;
+  }
+  .workout-page .exercise-composer.is-mobile-search-open {
+    max-height: 96px;
+    min-height: 53px;
+    margin-top: 16px;
+    padding: 7px 8px 7px 19px;
+    border-width: 1px;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    overflow: visible;
+    transform: translateY(0) scale(1);
+  }
+  .workout-page .exercise-composer .suggestions {
+    top: calc(100% + 8px);
+    bottom: auto;
+    max-height: min(45vh, 300px);
+    overflow-y: auto;
+    transform-origin: top center;
+  }
+}
+
+/* A unit is a lightweight action, not a selected segmented-control state.
+   Keep its tap target clear of the numeric value and animate only the label
+   that changed. */
+.workout-page .weight-set-input > .weight-unit-toggle {
+  background: transparent;
+  color: var(--track-input-label);
+  outline: none;
+}
+.workout-page .weight-set-input > .weight-unit-toggle:hover,
+.workout-page .weight-set-input > .weight-unit-toggle:focus-visible {
+  background: transparent;
+  color: var(--ink);
+  outline: none;
+}
+.workout-page .weight-set-input > .weight-unit-toggle.is-toggling {
+  animation: weight-unit-toggle 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes weight-unit-toggle {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.13);
+  }
+}
+
+@media (max-width: 1200px) {
+  .workout-page .weight-set-input {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 34px;
+    align-items: center;
+    height: 36px;
+    overflow: visible;
+    border: 1px solid var(--track-workout-input-border);
+    border-radius: 8px;
+    background: var(--raised);
+  }
+  .workout-page .weight-set-input > input {
+    height: 34px;
+    min-width: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0 4px 0 7px;
+    box-shadow: none;
+  }
+  .workout-page .weight-set-input > input:hover,
+  .workout-page .weight-set-input > input:focus {
+    border: 0;
+    background: transparent;
+    box-shadow: none;
+    transform: none;
+  }
+  .workout-page .weight-set-input > .weight-unit-toggle {
+    position: static;
+    width: 34px;
+    height: 34px;
+    min-height: 34px;
+    transform: none;
+    border-radius: 0;
+    font-size: 11px;
+  }
+  .workout-page .weight-set-input > .weight-unit-toggle.is-toggling {
+    animation: weight-unit-toggle-mobile 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes weight-unit-toggle-mobile {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.13);
+  }
+}
+
+/* Keep every visible set control on the same grid as its column heading. */
+@media (min-width: 1201px) {
+  .workout-page .set-row {
+    --workout-set-grid: 48px minmax(0, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) 36px;
+    grid-template-columns: var(--workout-set-grid);
+  }
+  .workout-page .set-heading {
+    display: grid;
+    grid-template-columns: var(--workout-set-grid);
+  }
+  .workout-page .set-heading > span {
+    justify-self: stretch;
+    text-align: center;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-number,
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    justify-self: center;
+  }
+}
+@media (max-width: 1200px) {
+  .workout-page .set-row:not(.set-heading) {
+    --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) 30px;
+    grid-template-columns: var(--workout-set-grid);
+  }
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    width: 30px;
+    height: 30px;
+    align-self: center;
+    justify-self: center;
+    margin: 0;
+  }
+  .workout-page .set-row .set-input:nth-child(3)::after,
+  .workout-page .set-row .set-input:nth-child(4)::after {
+    content: none;
+    display: none;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(3) > input,
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(4) > input {
+    padding-right: 7px;
+  }
+  .workout-page .add-set {
+    display: block;
+    width: 100%;
+    margin-inline: 0;
+    box-sizing: border-box;
+  }
+  .workout-page .set-delta {
+    top: -4px;
+    right: 4px;
+    z-index: 5;
+    padding: 0 3px;
+    border: 1px solid color-mix(in srgb, var(--track-input-label) 28%, transparent);
+    background: var(--track-workout-card-surface);
+    line-height: 13px;
+    transform: translateY(-100%);
+  }
+  .workout-page .task-list {
+    margin-top: 20px;
+  }
+}
+
+.recent.split-dragging {
+  opacity: 1;
+  animation: split-hold-settle 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes split-hold-settle {
+  0% {
+    transform: scale(1);
+  }
+  58% {
+    transform: scale(0.97);
+  }
+  100% {
+    transform: scale(0.985);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-search-toggle,
+  .workout-page .exercise-composer,
+  .workout-page .weight-set-input > .weight-unit-toggle,
+  .recent.split-dragging {
+    animation: none;
+    transition: none;
+  }
+}
+
+/* Finish is the only destructive session action that asks for confirmation.
+   The dialog uses the same compact surface language as the other prompts,
+   with a spring-like settle that remains cheap to composite. */
+.finish-confirm-backdrop {
+  background: rgba(0, 0, 0, 0.74);
+}
+.finish-confirm {
+  width: min(420px, calc(100vw - 32px));
+  border-color: color-mix(in srgb, var(--line) 90%, transparent);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
+  animation: finish-confirm-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.finish-confirm h2 {
+  margin-bottom: 8px;
+}
+.finish-confirm p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.finish-confirm-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+.finish-confirm-actions button {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 750;
+  cursor: pointer;
+}
+.finish-confirm-cancel {
+  background: var(--soft);
+  color: var(--ink);
+}
+.finish-confirm-submit {
+  border-color: color-mix(in srgb, var(--track-accent-online) 52%, var(--line)) !important;
+  background: var(--track-accent-online);
+  color: #071109;
+}
+.finish-confirm-actions button:hover {
+  transform: translateY(-1px);
+}
+.finish-confirm-actions button:active {
+  transform: scale(0.97);
+}
+@keyframes finish-confirm-in {
+  0% {
+    opacity: 0;
+    transform: translateY(12px) scale(0.94);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.01);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Undo follows the same Apple-like settle while the existing progress line
+   still communicates when the reversible window expires. */
+.undo-toast {
+  animation: undo-toast-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes undo-toast-in {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  64% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .finish-confirm,
+  .undo-toast {
+    animation: none;
+  }
+}
+
+/* Keep frequently moving surfaces on the compositor-friendly path.  Solid
+   surfaces preserve contrast without asking the browser to repaint the page
+   behind a blur on every frame. */
+.bottom-tab-bar,
+.undo-toast,
+.track-notification,
+.scroll-to-top,
+.scroll-to-bottom,
+.settings-tabs-more,
+.settings-backdrop,
+.password-reset-backdrop,
+.exercise-confirm-backdrop,
+.calendar-detail-backdrop,
+.username-prompt-backdrop,
+.personal-info-prompt-backdrop,
+.admin-users-backdrop,
+.mobile-sidebar-backdrop {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.track-notification {
+  background: color-mix(in srgb, var(--raised) 96%, var(--surface));
+}
+.bottom-tab-bar {
+  background: color-mix(in srgb, var(--surface) 96%, var(--raised));
 }

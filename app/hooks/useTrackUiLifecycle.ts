@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { TRACK_TIMING } from "../trackConstants";
+import { TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
 export function useTrackUiLifecycle({ announcement, identity, workout, settings, refs }: UseTrackAppLifecycleOptions) {
@@ -18,10 +18,16 @@ export function useTrackUiLifecycle({ announcement, identity, workout, settings,
   }, [announcement, announcementTimerRef, setAnnouncement]);
 
   useEffect(() => {
+    let frame: number | null = null;
     const updateScrollShortcut = () => {
-      const remaining = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
-      setShowScrollTop(window.scrollY > 420);
-      setShowScrollBottom(remaining > 420);
+      if (frame !== null) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = null;
+        const remaining = document.documentElement.scrollHeight - window.innerHeight - window.scrollY;
+        const threshold = TRACK_INTERACTION.scrollShortcutThresholdPx;
+        setShowScrollTop(window.scrollY > threshold);
+        setShowScrollBottom(remaining > threshold);
+      });
     };
     updateScrollShortcut();
     window.addEventListener("scroll", updateScrollShortcut, { passive: true });
@@ -32,6 +38,7 @@ export function useTrackUiLifecycle({ announcement, identity, workout, settings,
       window.removeEventListener("scroll", updateScrollShortcut);
       window.removeEventListener("resize", updateScrollShortcut);
       observer.disconnect();
+      if (frame !== null) window.cancelAnimationFrame(frame);
     };
   }, [setShowScrollBottom, setShowScrollTop]);
 

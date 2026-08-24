@@ -19,10 +19,11 @@ export function useIdentityState() {
   const [personalInfoSaving, setPersonalInfoSaving] = useState(false);
   const [personalInfoMessage, setPersonalInfoMessage] = useState("");
   const [cloudReady, setCloudReady] = useState(false);
-  const [exerciseNames, setExerciseNames] = useState<string[]>([]);
+  const [exerciseNames, setExerciseNames] = useState<readonly string[]>([]);
   const [syncLabel, setSyncLabel] = useState<string>(TRACK_UI_COPY.status.saved);
   const [siteUpdateSeconds, setSiteUpdateSeconds] = useState<number | null>(null);
   const [updateReady, setUpdateReady] = useState<ReleaseSignal | null>(null);
+  const [debugUpdateNotification, setDebugUpdateNotification] = useState(false);
   const [updatesViewBusy, setUpdatesViewBusy] = useState(false);
   const [updatesViewMessage, setUpdatesViewMessage] = useState("");
   const [adminAuthorized, setAdminAuthorized] = useState(false);
@@ -67,6 +68,8 @@ export function useIdentityState() {
     setSiteUpdateSeconds,
     updateReady,
     setUpdateReady,
+    debugUpdateNotification,
+    setDebugUpdateNotification,
     updatesViewBusy,
     setUpdatesViewBusy,
     updatesViewMessage,

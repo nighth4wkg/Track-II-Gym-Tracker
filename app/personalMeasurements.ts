@@ -1,10 +1,11 @@
-import type { WeightUnit } from "./trackTypes";
+import type { WeightUnit } from "./trackTypes.ts";
+import { WEIGHT_CONVERSION_FACTOR } from "./trackConstants.ts";
 
 export type PersonalMeasurement = "height" | "weight";
 
 export const PERSONAL_CONVERSION = {
   centimetersPerInch: 2.54,
-  poundsPerKilogram: 2.2046226218,
+  poundsPerKilogram: WEIGHT_CONVERSION_FACTOR,
 } as const;
 
 function formatMeasurement(value: number) {

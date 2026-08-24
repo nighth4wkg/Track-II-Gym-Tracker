@@ -1,10 +1,11 @@
 "use client";
 
 import { TRACK_LIMITS } from "../trackConstants";
-import { TRACK_ISSUES_URL, TRACK_RELEASES_URL } from "../trackConfig";
+import { TRACK_DISCORD_HANDLE, TRACK_ISSUES_URL, TRACK_RELEASES_URL } from "../trackConfig";
 import type { SettingsViewContentProps } from "./SettingsViewContent";
 
 export function SettingsUpdatesView({
+  nativeApp,
   releaseAvailable,
   updateVersion,
   updatesViewBusy,
@@ -15,39 +16,47 @@ export function SettingsUpdatesView({
     <section className="updates-page">
       <div className="updates-page-intro">
         <strong>Keep Track II current</strong>
-        <p>Check the latest app release. Releases include the newest IPA, APK, and release notes.</p>
+        <p>
+          {nativeApp
+            ? "Check the latest app release. Releases include the newest IPA, APK, and release notes."
+            : "Web builds do not auto-update. Install the native APK or IPA to check the configured release page."}
+        </p>
       </div>
       <div className="updates-page-card">
         <div className="updates-page-card-heading">
           <span className="updates-page-card-label">Release status</span>
-          <span className={releaseAvailable ? "updates-page-status ready" : "updates-page-status"}>
-            {releaseAvailable ? "Update ready" : "Up to date"}
+          <span className={nativeApp && releaseAvailable ? "updates-page-status ready" : "updates-page-status"}>
+            {nativeApp ? (releaseAvailable ? "Update ready" : "Up to date") : "Native only"}
           </span>
         </div>
         <p>
-          {releaseAvailable
-            ? `v${updateVersion} is ready to download from the configured release page.`
-            : "No updates yet."}
+          {!nativeApp
+            ? "The hosted PC/web beta stays on its current build. Native packages check GitHub releases instead."
+            : releaseAvailable
+              ? `v${updateVersion} is ready to download from the configured release page.`
+              : "No updates yet."}
         </p>
-        <div className="updates-page-actions">
-          <button
-            className="ui-button ui-button-primary"
-            onClick={() => void onCheckForUpdates()}
-            disabled={updatesViewBusy}
-          >
-            {updatesViewBusy ? "Checking…" : "Check for updates"}
-          </button>
-          {releaseAvailable && TRACK_RELEASES_URL && (
-            <a
-              className="ui-button ui-button-secondary updates-release-link"
-              href={TRACK_RELEASES_URL}
-              target="_blank"
-              rel="noreferrer"
+        {nativeApp && (
+          <div className="updates-page-actions">
+            <button
+              className="ui-button ui-button-primary"
+              onClick={() => void onCheckForUpdates()}
+              disabled={updatesViewBusy}
             >
-              Download update
-            </a>
-          )}
-        </div>
+              {updatesViewBusy ? "Checking…" : "Check for updates"}
+            </button>
+            {releaseAvailable && TRACK_RELEASES_URL && (
+              <a
+                className="ui-button ui-button-secondary updates-release-link"
+                href={TRACK_RELEASES_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Download update
+              </a>
+            )}
+          </div>
+        )}
         {updatesViewMessage && (
           <div className="updates-page-message" role="status">
             {updatesViewMessage}
@@ -67,7 +76,7 @@ export function SettingsAboutView() {
       <h3>Made for personal use and sharing with friends.</h3>
       <p>This project is fully vibe-coded, completely free, and non-commercial.</p>
       <p>
-        For issues, please use{" "}
+        For issues, please contact Discord: <strong>@{TRACK_DISCORD_HANDLE}</strong>, or use{" "}
         {TRACK_ISSUES_URL ? (
           <a href={TRACK_ISSUES_URL} target="_blank" rel="noreferrer">
             the Track II issue tracker
@@ -88,8 +97,10 @@ export function SettingsAdminView({
   announcementText,
   updateCheckBusy,
   updateCheckMessage,
+  isAdmin,
+  nativeApp,
+  onFakeUpdateNotification,
   onForceUpdateCheck,
-  onOpenAdminUsers,
   onSendAnnouncement,
   onSetAdminAnnouncementOpen,
   onSetAnnouncementText,
@@ -100,33 +111,37 @@ export function SettingsAdminView({
         <strong>Track II administration</strong>
         <p>Live diagnostics, release checks, and announcements for signed-in Track II users.</p>
       </div>
-      <div className="admin-card">
-        <div className="setting-row">
-          <div>
-            <strong>Force update check</strong>
-            <p>Ask Cloudflare for the latest deployed Track II build and refresh when one is available.</p>
+      {nativeApp && (
+        <div className="admin-card">
+          <div className="setting-row">
+            <div>
+              <strong>Force update check</strong>
+              <p>Ask Cloudflare for the latest deployed Track II build and refresh when one is available.</p>
+            </div>
+            <button className="admin-action-button" onClick={onForceUpdateCheck} disabled={updateCheckBusy}>
+              {updateCheckBusy ? "Checking…" : "Check now"}
+            </button>
           </div>
-          <button className="admin-action-button" onClick={onForceUpdateCheck} disabled={updateCheckBusy}>
-            {updateCheckBusy ? "Checking…" : "Check now"}
-          </button>
+          {updateCheckMessage && (
+            <div className="update-check-message" role="status">
+              {updateCheckMessage}
+            </div>
+          )}
         </div>
-        {updateCheckMessage && (
-          <div className="update-check-message" role="status">
-            {updateCheckMessage}
+      )}
+      {nativeApp && isAdmin && (
+        <div className="admin-card">
+          <div className="setting-row">
+            <div>
+              <strong>[debug] Fake update notification</strong>
+              <p>Show the native update popup on this admin device without checking the release page.</p>
+            </div>
+            <button className="admin-action-button" onClick={onFakeUpdateNotification}>
+              Show popup
+            </button>
           </div>
-        )}
-      </div>
-      <div className="admin-card">
-        <div className="setting-row">
-          <div>
-            <strong>Manage members</strong>
-            <p>View activity, inspect read-only splits, and manage administrator roles.</p>
-          </div>
-          <button className="admin-action-button" onClick={onOpenAdminUsers}>
-            Open directory
-          </button>
         </div>
-      </div>
+      )}
       <div className="admin-card">
         <div className="setting-row">
           <div>

@@ -20,6 +20,16 @@ export const FILTER_LABELS = {
   done: "Completed",
 } satisfies Record<Filter, string>;
 
+// Curated starter suggestions keep the empty state useful until per-user
+// exercise popularity data is available. Names intentionally match the
+// exercise catalog so each chip uses the same add flow as search results.
+export const POPULAR_QUICK_PICK_EXERCISES = [
+  "Back squat",
+  "Barbell bench press",
+  "Conventional deadlift",
+  "Pull-up",
+] as const;
+
 // Product limits live in one data-only map so validation and copy stay aligned
 // across the web and native shells.
 export const TRACK_LIMITS = {
@@ -27,8 +37,11 @@ export const TRACK_LIMITS = {
   maxUsernameChars: 24,
   rankHistoryDays: 84,
   announcementLookbackDays: 7,
+  minRestSeconds: 6,
   maxRestSeconds: 3600,
   defaultRestSeconds: 90,
+  maxTimerRuntimeDays: 7,
+  maxTimerLaps: 100,
   minHeightCm: 100,
   maxHeightCm: 250,
   minWeightKg: 25,
@@ -58,6 +71,13 @@ export const TRACK_INTERACTION = {
   dragAutoScrollMaxEdge: 170,
   dragAutoScrollViewportRatio: 0.24,
   focusDelayMs: 120,
+  scrollShortcutThresholdPx: 420,
+  splitMenuWidthPx: 180,
+  splitMenuBottomInsetPx: 156,
+  splitMenuOffsetX: 10,
+  splitMenuOffsetY: 5,
+  splitHoldMoveThreshold: 8,
+  splitHoldHapticMs: 20,
 } as const;
 
 export const TRACK_TIMING = {
@@ -73,6 +93,7 @@ export const TRACK_TIMING = {
   preferenceSaveRetryMaxMs: 30_000,
   announcementDismissMs: 5_000,
   notificationDeliveryTimeoutMs: 5_000,
+  notificationScheduleDelayMs: 1_000,
   adminHeartbeatStaleMs: 45_000,
   adminHeartbeatPollMs: 60_000,
   preferenceFallbackPollMs: 30_000,
@@ -88,6 +109,7 @@ export const TRACK_TIMING = {
   adminMemberMenuHoldMs: 520,
   exportUrlRevokeMs: 1_000,
   splitCreateDelayMs: 360,
+  splitHoldMenuMs: 420,
   touchDoubleTapGuardMs: 320,
   stopwatchTickMs: 31,
   restTimerTickMs: 200,
@@ -140,6 +162,22 @@ export const TRACK_UI_COPY = {
     filtered: "Nothing here yet",
     filteredHint: "Complete an exercise to see it here.",
   },
+  notifications: {
+    enabled: "Notifications are enabled on this device.",
+    permissionEnabledAnnouncement: "Announcements are now enabled on this device.",
+    nativeUnsupported: "Notifications aren’t available in this Track II build.",
+    browserUnsupported: "Notifications aren’t available in this browser.",
+    blockedSettings: "Notifications are blocked. Open Track II in Settings and turn on Allow Notifications.",
+    blockedIPhoneSettings:
+      "Notifications are blocked. Open iPhone Settings, choose Track II, and turn on Allow Notifications.",
+    blockedIPhone: "Notifications are blocked. Open iPhone Settings, choose Track II, and enable them.",
+    blockedNative: "Notifications are blocked. Open your device settings, choose Track II, and enable them.",
+    blockedBrowser: "Notifications are blocked. You can enable them in your browser or device settings.",
+    iosHomeScreen: "On iPhone, add Track II to your Home Screen first, then open it there and enable notifications.",
+    nativeError:
+      "Track II couldn’t open notification settings automatically. Open device Settings, choose Track II, and enable notifications.",
+    browserError: "Track II couldn’t open notification permissions. Try again from Privacy & Notifications.",
+  },
 } as const;
 
 export const MOBILE_SIDEBAR_GESTURE_EDGE = 68;
@@ -166,6 +204,11 @@ export const SYNC_SAVE_DEBOUNCE_MS = 350;
 export const SYNC_REFRESH_DEBOUNCE_MS = 180;
 export const SYNC_FALLBACK_POLL_MS = 60_000;
 export const CALENDAR_SYNC_POLL_MS = 30_000;
+
+// Shared conversion constants prevent slightly different rounding or time
+// windows from appearing in separate data and UI modules.
+export const MILLISECONDS_PER_DAY = 86_400_000;
+export const WEIGHT_CONVERSION_FACTOR = 2.2046226218;
 
 export const ACCOUNT_LOCAL_KEYS = [
   "saved-splits",

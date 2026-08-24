@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { TRACK_ASSET_QUERY } from "./trackConfig";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -17,13 +18,13 @@ export const metadata: Metadata = {
   description: "Track II helps you record exercises, target reps, and reps in reserve across your workout splits.",
   icons: {
     icon: [
-      { url: "/track-icon.svg?v=3.0.2", type: "image/svg+xml" },
-      { url: "/icon-192.png?v=3.0.2", sizes: "192x192", type: "image/png" },
+      { url: `/track-icon.svg${TRACK_ASSET_QUERY}`, type: "image/svg+xml" },
+      { url: `/icon-192.png${TRACK_ASSET_QUERY}`, sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/track-icon.svg?v=3.0.2",
-    apple: "/apple-touch-icon.png?v=3.0.2",
+    shortcut: `/track-icon.svg${TRACK_ASSET_QUERY}`,
+    apple: `/apple-touch-icon.png${TRACK_ASSET_QUERY}`,
   },
-  manifest: "/manifest.webmanifest?v=3.0.2",
+  manifest: `/manifest.webmanifest${TRACK_ASSET_QUERY}`,
   appleWebApp: {
     capable: true,
     title: "Track II",

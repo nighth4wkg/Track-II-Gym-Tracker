@@ -1,14 +1,14 @@
 import { Capacitor } from "@capacitor/core";
-import { AppLauncher } from "@capacitor/app-launcher";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import type { Dispatch, FormEvent, MutableRefObject, RefObject, SetStateAction } from "react";
 import { supabase } from "../supabase";
 import { haptic } from "../haptics";
 import { compactSearchText } from "../exerciseSearch";
-import { TRACK_LIMITS, TRACK_TIMING } from "../trackConstants";
+import { TRACK_LIMITS, TRACK_TIMING, TRACK_UI_COPY } from "../trackConstants";
 import type { Checklist, Filter, SettingsView, ThemeMode, TrackAnnouncement, WeightUnit } from "../trackTypes";
 import {
   nativeLocalNotificationsAvailable,
+  openNativeNotificationSettings,
   promiseWithTimeout,
   safeStorageSet,
   showSystemNotification,
@@ -22,13 +22,14 @@ export type TrackAppInteractionsOptions = {
   active: Checklist | undefined;
   activeId: string;
   defaultUnit: WeightUnit;
-  exerciseNames: string[];
+  exerciseNames: readonly string[];
   inputRef: RefObject<HTMLInputElement | null>;
   searchQuery: string;
   setAnnouncement: StateSetter<TrackAnnouncement | null>;
   setAnnouncementSendBusy: StateSetter<boolean>;
   setAnnouncementSendMessage: StateSetter<string>;
   setAnnouncementText: StateSetter<string>;
+  setDebugUpdateNotification: StateSetter<boolean>;
   setEditing: StateSetter<string | null>;
   setFilter: StateSetter<Filter>;
   setLists: StateSetter<Checklist[]>;
@@ -72,6 +73,7 @@ export function useTrackAppInteractions({
   setAnnouncementSendBusy,
   setAnnouncementSendMessage,
   setAnnouncementText,
+  setDebugUpdateNotification,
   setEditing,
   setFilter,
   setLists,
@@ -103,6 +105,8 @@ export function useTrackAppInteractions({
   announcementText,
   announcementSendBusy,
 }: TrackAppInteractionsOptions) {
+  const notificationCopy = TRACK_UI_COPY.notifications;
+
   function navigateBottomTab(id: "workout" | "timer" | "calendar" | "rank") {
     haptic(8);
     setShowTimer(id === "timer");
@@ -174,7 +178,7 @@ export function useTrackAppInteractions({
         setNotificationPrompt(false);
         if (!nativeLocalNotificationsAvailable()) {
           setNotificationPermission("unsupported");
-          setNotificationMessage("Notifications aren’t available in this Track II build.");
+          setNotificationMessage(notificationCopy.nativeUnsupported);
           return;
         }
         let permission = await promiseWithTimeout(LocalNotifications.checkPermissions(), 4000);
@@ -182,16 +186,12 @@ export function useTrackAppInteractions({
           setNotificationPermission("denied");
           safeStorageSet("track-notification-prompt", "denied");
           if (appSettingsAvailable) {
-            const result = await promiseWithTimeout(AppLauncher.openUrl({ url: "app-settings:" }), 8000);
+            const settingsOpened = await openNativeNotificationSettings();
             setNotificationMessage(
-              result.completed
-                ? "Notifications are blocked. Open Track II in Settings and turn on Allow Notifications."
-                : "Notifications are blocked. Open iPhone Settings, choose Track II, and turn on Allow Notifications.",
+              settingsOpened ? notificationCopy.blockedSettings : notificationCopy.blockedIPhoneSettings,
             );
           } else {
-            setNotificationMessage(
-              "Notifications are blocked. Open iPhone Settings, choose Track II, and enable them.",
-            );
+            setNotificationMessage(notificationCopy.blockedNative);
           }
           return;
         }
@@ -205,27 +205,23 @@ export function useTrackAppInteractions({
           normalizedPermission === "default" ? "dismissed" : normalizedPermission,
         );
         if (normalizedPermission === "granted") {
-          setNotificationMessage("Notifications are enabled on this device.");
-          void showSystemNotification("Announcements are now enabled on this device.", "permission-enabled");
+          setNotificationMessage(notificationCopy.enabled);
+          void showSystemNotification(notificationCopy.permissionEnabledAnnouncement, "permission-enabled");
         } else if (normalizedPermission === "denied") {
           if (appSettingsAvailable) {
-            const result = await promiseWithTimeout(AppLauncher.openUrl({ url: "app-settings:" }), 8000);
+            const settingsOpened = await openNativeNotificationSettings();
             setNotificationMessage(
-              result.completed
-                ? "Notifications are blocked. Open Track II in Settings and turn on Allow Notifications."
-                : "Notifications are blocked. Open iPhone Settings, choose Track II, and turn on Allow Notifications.",
+              settingsOpened ? notificationCopy.blockedSettings : notificationCopy.blockedIPhoneSettings,
             );
           } else {
-            setNotificationMessage(
-              "Notifications are blocked. Open iPhone Settings, choose Track II, and enable them.",
-            );
+            setNotificationMessage(notificationCopy.blockedNative);
           }
         }
         return;
       }
       if (!("Notification" in window)) {
         setNotificationPermission("unsupported");
-        setNotificationMessage("Notifications aren’t available in this browser.");
+        setNotificationMessage(notificationCopy.browserUnsupported);
         setNotificationPrompt(false);
         return;
       }
@@ -234,9 +230,7 @@ export function useTrackAppInteractions({
         window.matchMedia("(display-mode: standalone)").matches ||
         ("standalone" in navigator && navigator.standalone === true);
       if (isiOS && !standalone) {
-        setNotificationMessage(
-          "On iPhone, add Track II to your Home Screen first, then open it there and enable notifications.",
-        );
+        setNotificationMessage(notificationCopy.iosHomeScreen);
         setNotificationPrompt(false);
         return;
       }
@@ -246,17 +240,14 @@ export function useTrackAppInteractions({
       setNotificationPrompt(false);
       safeStorageSet("track-notification-prompt", permission === "default" ? "dismissed" : permission);
       if (permission === "granted") {
-        setNotificationMessage("Notifications are enabled on this device.");
-        void showSystemNotification("Announcements are now enabled on this device.", "permission-enabled");
-      } else if (permission === "denied")
-        setNotificationMessage("Notifications are blocked. You can enable them in your browser or device settings.");
+        setNotificationMessage(notificationCopy.enabled);
+        void showSystemNotification(notificationCopy.permissionEnabledAnnouncement, "permission-enabled");
+      } else if (permission === "denied") setNotificationMessage(notificationCopy.blockedBrowser);
     } catch {
       setNotificationPermission("default");
       setNotificationPrompt(false);
       setNotificationMessage(
-        Capacitor.isNativePlatform()
-          ? "Track II couldn’t open notification permissions. Check your device settings for Track II."
-          : "Track II couldn’t open notification permissions. Try again from Privacy & Notifications.",
+        Capacitor.isNativePlatform() ? notificationCopy.nativeError : notificationCopy.browserError,
       );
     } finally {
       setNotificationRequestBusy(false);
@@ -281,6 +272,12 @@ export function useTrackAppInteractions({
     } finally {
       setUpdatesViewBusy(false);
     }
+  }
+
+  function showFakeUpdateNotification() {
+    if (!isAdmin) return;
+    haptic(12);
+    setDebugUpdateNotification(true);
   }
 
   function toggleSidebar() {
@@ -350,6 +347,7 @@ export function useTrackAppInteractions({
     openSettings,
     requestNotifications,
     sendAnnouncement,
+    showFakeUpdateNotification,
     toggleSidebar,
   };
 }

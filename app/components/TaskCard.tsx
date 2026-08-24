@@ -8,12 +8,14 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import { createPortal } from "react-dom";
 import { useConnectedTaskCard } from "../contexts/WorkoutEditorContext";
 import { applyAnimatedStyles } from "../domMotion";
+import { weightProgressionDelta } from "../trackUtils";
 
 export type TaskCardSet = {
   id: string;
@@ -22,6 +24,7 @@ export type TaskCardSet = {
   reps: string;
   rir: string;
   lastWeight?: number;
+  lastWeightUnit?: "kg" | "lb";
   lastReps?: number;
   lastRir?: number;
 };
@@ -86,6 +89,7 @@ function sameTask(left: TaskCardTask, right: TaskCardTask) {
       leftSet.reps === rightSet.reps &&
       leftSet.rir === rightSet.rir &&
       leftSet.lastWeight === rightSet.lastWeight &&
+      leftSet.lastWeightUnit === rightSet.lastWeightUnit &&
       leftSet.lastReps === rightSet.lastReps &&
       leftSet.lastRir === rightSet.lastRir
     );
@@ -99,6 +103,20 @@ function summarizeValues(values: string[], suffix: string) {
   const maximum = Math.max(...numbers);
   const format = (value: number) => (Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2))));
   return minimum === maximum ? `${format(minimum)} ${suffix}` : `${format(minimum)}–${format(maximum)} ${suffix}`;
+}
+
+function focusNextSetInput(event: ReactKeyboardEvent<HTMLInputElement>, field: "reps" | "rir" | null) {
+  if (event.key !== "Enter") return;
+  event.preventDefault();
+  if (!field) {
+    event.currentTarget.blur();
+    return;
+  }
+  const nextInput = event.currentTarget
+    .closest<HTMLElement>(".set-row")
+    ?.querySelector<HTMLInputElement>(`input[data-set-field="${field}"]`);
+  if (nextInput) nextInput.focus();
+  else event.currentTarget.blur();
 }
 
 function TaskCardView({
@@ -136,7 +154,9 @@ function TaskCardView({
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const skipNextEditBlur = useRef(false);
+  const unitToggleTimer = useRef<number | null>(null);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [togglingUnitId, setTogglingUnitId] = useState<string | null>(null);
   const positionMenu = useCallback(() => {
     const trigger = menuButtonRef.current;
     if (!trigger || !globalThis.window) return;
@@ -190,6 +210,23 @@ function TaskCardView({
       document.removeEventListener("keydown", handleKey);
     };
   }, [mobileExerciseMenu, onToggleMenu]);
+
+  useEffect(
+    () => () => {
+      if (unitToggleTimer.current !== null) window.clearTimeout(unitToggleTimer.current);
+    },
+    [],
+  );
+
+  const toggleSetUnit = (setId: string) => {
+    onToggleSetUnit(setId);
+    setTogglingUnitId(setId);
+    if (unitToggleTimer.current !== null) window.clearTimeout(unitToggleTimer.current);
+    unitToggleTimer.current = window.setTimeout(() => {
+      setTogglingUnitId(null);
+      unitToggleTimer.current = null;
+    }, 280);
+  };
 
   return (
     <article
@@ -253,13 +290,13 @@ function TaskCardView({
                 <i>
                   {summarizeValues(
                     (task.sets ?? []).map((set) => set.weight),
-                    task.sets?.[0]?.unit ?? "kg",
+                    (task.sets?.[0]?.unit ?? "kg").toUpperCase(),
                   )}
                 </i>
                 <i>
                   {summarizeValues(
                     (task.sets ?? []).map((set) => set.reps),
-                    "reps",
+                    "REPS",
                   )}
                 </i>
                 <i>
@@ -313,87 +350,91 @@ function TaskCardView({
           </div>
           <div className="sets-table">
             <div className="set-row set-heading">
-              <span>Set</span>
-              <span>Weight</span>
-              <span>Reps</span>
+              <span>SET</span>
+              <span>WEIGHT</span>
+              <span>REPS</span>
               <span>RIR</span>
               <span />
             </div>
-            {(task.sets ?? []).map((set, index) => (
-              <div className="set-row" key={set.id}>
-                <span className="set-number">{index + 1}</span>
-                <span className="set-input weight-set-input" data-suffix={set.unit}>
-                  <input
-                    value={set.weight}
-                    onChange={(event) => onUpdateSet(set.id, "weight", event.target.value)}
-                    onBlur={() => onFinishSetWeightEdit(set)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                    }}
-                    onFocus={(event) => onBeginSetWeightEdit(set, event.currentTarget)}
-                    inputMode="decimal"
-                    aria-label={`${task.text} set ${index + 1} weight`}
-                  />
-                  <button type="button" onClick={() => onToggleSetUnit(set.id)}>
-                    {set.unit}
+            {(task.sets ?? []).map((set, index) => {
+              const progressionDelta = weightProgressionDelta(set);
+              return (
+                <div className="set-row" key={set.id}>
+                  <span className="set-number">{index + 1}</span>
+                  <span className="set-input weight-set-input" data-suffix={set.unit}>
+                    <input
+                      value={set.weight}
+                      onChange={(event) => onUpdateSet(set.id, "weight", event.target.value)}
+                      onBlur={() => onFinishSetWeightEdit(set)}
+                      onKeyDown={(event) => focusNextSetInput(event, "reps")}
+                      onFocus={(event) => onBeginSetWeightEdit(set, event.currentTarget)}
+                      inputMode="decimal"
+                      enterKeyHint="next"
+                      data-set-field="weight"
+                      aria-label={`${task.text} set ${index + 1} weight`}
+                    />
+                    <button
+                      type="button"
+                      className={togglingUnitId === set.id ? "weight-unit-toggle is-toggling" : "weight-unit-toggle"}
+                      onClick={() => toggleSetUnit(set.id)}
+                      aria-label={`Change weight unit for ${task.text} set ${index + 1}`}
+                    >
+                      {set.unit.toUpperCase()}
+                    </button>
+                    {progressionDelta !== null && (
+                      <em className={progressionDelta > 0 ? "rep-delta set-delta up" : "rep-delta set-delta down"}>
+                        {progressionDelta > 0 ? "+" : ""}
+                        {progressionDelta}
+                      </em>
+                    )}
+                  </span>
+                  <span className="set-input">
+                    <input
+                      value={set.reps}
+                      onChange={(event) => onUpdateSet(set.id, "reps", event.target.value)}
+                      onBlur={() => !set.reps && onUpdateSet(set.id, "reps", "1")}
+                      onKeyDown={(event) => focusNextSetInput(event, "rir")}
+                      onFocus={(event) => event.currentTarget.select()}
+                      inputMode="numeric"
+                      enterKeyHint="next"
+                      data-set-field="reps"
+                      aria-label={`${task.text} set ${index + 1} reps`}
+                    />
+                    {set.lastReps !== undefined && Number(set.reps) !== set.lastReps && (
+                      <em
+                        className={
+                          Number(set.reps) > set.lastReps ? "rep-delta set-delta up" : "rep-delta set-delta down"
+                        }
+                      >
+                        {Number(set.reps) > set.lastReps ? "+" : ""}
+                        {Number(set.reps) - set.lastReps}
+                      </em>
+                    )}
+                  </span>
+                  <span className="set-input">
+                    <input
+                      value={set.rir}
+                      onChange={(event) => onUpdateSet(set.id, "rir", event.target.value)}
+                      onBlur={() => set.rir === "" && onUpdateSet(set.id, "rir", "0")}
+                      onKeyDown={(event) => focusNextSetInput(event, null)}
+                      onFocus={(event) => event.currentTarget.select()}
+                      inputMode="numeric"
+                      enterKeyHint="done"
+                      data-set-field="rir"
+                      aria-label={`${task.text} set ${index + 1} RIR`}
+                    />
+                  </span>
+                  <button
+                    className="remove-set"
+                    onClick={() => onRemoveSet(set.id)}
+                    disabled={(task.sets?.length ?? 0) <= 1}
+                    aria-label={`Remove set ${index + 1}`}
+                  >
+                    ×
                   </button>
-                  {set.lastWeight !== undefined && Number(set.weight) !== set.lastWeight && (
-                    <em
-                      className={
-                        Number(set.weight) > set.lastWeight ? "rep-delta set-delta up" : "rep-delta set-delta down"
-                      }
-                    >
-                      {Number(set.weight) > set.lastWeight ? "+" : ""}
-                      {Number((Number(set.weight) - set.lastWeight).toFixed(2))}
-                    </em>
-                  )}
-                </span>
-                <span className="set-input">
-                  <input
-                    value={set.reps}
-                    onChange={(event) => onUpdateSet(set.id, "reps", event.target.value)}
-                    onBlur={() => !set.reps && onUpdateSet(set.id, "reps", "1")}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                    }}
-                    onFocus={(event) => event.currentTarget.select()}
-                    inputMode="numeric"
-                    aria-label={`${task.text} set ${index + 1} reps`}
-                  />
-                  {set.lastReps !== undefined && Number(set.reps) !== set.lastReps && (
-                    <em
-                      className={
-                        Number(set.reps) > set.lastReps ? "rep-delta set-delta up" : "rep-delta set-delta down"
-                      }
-                    >
-                      {Number(set.reps) > set.lastReps ? "+" : ""}
-                      {Number(set.reps) - set.lastReps}
-                    </em>
-                  )}
-                </span>
-                <span className="set-input">
-                  <input
-                    value={set.rir}
-                    onChange={(event) => onUpdateSet(set.id, "rir", event.target.value)}
-                    onBlur={() => set.rir === "" && onUpdateSet(set.id, "rir", "0")}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") event.currentTarget.blur();
-                    }}
-                    onFocus={(event) => event.currentTarget.select()}
-                    inputMode="numeric"
-                    aria-label={`${task.text} set ${index + 1} RIR`}
-                  />
-                </span>
-                <button
-                  className="remove-set"
-                  onClick={() => onRemoveSet(set.id)}
-                  disabled={(task.sets?.length ?? 0) <= 1}
-                  aria-label={`Remove set ${index + 1}`}
-                >
-                  ×
-                </button>
-              </div>
-            ))}
+                </div>
+              );
+            })}
           </div>
           <button className="add-set" onClick={onAddSet}>
             ＋ Add set

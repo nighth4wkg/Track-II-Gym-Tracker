@@ -1,8 +1,9 @@
 import { calendarDateKey } from "../calendarTypes";
 import { supabase } from "../supabase";
+import type { WeightUnit } from "../trackTypes";
+import { MILLISECONDS_PER_DAY } from "../trackConstants";
+import { convertWeight } from "../trackUtils";
 import { fetchAllPages } from "./pagination";
-
-type WeightUnit = "kg" | "lb";
 
 export type WorkoutSetDetail = {
   setNumber: number;
@@ -29,17 +30,11 @@ export type WorkoutDayDetail = {
   notes: string;
 };
 
-function convertWeight(weight: number, from: WeightUnit, to: WeightUnit) {
-  if (from === to || !Number.isFinite(weight)) return weight;
-  const converted = from === "kg" ? weight * 2.2046226218 : weight / 2.2046226218;
-  return Math.round(converted * 100) / 100;
-}
-
 export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Promise<WorkoutDayDetail | null> {
   const selectedDay = new Date(`${dateKey}T00:00:00`);
   if (Number.isNaN(selectedDay.getTime())) return null;
-  const queryStart = new Date(selectedDay.getTime() - 86_400_000).toISOString();
-  const queryEnd = new Date(selectedDay.getTime() + 2 * 86_400_000).toISOString();
+  const queryStart = new Date(selectedDay.getTime() - MILLISECONDS_PER_DAY).toISOString();
+  const queryEnd = new Date(selectedDay.getTime() + 2 * MILLISECONDS_PER_DAY).toISOString();
   const sessionsWithNotes = await fetchAllPages<{
     id: string;
     split_name: string | null;

@@ -9,6 +9,7 @@ import {
 } from "react";
 import type { TimerMode } from "../components/TimerScreen";
 import type { TimerRuntimeState } from "../trackTypes";
+import { TRACK_LIMITS } from "../trackConstants";
 
 type UseTimerPersistenceOptions = {
   timerMode: TimerMode;
@@ -117,7 +118,7 @@ export function useTimerPersistence({
       startedAtMs: timerMode === "stopwatch" && timerRunning ? timerStartedAtRef.current || null : null,
       restRemainingMs,
       restEndsAtMs: timerMode === "rest" && timerRunning ? restEndsAtRef.current || null : null,
-      laps: timerLaps.slice(-100),
+      laps: timerLaps.slice(-TRACK_LIMITS.maxTimerLaps),
       updatedAt: now,
     });
   }, [restEndsAtRef, setTimerRuntime, timerStartedAtRef, timerPersistenceVersion]);

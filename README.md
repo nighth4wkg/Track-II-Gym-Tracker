@@ -1,77 +1,246 @@
-# Track II — Gym Tracker
+# Track II
 
-Track II is a privacy-focused workout tracker for planning sessions, recording sets, reviewing history, and understanding strength progress. The same React source powers the web app and Capacitor mobile builds.
+Track II is a free, responsive lifting-session tracker for planning splits and
+recording sets, weight, reps, and RIR. The web app is the Beta source of truth:
+new UI, gesture, and security changes are tested here before a later APK or IPA
+release.
 
-## Features
+The app uses React, Vite, Cloudflare Pages, and Supabase. The browser bundle is
+safe to share when it is configured with a Supabase publishable key. Never put a
+Supabase service-role key, database password, private admin identifier, or
+personal deployment URL in the source repository.
 
-- Workout splits with exercise search, sets, weight, reps, RIR, and editing.
-- Automatic saving plus private realtime synchronization through Supabase.
-- Calendar history, workout details, notes, and backup exports.
-- Strength ranks by muscle group with an interactive anatomy view.
-- Stopwatch, configurable rest timer, notifications, and haptics.
-- Metric and imperial units, responsive layouts, and light/OLED themes.
-- Optional AI-assisted workout import and private admin tools.
+## What is in this Beta
 
-## Start locally
+- Workout splits with exercise search, editing, reordering, and multiple sets.
+- Calendar history, workout details, notes, and deletion of saved sessions.
+- Stopwatch and configurable rest timer modes with mouse and touch gestures.
+- Light and OLED Dark themes, responsive layouts, and mobile-safe controls.
+- Username/email authentication, password recovery, Supabase sync, CSV/JSON
+  backup export, and admin-only diagnostics.
+- A unified Track II bottom tab bar on desktop and mobile, with a small BETA
+  label while this web version is being validated.
+- Settings → Updates checks the deployed web build. Release notes and native
+  downloads will be published later with the APK/IPA stage; there is no in-app
+  Changelog tab.
 
-Requirements: Node.js 22.13 or newer and a Supabase project.
+## Project layout
+
+| Path | Purpose |
+| --- | --- |
+| `app/` | Shared Track II UI, state, styles, and Supabase client |
+| `cloudflare/` | Static Cloudflare Pages entry |
+| `public/` | Icons, manifest, service worker, and public assets |
+| `supabase/` | Database migrations and Edge Functions |
+| `worker/` | Optional vinext/Cloudflare Worker entry |
+| `tests/` | Source and build smoke checks |
+| `tools/oxlint/anti-slop/` | Review-focused anti-slop lint rules |
+
+Generated output, local staging folders, ZIP files, and environment files are
+ignored by Git. They stay on the local computer for deployment and are not part
+of the shareable source.
+
+## 1. Install the tools
+
+This setup is free within the usual free-tier limits of the services involved.
+Install:
+
+1. Node.js 22 or newer from [nodejs.org](https://nodejs.org/).
+2. A free Supabase account at [supabase.com](https://supabase.com/).
+3. A free Cloudflare account at [dash.cloudflare.com](https://dash.cloudflare.com/).
+
+Download or copy this source folder, open a terminal in that folder, and run:
 
 ```powershell
-npm.cmd install
-Copy-Item .env.example .env.local
-npm.cmd run dev
+npm.cmd ci
 ```
 
-Fill the placeholders in `.env.local` with your own Supabase URL and publishable key. Never place a service-role key, database password, or signing certificate in browser environment variables or Git.
+On Windows, use `npm.cmd` and `npx.cmd` if PowerShell says that running
+`npm.ps1` or `npx.ps1` is disabled. This avoids changing the computer's global
+execution-policy setting.
 
-## Configure Supabase
+## 2. Create the Supabase project
 
-Install or use the Supabase CLI, then link your own project and apply the included migrations:
+1. In Supabase, create a new project and choose a strong database password.
+2. Open Project Settings → Data API and copy the Project URL and the
+   **publishable** key. Do not copy a secret/service-role key.
+3. In the project folder, copy `.env.example` to `.env.local` and replace the
+   two Supabase placeholders:
+
+```dotenv
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_your_key
+```
+
+4. Add the URL where you will host the Beta and, when available, the release
+   links for your own repository:
+
+```dotenv
+NEXT_PUBLIC_TRACK_WEB_ORIGIN=https://your-pages-project.pages.dev
+NEXT_PUBLIC_TRACK_RELEASES_URL=https://github.com/your-account/your-repo/releases/latest
+NEXT_PUBLIC_TRACK_ISSUES_URL=https://github.com/your-account/your-repo/issues
+```
+
+The release and issue URLs may be left blank during the web-only Beta stage.
+The source intentionally contains only these generic examples, never an
+owner's real URL.
+
+## 3. Apply the database and server functions
+
+Install the Supabase CLI through the project with `npx`, then log in:
 
 ```powershell
 npx.cmd supabase login
-npx.cmd supabase link --project-ref YOUR_PROJECT_REF
-npx.cmd supabase db push --dry-run
+npx.cmd supabase link --project-ref your-project-ref
 npx.cmd supabase db push
 ```
 
-Deploy only the Edge Functions your deployment uses. Set server-only values with `supabase secrets set`; do not add them to `.env.local`.
+The CLI asks for confirmation before applying the SQL files in
+`supabase/migrations/`. If the project reports that a migration version already
+exists, stop and inspect the migration history in Supabase before retrying;
+never delete production migration history to force a push.
 
-## Validate and deploy the web app
+Deploy the Edge Functions used by the app. `username-auth` intentionally has
+gateway JWT verification disabled because it creates the session; the other
+functions verify the caller at the Supabase gateway and again in their code:
 
 ```powershell
-npm.cmd run validate:release
+npx.cmd supabase functions deploy username-auth --no-verify-jwt
+npx.cmd supabase functions deploy extract-workout
+npx.cmd supabase functions deploy admin-member-data
+npx.cmd supabase functions deploy admin-announcement
+```
+
+The admin directory also needs the `admin_users` migration included in this
+source. `npx.cmd supabase db push` applies it with the other migrations. The
+first administrator is the bootstrap account from `TRACK_ADMIN_USERNAME` and
+`TRACK_ADMIN_USER_ID`. Once that account promotes another member, the server
+stores the administrator roster in `public.admin_users` and the browser never
+gets direct access to that table.
+
+The `20260821_private_data_hardening.sql` migration is also required for a
+secure deployment. It forces owner-scoped row-level security and removes
+anonymous table access for profiles, splits, exercises, sets, notes, and workout
+history. Supabase Auth owns passwords; Track never stores them in its tables.
+
+The `20260826_track_announcements.sql` migration stores administrator
+announcements server-side, and `20260827_private_sync_channels.sql` limits
+Realtime broadcasts to the signed-in user's own private channel. Do not skip
+these migrations; the app no longer uses a public cross-user broadcast channel.
+
+In the admin member directory, open a member's `…` menu to promote or demote
+them. The last remaining administrator cannot be demoted, so an installation
+always keeps a way back into the admin panel. Role changes are server-side and
+do not require rebuilding the web bundle.
+
+Set the server-only configuration. Replace the example values with your own
+values; do not put these in `.env.local` or in the browser source:
+
+```powershell
+npx.cmd supabase secrets set TRACK_ALLOWED_ORIGINS=https://your-pages-project.pages.dev TRACK_ADMIN_USERNAME=your-admin-username TRACK_ADMIN_USER_ID=your-auth-user-uuid TRACK_GEMINI_MODEL=gemini-2.5-flash
+```
+
+`TRACK_ALLOWED_ORIGINS` is a comma-separated list of exact site origins. The
+admin username and UUID are required for the first administrator when you use
+the admin panel. Use the username stored in that account's profile and find
+its UUID in Supabase Authentication → Users. The functions reject requests
+from origins that are not in this allowlist.
+`TRACK_GEMINI_MODEL` is optional; omit it to use the app's tested default model.
+
+## 4. Run the web Beta locally
+
+Start the hosted-runtime development server:
+
+```powershell
+npm run dev
+```
+
+Open the local URL printed in the terminal, normally
+`http://localhost:3000`. Create a test account and verify sign-in, saving,
+calendar history, timer gestures, the bottom tabs, Settings, and the admin
+panel if you enabled it.
+
+## 5. Build and host it on Cloudflare Pages
+
+Build the static web bundle:
+
+```powershell
+npm run build:pages
+```
+
+The upload folder is:
+
+```text
+work/cloudflare-pages
+```
+
+To host it without a paid plan:
+
+1. Open Cloudflare Dashboard → Workers & Pages → Create application → Pages.
+2. Choose **Direct Upload**.
+3. Upload the contents of `work/cloudflare-pages` so `index.html` is at the
+   top level.
+4. Give the project its own Pages name and open the resulting URL.
+5. Put that final URL in `NEXT_PUBLIC_TRACK_WEB_ORIGIN`, rebuild, and make sure
+   it is also present in the `TRACK_ALLOWED_ORIGINS` Supabase secret.
+
+If you change the public environment values, rebuild the Pages bundle. The
+browser build cannot read a changed `.env.local` after it has already been
+uploaded.
+
+Create a named release archive and a rollback archive after the build:
+
+```powershell
 npm.cmd run package:pages:release
 ```
 
-The release command creates a Cloudflare Pages upload ZIP plus a rollback archive of the previous verified web build in `release-artifacts/`. Upload the release ZIP in the Cloudflare Pages dashboard, or deploy `work/cloudflare-pages` with Wrangler.
+The files are written to `release-artifacts` with names like
+`Track-II-web-v1.0-build-20260820-184500.zip` and
+`Track-II-web-v1.0-rollback-20260820-184500.zip`. The command never
+overwrites an existing archive. The rollback archive points to the previous
+verified web build; on the first run it preserves the current verified build
+as the initial rollback point. Upload the release ZIP for a new deployment or
+upload the rollback ZIP to restore the previous version.
 
-## Native builds
+## 6. Check the source before sharing it
+
+Run the same checks used for the Beta source:
 
 ```powershell
-npm.cmd run build:pages
-npx.cmd cap add android
-npx.cmd cap add ios
-npx.cmd cap sync
-npm.cmd run generate:native-icons
+npm run typecheck
+npm run lint
+npm test
 ```
 
-Android builds require Android Studio/JDK. iOS builds require macOS and Xcode. The included Native Release workflow produces an installable, debug-signed Android test APK and an unsigned iOS IPA; an App Store/TestFlight IPA still requires Apple signing. The shared `assets/icon-only.png` source generates the native icon resources.
+Before sharing, search the source and `.env` files for real project URLs,
+personal email addresses, admin usernames, UUIDs, service keys, and passwords.
+Keep `.env.local` private. The public source should contain only placeholders
+such as `your-project`, `your-account`, and `your-repo`.
 
-## SideStore and AltStore
+The web build intentionally shows a small `BETA` label while this stage is
+being validated. The shared app hides that label when it runs inside a native
+Capacitor APK or IPA, so native packages can use the same source without the
+web-only Beta badge.
 
-Add this source URL in SideStore or AltStore:
+## Later stages
 
-```text
-https://github.com/nighth4wkg/Track-II-Gym-Tracker/releases/latest/download/altstore-source.json
+GitHub publication is intentionally separate from this Beta setup. When the web
+version is stable, the next stage will sanitize and publish the source with a
+non-coder setup guide. Only after that will the shared web bundle be packaged as
+an APK and unsigned/device IPA, with versioned GitHub Release notes and download
+files.
+
+## Useful commands
+
+```powershell
+npm.cmd run dev          # local hosted-runtime development
+npm.cmd run build        # hosted vinext/Cloudflare worker output
+npm.cmd run build:pages  # static Cloudflare Pages upload bundle
+npm.cmd run package:pages:release # named Pages ZIP plus rollback archive
+npm.cmd run typecheck    # TypeScript validation
+npm.cmd run lint         # ESLint plus anti-slop validation
+npm.cmd test             # build plus source smoke tests
 ```
 
-SideStore or AltStore downloads the unsigned IPA from the latest GitHub release and signs it locally with your Apple account. Each future native release generates a matching source file automatically; update detection depends on the IPA version, not its release date.
-
-## Privacy and security
-
-This public source contains placeholders only. Local environment files, Supabase link metadata, build output, QA artifacts, platform-hosting metadata, and signing materials are excluded. Review Supabase Row Level Security policies before allowing real users.
-
-## License
-
-No license is granted yet. Add the license you want before inviting third-party contributions or redistribution.
+Track II is free and non-commercial. Use your own Supabase and Cloudflare
+projects when hosting your own copy.

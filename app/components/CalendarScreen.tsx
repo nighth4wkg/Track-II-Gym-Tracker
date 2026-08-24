@@ -18,6 +18,11 @@ import { fetchWorkoutDayDetail, type WorkoutDayDetail } from "../data/calendarWo
 import { CalendarDetailModal } from "./CalendarDetailModal";
 import { TRACK_TIMING } from "../trackConstants";
 
+function formatSummaryDate(dateKey: string | null) {
+  if (!dateKey) return "—";
+  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+}
+
 export type CalendarScreenProps = {
   month: Date;
   onMonthChange: (month: Date) => void;
@@ -48,6 +53,9 @@ export function CalendarScreen({
   const cells = Array.from({ length: firstDayOffset + daysInMonth }, (_, index) =>
     index < firstDayOffset ? null : index - firstDayOffset + 1,
   );
+  const monthPrefix = `${year}-${String(monthIndex + 1).padStart(2, "0")}-`;
+  const monthWorkoutCount = [...workoutDates].filter((dateKey) => dateKey.startsWith(monthPrefix)).length;
+  const latestWorkoutDate = [...workoutDates].sort().slice(-1)[0] ?? null;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutDayDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -358,6 +366,23 @@ export function CalendarScreen({
           Today
         </button>
       </div>
+      <section className="calendar-insight-strip" aria-label="Workout history summary">
+        <div className="calendar-insight-card">
+          <span>This month</span>
+          <strong>{monthWorkoutCount}</strong>
+          <small>{monthWorkoutCount === 1 ? "workout" : "workouts"}</small>
+        </div>
+        <div className="calendar-insight-card">
+          <span>Total logged</span>
+          <strong>{workoutDates.size}</strong>
+          <small>{workoutDates.size === 1 ? "session" : "sessions"}</small>
+        </div>
+        <div className="calendar-insight-card">
+          <span>Latest session</span>
+          <strong>{formatSummaryDate(latestWorkoutDate)}</strong>
+          <small>{latestWorkoutDate ? "completed" : "No sessions yet"}</small>
+        </div>
+      </section>
       <div className="calendar-card ui-panel" onTouchStart={startCalendarSwipe} onTouchEnd={finishCalendarSwipe}>
         <div key={monthKey} className={`calendar-month-stage ${monthDirection}`}>
           <div className="calendar-heading">
@@ -423,6 +448,12 @@ export function CalendarScreen({
           </div>
         </div>
       </div>
+      {workoutDates.size === 0 && (
+        <div className="calendar-empty-note ui-empty" role="status">
+          <strong>Your workout history will appear here.</strong>
+          <span>Finish a session to start building your calendar.</span>
+        </div>
+      )}
       {selectedDate && (
         <CalendarDetailModal
           selectedDate={selectedDate}

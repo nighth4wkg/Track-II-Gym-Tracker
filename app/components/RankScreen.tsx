@@ -205,6 +205,11 @@ export function RankScreen({
     () => buildRankSummaries(rankTasks, { bodyWeightKg, recentDays: TRACK_LIMITS.rankHistoryDays }),
     [rankTasks, bodyWeightKg],
   );
+  const trackedSummaries = summaries.filter((summary) => summary.score > 0 || summary.trackedExercises > 0);
+  const trackedExerciseCount = trackedSummaries.reduce((total, summary) => total + summary.trackedExercises, 0);
+  const strongestSummary = trackedSummaries.length
+    ? trackedSummaries.reduce((strongest, summary) => (summary.score > strongest.score ? summary : strongest))
+    : null;
   const selectedSummary = summaries.find((summary) => summary.group === selected) ?? null;
   const selectedTone = selectedSummary ? rankToneClass(selectedSummary.label) : "";
   const selectBodyGroup = (group: MuscleGroup, side: "front" | "back") => {
@@ -233,6 +238,25 @@ export function RankScreen({
           <p>Your strength by muscle group.</p>
         </div>
       </div>
+      <section className="rank-insight-strip" aria-label="Rank overview">
+        <div className="rank-insight-card">
+          <span>Tracked groups</span>
+          <strong>
+            {trackedSummaries.length}/{summaries.length}
+          </strong>
+          <small>{trackedSummaries.length ? "with rank data" : "No data yet"}</small>
+        </div>
+        <div className="rank-insight-card">
+          <span>Exercises analyzed</span>
+          <strong>{trackedExerciseCount || "—"}</strong>
+          <small>{trackedExerciseCount === 1 ? "exercise" : "across your log"}</small>
+        </div>
+        <div className="rank-insight-card">
+          <span>Strongest area</span>
+          <strong>{strongestSummary ? MUSCLE_LABELS[strongestSummary.group] : "—"}</strong>
+          <small>{strongestSummary ? strongestSummary.label : "Complete a session"}</small>
+        </div>
+      </section>
       {!selectedSummary ? (
         <section className="rank-hero-card is-overview" aria-label="Front and back strength maps">
           <div className="rank-map-pair">
@@ -253,6 +277,12 @@ export function RankScreen({
               />
             </div>
           </div>
+          {!trackedSummaries.length && (
+            <div className="rank-empty-note" role="status">
+              <strong>Complete a workout to unlock your rank map.</strong>
+              <span>Your logged sets will shape each muscle group over time.</span>
+            </div>
+          )}
         </section>
       ) : (
         <section className="rank-hero-card is-focused" key={selectedSummary.group}>

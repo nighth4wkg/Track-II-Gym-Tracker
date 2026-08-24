@@ -1,10 +1,9 @@
-﻿# Track public repository ignore rules.
+# Track public repository ignore rules.
 # Keep source, configuration, migrations, tests, and CI reviewable; keep local
 # credentials, generated bundles, and historical upload archives out of Git.
 
 # Dependencies and package-manager caches
 /node_modules/
-/.npm-cache/
 /.pnpm-store/
 /.pnp/
 .pnp.*
@@ -18,6 +17,7 @@
 .env*
 !.env.example
 /.openai/
+/QA-TEST/
 
 # Generated application/build output
 /.next/
@@ -32,9 +32,6 @@
 /release-artifacts/
 /excluded_from_project/
 /_zip-inspect/
-/android/
-/ios/
-/Payload/
 /coverage/
 /test-results/
 /playwright-report/

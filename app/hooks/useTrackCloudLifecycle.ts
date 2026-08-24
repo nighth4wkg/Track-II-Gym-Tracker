@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { supabase } from "../supabase";
-import { CALENDAR_SYNC_POLL_MS, TRACK_LIMITS, TRACK_TIMING } from "../trackConstants";
+import { CALENDAR_SYNC_POLL_MS, MILLISECONDS_PER_DAY, TRACK_LIMITS, TRACK_TIMING } from "../trackConstants";
 import { showSystemNotification } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
@@ -60,7 +60,7 @@ export function useTrackCloudLifecycle({
     let cancelled = false;
     latestAnnouncementIdRef.current = null;
     const loadLatestAnnouncement = async () => {
-      const cutoff = new Date(Date.now() - TRACK_LIMITS.announcementLookbackDays * 86_400_000).toISOString();
+      const cutoff = new Date(Date.now() - TRACK_LIMITS.announcementLookbackDays * MILLISECONDS_PER_DAY).toISOString();
       const { data, error } = await supabase
         .from("track_announcements")
         .select("id,message")

@@ -28,6 +28,8 @@ export function applyAnimatedStyles(element: HTMLElement | null, values: MotionV
   if (!element || !supportsWebAnimations(element)) return;
   const effects = effectMap(element);
   const computed = getComputedStyle(element);
+  const reducedMotion = globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+  const effectiveDuration = reducedMotion ? 0 : duration;
 
   for (const [property, rawValue] of Object.entries(values)) {
     effects.get(property)?.cancel();
@@ -38,8 +40,8 @@ export function applyAnimatedStyles(element: HTMLElement | null, values: MotionV
     effects.set(
       property,
       element.animate([from, to], {
-        duration,
-        easing: "cubic-bezier(.16,1,.3,1)",
+        duration: effectiveDuration,
+        easing: "cubic-bezier(.22,1,.36,1)",
         fill: "forwards",
       }),
     );

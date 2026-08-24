@@ -14,6 +14,7 @@ type CreateSettingsContextOptions = {
   active: Checklist | null;
   tasks: Checklist["tasks"];
   isAdmin: boolean;
+  nativeApp: boolean;
   releaseAvailable: boolean;
   updateVersion: string;
   identity: ReturnType<typeof useIdentityState>;
@@ -30,6 +31,7 @@ export function createSettingsContextValue({
   active,
   tasks,
   isAdmin,
+  nativeApp,
   releaseAvailable,
   updateVersion,
   identity,
@@ -56,6 +58,7 @@ export function createSettingsContextValue({
     exportBusy: local.exportBusy,
     exportMessage: local.exportMessage,
     isAdmin,
+    nativeApp,
     notificationMessage: settings.notificationMessage,
     notificationPermission: settings.notificationPermission,
     notificationRequestBusy: settings.notificationRequestBusy,
@@ -83,16 +86,13 @@ export function createSettingsContextValue({
     onCheckForUpdates: interactions.checkForUpdatesFromSettings,
     onCompletionEnabledChange: settings.setCompletionEnabled,
     onExportWorkoutData: exportActions.exportWorkoutData,
+    onFakeUpdateNotification: interactions.showFakeUpdateNotification,
     onForceUpdateCheck: () => {
       haptic(10);
       void local.siteUpdateCheckRef.current?.(true);
     },
     onImportWorkoutImage: importActions.importWorkoutImage,
     onNotificationRequest: interactions.requestNotifications,
-    onOpenAdminUsers: () => {
-      haptic(8);
-      settings.setAdminUsersOpen(true);
-    },
     onPersonalHeightChange: identity.setPersonalHeightInput,
     onPersonalWeightChange: identity.setPersonalWeightInput,
     onRememberExercisesChange: settings.setRememberExercisesAcrossSplits,

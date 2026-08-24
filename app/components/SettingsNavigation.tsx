@@ -34,16 +34,8 @@ const desktopSettingsItems: DesktopSettingsItem[] = [
   { view: "updates", icon: "updates", label: "Updates" },
   { view: "about", icon: "about", label: "About Track II" },
 ];
-
-const mobileSettingsItems: Array<{ view: SettingsView; label: string }> = [
-  { view: "appearance", label: "Appearance" },
-  { view: "personal", label: "Personal Info" },
-  { view: "workout", label: "Workout" },
-  { view: "account", label: "Account" },
-  { view: "ai", label: "AI Import" },
-  { view: "updates", label: "Updates" },
-  { view: "about", label: "About" },
-];
+const adminSettingsItem: DesktopSettingsItem = { view: "admin", icon: "admin", label: "Admin Panel" };
+const adminDesktopSettingsItems: DesktopSettingsItem[] = [...desktopSettingsItems, adminSettingsItem];
 
 function SettingsIcon({ name }: { name: SettingsIconName }) {
   const content = {
@@ -128,12 +120,8 @@ export function SettingsNavigation({
   onSettingsViewChange,
   onShowMoreSettings,
 }: SettingsNavigationProps) {
-  const desktopItems = isAdmin
-    ? [...desktopSettingsItems, { view: "admin" as const, icon: "admin" as const, label: "Admin Panel" }]
-    : desktopSettingsItems;
-  const mobileItems = isAdmin
-    ? [...mobileSettingsItems, { view: "admin" as const, label: "Admin" }]
-    : mobileSettingsItems;
+  const desktopItems = isAdmin ? adminDesktopSettingsItems : desktopSettingsItems;
+  const mobileItems = desktopItems;
 
   return (
     <>
@@ -171,7 +159,7 @@ export function SettingsNavigation({
               className={settingsView === item.view ? "active" : ""}
               onClick={() => onSettingsViewChange(item.view)}
             >
-              {item.label}
+              <span>{item.label}</span>
             </button>
           ))}
         </div>

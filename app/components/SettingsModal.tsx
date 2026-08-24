@@ -1,7 +1,7 @@
 "use client";
 
 import { lazy, Suspense, useEffect, useRef, type RefObject } from "react";
-import { AdminToolsSkeleton, SettingsScreenSkeleton } from "./LoadingSkeletons";
+import { SettingsScreenSkeleton } from "./LoadingSkeletons";
 import { SettingsNavigation } from "./SettingsNavigation";
 import { haptic } from "../haptics";
 import { SETTINGS_LABELS } from "../trackConstants";
@@ -12,8 +12,6 @@ import { useModalFocus } from "../hooks/useModalFocus";
 const SettingsViewContent = lazy(async () => ({
   default: (await import("./SettingsViewContent")).ConnectedSettingsViewContent,
 }));
-const AdminMemberViewer = lazy(async () => ({ default: (await import("./AdminMemberViewer")).AdminMemberViewer }));
-
 type SettingsModalProps = {
   exerciseUnitsExpanded: boolean;
   isAdmin: boolean;
@@ -126,11 +124,6 @@ export function SettingsModal({
             <Suspense fallback={<SettingsScreenSkeleton />}>
               <SettingsViewContent />
             </Suspense>
-            {settingsView === "admin" && isAdmin && (
-              <Suspense fallback={<AdminToolsSkeleton />}>
-                <AdminMemberViewer />
-              </Suspense>
-            )}
           </div>
         </div>
       </section>

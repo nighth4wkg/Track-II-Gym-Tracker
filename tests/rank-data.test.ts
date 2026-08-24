@@ -393,6 +393,68 @@ test("renamed historical exercises inherit the current split name through unique
   ]);
 });
 
+test("generic renamed history follows the current equipment-qualified exercise without duplicating Rank rows", () => {
+  const now = new Date().toISOString();
+  const current: RankTask[] = [
+    {
+      exerciseId: "current-fly",
+      text: "Machine Chest Fly",
+      weight: 36,
+      reps: 8,
+      rir: 0,
+      source: "current",
+    },
+    {
+      exerciseId: "current-press",
+      text: "Machine Sagittal Shoulder Press (Upper Chest)",
+      weight: 77,
+      reps: 5,
+      rir: 0,
+      source: "current",
+    },
+  ];
+  const history: RankTask[] = [
+    {
+      exerciseId: "legacy-fly",
+      text: "Chest Fly",
+      weight: 36,
+      reps: 8,
+      rir: 1,
+      source: "history",
+      performedAt: now,
+    },
+    {
+      exerciseId: "legacy-press",
+      text: "Sagittal Shoulder Press (Upper Chest)",
+      weight: 77,
+      reps: 8,
+      rir: 0,
+      source: "history",
+      performedAt: now,
+    },
+  ];
+
+  const summaries = buildRankSummaries([...current, ...history], { bodyWeightKg: 75 });
+  const displayed = summaries.flatMap((summary) => summary.matchedExercises.map((row) => row.exercise));
+  assert.deepEqual(new Set(displayed), new Set(current.map((task) => task.text)));
+  assert.equal(summaries.find((summary) => summary.group === "chest")?.trackedExercises, 2);
+});
+
+test("generic history does not collapse genuinely different current equipment variants", () => {
+  const now = new Date().toISOString();
+  const summaries = buildRankSummaries(
+    [
+      { exerciseId: "machine", text: "Machine Chest Fly", weight: 36, reps: 8, rir: 0, source: "current" },
+      { exerciseId: "cable", text: "Cable Chest Fly", weight: 20, reps: 10, rir: 0, source: "current" },
+      { text: "Chest Fly", weight: 36, reps: 8, rir: 0, source: "history", performedAt: now },
+    ],
+    { bodyWeightKg: 75 },
+  );
+  const chest = summaries.find((summary) => summary.group === "chest");
+  assert.ok(chest);
+  assert.deepEqual(chest.matchedExercises.map((row) => row.exercise).sort(), ["Cable Chest Fly", "Machine Chest Fly"]);
+});
+
 test("same-id history always adopts the latest current name", () => {
   const now = new Date().toISOString();
   const tasks: RankTask[] = [
@@ -412,6 +474,34 @@ test("same-id history always adopts the latest current name", () => {
   assert.ok(back);
   assert.equal(back.matchedExercises.length, 1);
   assert.equal(back.matchedExercises[0].exercise, "Cable Spinal Extension");
+});
+
+test("current renamed exercise values stay authoritative over older heavier history", () => {
+  const now = new Date().toISOString();
+  const chest = buildRankSummaries(
+    [
+      {
+        exerciseId: "stable-chest-id",
+        text: "Machine Chest Fly (Renamed)",
+        sets: [{ weight: 10, unit: "kg", reps: 7, rir: 0 }],
+        source: "current",
+      },
+      {
+        exerciseId: "stable-chest-id",
+        text: "Machine Chest Fly",
+        sets: [{ weight: 36, unit: "kg", reps: 5, rir: 0 }],
+        source: "history",
+        performedAt: now,
+      },
+    ],
+    { bodyWeightKg: 75 },
+  ).find((summary) => summary.group === "chest");
+
+  assert.ok(chest);
+  assert.equal(chest.matchedExercises.length, 1);
+  assert.equal(chest.matchedExercises[0].source, "current");
+  assert.equal(chest.matchedExercises[0].exercise, "Machine Chest Fly (Renamed)");
+  assert.equal(chest.matchedExercises[0].bestSet, "10 kg x 7 reps - 0 RIR");
 });
 
 test("unmatched old history cannot create ghost exercises in any muscle group", () => {

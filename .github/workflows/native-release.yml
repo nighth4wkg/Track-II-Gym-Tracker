@@ -189,6 +189,8 @@ jobs:
 
       - name: Publish release
         run: |
+          NOTES_FILE="release-notes/${RELEASE_TAG#v}.md"
+          if [[ ! -f "$NOTES_FILE" ]]; then NOTES_FILE="release-notes/v1.0.md"; fi
           gh release create "$RELEASE_TAG" release-assets/* \
             --title "Track II $RELEASE_TAG" \
-            --notes-file release-notes/v1.0.md
+            --notes-file "$NOTES_FILE"

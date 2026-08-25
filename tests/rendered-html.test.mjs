@@ -706,6 +706,8 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(finishButton, /Keep logging/);
   assert.match(workoutPage, /className="mobile-search-toggle"/);
   assert.match(workoutPage, /is-mobile-search-open/);
+  assert.match(css, /\.welcome-start-steps \{[\s\S]*?gap:10px;/);
+  assert.match(css, /\.welcome-start-steps \+ \.welcome-button \{[\s\S]*?margin-top:clamp\(14px,2\.5vh,20px\);/);
   assert.match(taskCard, /className=\{togglingUnitId === set\.id/);
   assert.match(taskCard, /set\.unit\.toUpperCase\(\)/);
   assert.match(splitGesture, /splitHoldMenuOpened/);
@@ -1312,6 +1314,9 @@ test("native updates and notification permissions use native-safe paths", async 
 
   assert.match(releaseManager, /nativeApp\s*&&\s*remoteRelease\.buildId/);
   assert.match(releaseManager, /if \(!nativeApp\)/);
+  assert.match(releaseManager, /githubLatestReleaseAssetUrl/);
+  assert.match(releaseManager, /altstore-source\.json/);
+  assert.match(releaseManager, /firstApp\.versions/);
   assert.match(trackUtils, /openNativeNotificationSettings/);
   assert.match(trackUtils, /AppLauncher\.openUrl\(\{\s*url\s*\}\)/);
   assert.match(trackUtils, /"app-settings:"/);
@@ -1324,6 +1329,21 @@ test("native updates and notification permissions use native-safe paths", async 
   assert.match(updateNotification, /document\.body/);
   assert.match(updateNotification, /debug && !isAdmin/);
   assert.match(updateNotification, /!nativeApp \|\| !globalThis\.document/);
+});
+
+test("update and announcement notifications keep their centered entrance transform", async () => {
+  const [components, polish] = await Promise.all([read("app/styles/components.css"), read("app/styles/polish.css")]);
+
+  assert.match(
+    components,
+    /@keyframes notification-in \{[\s\S]*?from \{[\s\S]*?transform: translate3d\(calc\(-50% \+ var\(--announcement-offset, 0px\)\), -18px, 0\) scale\(0\.96\);[\s\S]*?to \{[\s\S]*?transform: translate3d\(calc\(-50% \+ var\(--announcement-offset, 0px\)\), 0, 0\) scale\(1\);[\s\S]*?\}/,
+  );
+  assert.match(
+    polish,
+    /@keyframes mobile-notification-in \{[\s\S]*?from \{[\s\S]*?transform: translate3d\(calc\(-50% \+ var\(--announcement-offset, 0px\)\), -12px, 0\) scale\(0\.98\);[\s\S]*?to \{[\s\S]*?transform: translate3d\(calc\(-50% \+ var\(--announcement-offset, 0px\)\), 0, 0\) scale\(1\);[\s\S]*?\}/,
+  );
+  assert.doesNotMatch(components, /@keyframes notification-in[\s\S]*?translate:\s*-50%/);
+  assert.doesNotMatch(polish, /@keyframes mobile-notification-in[\s\S]*?translate:\s*-50%/);
 });
 
 test("new persistence and privacy paths avoid scans, plaintext snapshots, and inline boot scripts", async () => {

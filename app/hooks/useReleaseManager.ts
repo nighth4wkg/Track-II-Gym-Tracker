@@ -29,11 +29,18 @@ type UseReleaseManagerOptions = {
 
 function parseRemoteReleasePayload(payload: JsonValue): RemoteRelease | null {
   if (!isJsonObject(payload)) return null;
+  const altStoreVersion = (() => {
+    if (!Array.isArray(payload.apps)) return "";
+    const firstApp = payload.apps[0];
+    if (!isJsonObject(firstApp) || !Array.isArray(firstApp.versions)) return "";
+    const firstVersion = firstApp.versions[0];
+    return isJsonObject(firstVersion) && isStringValue(firstVersion.version) ? firstVersion.version.trim() : "";
+  })();
   const version = isStringValue(payload.version)
     ? payload.version.trim()
     : isStringValue(payload.tag_name)
       ? payload.tag_name.trim()
-      : "";
+      : altStoreVersion;
   if (!version) return null;
   const buildId = isStringValue(payload.buildId)
     ? payload.buildId.trim()
@@ -51,6 +58,19 @@ function githubLatestReleaseApiUrl(releasesUrl: string) {
     const [owner, repository, releases, latest] = segments;
     if (releases !== "releases" || latest !== "latest") return null;
     return `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/releases/latest`;
+  } catch {
+    return null;
+  }
+}
+
+function githubLatestReleaseAssetUrl(releasesUrl: string, assetName: string) {
+  try {
+    const url = new URL(releasesUrl);
+    const segments = url.pathname.split("/").filter(Boolean);
+    if (url.hostname !== "github.com" || segments.length < 4) return null;
+    const [owner, repository, releases, latest] = segments;
+    if (releases !== "releases" || latest !== "latest") return null;
+    return `https://github.com/${encodeURIComponent(owner)}/${encodeURIComponent(repository)}/releases/latest/download/${encodeURIComponent(assetName)}`;
   } catch {
     return null;
   }
@@ -163,6 +183,11 @@ export function useReleaseManager({
     };
     const readRemoteRelease = async (): Promise<RemoteRelease | null> => {
       const cacheBust = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const githubReleaseAssetUrl = githubLatestReleaseAssetUrl(TRACK_RELEASES_URL, "altstore-source.json");
+      if (githubReleaseAssetUrl) {
+        const sideStoreRelease = await readJsonRelease(githubReleaseAssetUrl, nativeRequestOptions);
+        if (sideStoreRelease) return sideStoreRelease;
+      }
       const githubApiUrl = githubLatestReleaseApiUrl(TRACK_RELEASES_URL);
       if (githubApiUrl) {
         const githubRelease = await readJsonRelease(githubApiUrl, {

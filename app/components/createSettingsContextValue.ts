@@ -76,6 +76,7 @@ export function createSettingsContextValue({
     updateCheckMessage: identity.updateCheckMessage,
     updateVersion,
     updatesViewBusy: identity.updatesViewBusy,
+    updatesViewStatus: identity.updatesViewStatus,
     updatesViewMessage: identity.updatesViewMessage,
     onAddAiExercises: importActions.addAiExercises,
     onAiExercisesChange: local.setAiExercises,

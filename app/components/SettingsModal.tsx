@@ -63,6 +63,17 @@ export function SettingsModal({
     };
   }, []);
 
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      settingsTabsRef.current?.querySelector<HTMLButtonElement>("button.active")?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+        inline: "center",
+      });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [settingsTabsRef, settingsView]);
+
   return (
     <div
       className={settingsClosing ? "settings-backdrop closing" : "settings-backdrop"}
@@ -104,21 +115,23 @@ export function SettingsModal({
               <span className="settings-kicker">TRACK II</span>
               <div className="settings-heading" key={settingsView}>
                 <h2 id="settings-title">{SETTINGS_LABELS[settingsView]}</h2>
-                <span>v{TRACK_VERSION}</span>
               </div>
             </div>
-            <button
-              type="button"
-              className="settings-close ui-button ui-button-quiet"
-              onPointerDown={(event) => {
-                event.stopPropagation();
-                onClose();
-              }}
-              onClick={onClose}
-              aria-label="Close settings"
-            >
-              ×
-            </button>
+            <div className="settings-title-actions">
+              <span className="settings-version-badge">v{TRACK_VERSION}</span>
+              <button
+                type="button"
+                className="settings-close ui-button ui-button-quiet"
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                  onClose();
+                }}
+                onClick={onClose}
+                aria-label="Close settings"
+              >
+                ×
+              </button>
+            </div>
           </div>
           <div className={`settings-view view-${settingsView}`} key={settingsView}>
             <Suspense fallback={<SettingsScreenSkeleton />}>

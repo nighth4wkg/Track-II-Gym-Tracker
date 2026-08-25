@@ -2,7 +2,15 @@
 
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { SETTINGS_CONTENT_VIEWS, THEME_MODES, TRACK_LIMITS, TRACK_UI_COPY, WEIGHT_UNITS } from "../trackConstants";
-import type { AiExercise, Checklist, SettingsView, Task, ThemeMode, WeightUnit } from "../trackTypes";
+import type {
+  AiExercise,
+  Checklist,
+  SettingsView,
+  Task,
+  ThemeMode,
+  UpdatesViewStatus,
+  WeightUnit,
+} from "../trackTypes";
 import { useSettingsContext } from "../contexts/SettingsContext";
 import { formatPersonalInput, PERSONAL_CONVERSION, toMetricPersonalInput } from "../personalMeasurements";
 import { SettingsAboutView, SettingsAdminView, SettingsUpdatesView } from "./SettingsSpecialViews";
@@ -43,6 +51,7 @@ export type SettingsViewContentProps = {
   updateCheckMessage: string;
   updateVersion: string | null;
   updatesViewBusy: boolean;
+  updatesViewStatus: UpdatesViewStatus;
   updatesViewMessage: string;
   onAddAiExercises: () => void;
   onAiExercisesChange: Dispatch<SetStateAction<AiExercise[]>>;
@@ -403,6 +412,24 @@ export function SettingsViewContent(props: SettingsViewContentProps) {
           </label>
           <div className="ai-privacy">
             Your key stays in memory and is cleared when Track II closes or you sign out.
+          </div>
+          <div className="ai-key-help">
+            <strong>How to get a Gemini API key</strong>
+            <ol>
+              <li>Open Google AI Studio and sign in.</li>
+              <li>
+                Select <b>Create API key</b> on the API keys page.
+              </li>
+              <li>Copy the key and paste it above. Never share it or commit it to GitHub.</li>
+            </ol>
+            <div className="ai-key-help-links">
+              <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">
+                Open Google AI Studio
+              </a>
+              <a href="https://ai.google.dev/gemini-api/docs/api-key" target="_blank" rel="noopener noreferrer">
+                Read Google&apos;s key-safety guide
+              </a>
+            </div>
           </div>
           <label className={aiBusy ? "ai-upload busy" : "ai-upload"}>
             <input

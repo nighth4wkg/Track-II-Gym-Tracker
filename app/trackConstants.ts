@@ -86,6 +86,7 @@ export const TRACK_TIMING = {
   settingsCloseAnimationMs: 260,
   settingsTabsScrollMs: 260,
   settingsTabsScrollStepPx: 180,
+  setupCompleteNoticeMs: 1_600,
   undoDismissMs: 360,
   passwordResetCloseMs: 900,
   syncSavedFeedbackMs: 900,

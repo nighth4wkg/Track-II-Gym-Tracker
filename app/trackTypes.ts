@@ -96,6 +96,7 @@ export type ReleaseSignal = {
 
 export type RemoteRelease = { version: string; buildId?: string };
 export type UpdateCheckResult = "update" | "current" | "error";
+export type UpdatesViewStatus = "idle" | "checking" | "current" | "available" | "error";
 
 export type AiExercise = {
   name: string;

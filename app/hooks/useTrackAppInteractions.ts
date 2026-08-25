@@ -5,7 +5,15 @@ import { supabase } from "../supabase";
 import { haptic } from "../haptics";
 import { compactSearchText } from "../exerciseSearch";
 import { TRACK_LIMITS, TRACK_TIMING, TRACK_UI_COPY } from "../trackConstants";
-import type { Checklist, Filter, SettingsView, ThemeMode, TrackAnnouncement, WeightUnit } from "../trackTypes";
+import type {
+  Checklist,
+  Filter,
+  SettingsView,
+  ThemeMode,
+  TrackAnnouncement,
+  UpdatesViewStatus,
+  WeightUnit,
+} from "../trackTypes";
 import {
   nativeLocalNotificationsAvailable,
   openNativeNotificationSettings,
@@ -51,6 +59,7 @@ export type TrackAppInteractionsOptions = {
   setSidebarCollapsed: StateSetter<boolean>;
   setThemeMode: StateSetter<ThemeMode>;
   setUpdatesViewBusy: StateSetter<boolean>;
+  setUpdatesViewStatus: StateSetter<UpdatesViewStatus>;
   setUpdatesViewMessage: StateSetter<string>;
   siteUpdateCheckRef: MutableRefObject<((manual?: boolean) => Promise<SiteUpdateResult>) | null>;
   settingsCloseTimer: MutableRefObject<number | null>;
@@ -95,6 +104,7 @@ export function useTrackAppInteractions({
   setSidebarCollapsed,
   setThemeMode,
   setUpdatesViewBusy,
+  setUpdatesViewStatus,
   setUpdatesViewMessage,
   siteUpdateCheckRef,
   settingsCloseTimer,
@@ -257,17 +267,24 @@ export function useTrackAppInteractions({
   async function checkForUpdatesFromSettings() {
     haptic(10);
     setUpdatesViewBusy(true);
+    setUpdatesViewStatus("checking");
     setUpdatesViewMessage("");
     try {
       const result = await siteUpdateCheckRef.current?.(true);
       if (result === "update") {
+        setUpdatesViewStatus("available");
         setUpdatesViewMessage("Update ready.");
         return;
       }
       if (result === "current") {
+        setUpdatesViewStatus("current");
         setUpdatesViewMessage("No updates yet.");
         return;
       }
+      setUpdatesViewStatus("error");
+      setUpdatesViewMessage("Couldn’t check for updates. Try again in a moment.");
+    } catch {
+      setUpdatesViewStatus("error");
       setUpdatesViewMessage("Couldn’t check for updates. Try again in a moment.");
     } finally {
       setUpdatesViewBusy(false);
@@ -298,11 +315,11 @@ export function useTrackAppInteractions({
     toggleSidebar();
   }
 
-  function openSettings() {
+  function openSettings(view: SettingsView = "appearance") {
     if (settingsCloseTimer.current !== null) window.clearTimeout(settingsCloseTimer.current);
     settingsCloseTimer.current = null;
     setSettingsClosing(false);
-    setSettingsView("appearance");
+    setSettingsView(view);
     setSettingsOpen(true);
   }
 

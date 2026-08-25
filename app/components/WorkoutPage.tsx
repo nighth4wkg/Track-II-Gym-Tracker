@@ -1,8 +1,9 @@
 "use client";
 
-import { useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { ConnectedTaskCard } from "./TaskCard";
-import { FILTER_LABELS, FILTER_OPTIONS, TRACK_INTERACTION } from "../trackConstants";
+import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
+import { FILTER_LABELS, FILTER_OPTIONS, TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 import type { Checklist, Filter, Task } from "../trackTypes";
 
 type WorkoutPageProps = {
@@ -23,6 +24,7 @@ type WorkoutPageProps = {
   onAddExercise: (name: string) => void;
   onAddTask: (event: FormEvent<HTMLFormElement>) => void;
   onFilterChange: (filter: Filter) => void;
+  onOpenAiImport: () => void;
   onSearchValueChange: (value: string) => void;
   onShowSuggestionsChange: (show: boolean) => void;
 };
@@ -45,13 +47,49 @@ export function WorkoutPage({
   onAddExercise,
   onAddTask,
   onFilterChange,
+  onOpenAiImport,
   onSearchValueChange,
   onShowSuggestionsChange,
 }: WorkoutPageProps) {
   const suggestionListId = useId();
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [setupCompleteVisible, setSetupCompleteVisible] = useState(false);
+  const setupCompleteTimer = useRef<number | null>(null);
   const suggestionsVisible = showSuggestions && searchQueryActive && exerciseSuggestions.length > 0;
+  const hasLoggedFirstSet = tasks.some((task) => {
+    if (task.done || task.lastWeight !== undefined || task.lastReps !== undefined) return true;
+    if (task.weight !== undefined && task.weight.trim() !== "0") return true;
+    return (task.sets ?? []).some(
+      (set) =>
+        set.lastWeight !== undefined ||
+        set.lastReps !== undefined ||
+        set.lastRir !== undefined ||
+        set.weight.trim() !== "0" ||
+        set.reps.trim() !== "1" ||
+        set.rir.trim() !== "0",
+    );
+  });
+  const previousHasLoggedFirstSet = useRef(hasLoggedFirstSet);
+
+  useEffect(() => {
+    const wasLogged = previousHasLoggedFirstSet.current;
+    previousHasLoggedFirstSet.current = hasLoggedFirstSet;
+    if (!hasLoggedFirstSet || wasLogged) return;
+    setSetupCompleteVisible(true);
+    if (setupCompleteTimer.current !== null) window.clearTimeout(setupCompleteTimer.current);
+    setupCompleteTimer.current = window.setTimeout(() => {
+      setSetupCompleteVisible(false);
+      setupCompleteTimer.current = null;
+    }, TRACK_TIMING.setupCompleteNoticeMs);
+  }, [hasLoggedFirstSet]);
+
+  useEffect(
+    () => () => {
+      if (setupCompleteTimer.current !== null) window.clearTimeout(setupCompleteTimer.current);
+    },
+    [],
+  );
 
   const toggleMobileSearch = () => {
     const nextOpen = !mobileSearchOpen;
@@ -212,6 +250,11 @@ export function WorkoutPage({
           ))}
         </div>
       )}
+      {tasks.length > 0 && (!hasLoggedFirstSet || setupCompleteVisible) && (
+        <div className={setupCompleteVisible ? "workout-setup-complete" : undefined}>
+          <WorkoutSetupSteps className="workout-start-steps" stage={setupCompleteVisible ? 4 : 3} />
+        </div>
+      )}
       <div className={progressFading ? "task-list progress-fading" : "task-list"} aria-live="polite">
         {visible.map((task) => (
           <ConnectedTaskCard key={task.id} task={task} />
@@ -235,37 +278,7 @@ export function WorkoutPage({
                   ? "Finish an exercise to see it appear in this view."
                   : "Switch to All exercises to review the full split."}
             </p>
-            {tasks.length === 0 && (
-              <ol className="workout-start-steps" aria-label="How to start this workout">
-                <li className="is-complete">
-                  <span className="workout-start-step-index" aria-hidden="true">
-                    ✓
-                  </span>
-                  <span>
-                    <strong>Create a split</strong>
-                    <small>Done</small>
-                  </span>
-                </li>
-                <li className="is-current">
-                  <span className="workout-start-step-index" aria-hidden="true">
-                    2
-                  </span>
-                  <span>
-                    <strong>Add an exercise</strong>
-                    <small>Search above or choose a quick pick.</small>
-                  </span>
-                </li>
-                <li>
-                  <span className="workout-start-step-index" aria-hidden="true">
-                    3
-                  </span>
-                  <span>
-                    <strong>Log your first set</strong>
-                    <small>Enter weight, reps, and RIR.</small>
-                  </span>
-                </li>
-              </ol>
-            )}
+            {tasks.length === 0 && <WorkoutSetupSteps className="workout-start-steps" stage={2} />}
             {tasks.length === 0 && quickPickExercises.length > 0 && (
               <div className="empty-quick-picks" aria-label="Quick add exercises">
                 <span className="empty-quick-picks-label">Quick add</span>
@@ -278,21 +291,32 @@ export function WorkoutPage({
                 </div>
               </div>
             )}
-            <button
-              type="button"
-              className="empty-action ui-button ui-button-secondary"
-              onClick={() => {
-                if (tasks.length === 0) {
-                  setMobileSearchOpen(true);
-                  window.requestAnimationFrame(() => {
-                    inputRef.current?.focus();
-                    onShowSuggestionsChange(true);
-                  });
-                } else onFilterChange("all");
-              }}
-            >
-              {tasks.length === 0 ? "Browse exercise library" : "Show all exercises"}
-            </button>
+            <div className="empty-actions">
+              <button
+                type="button"
+                className="empty-action ui-button ui-button-secondary"
+                onClick={() => {
+                  if (tasks.length === 0) {
+                    setMobileSearchOpen(true);
+                    window.requestAnimationFrame(() => {
+                      inputRef.current?.focus();
+                      onShowSuggestionsChange(true);
+                    });
+                  } else onFilterChange("all");
+                }}
+              >
+                {tasks.length === 0 ? "Browse exercise library" : "Show all exercises"}
+              </button>
+              {tasks.length === 0 && (
+                <button
+                  type="button"
+                  className="empty-action empty-action-ai ui-button ui-button-secondary"
+                  onClick={onOpenAiImport}
+                >
+                  <span aria-hidden="true">✦</span> Import split with AI
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

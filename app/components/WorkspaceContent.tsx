@@ -7,6 +7,7 @@ import { TimerScreenSkeleton } from "./TimerScreenSkeleton";
 import type { RestTimerSelection, TimerMode, TimerTransition } from "./TimerScreen";
 import { WorkoutEditorProvider, type WorkoutEditorContextValue } from "../contexts/WorkoutEditorContext";
 import { WorkoutPage } from "./WorkoutPage";
+import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
 import type { CalendarScreenProps } from "./CalendarScreen";
 import type { Checklist, Filter, PersonalInfo, Task } from "../trackTypes";
 
@@ -79,6 +80,7 @@ type WorkspaceContentProps = {
   onAddTask: (event: React.FormEvent<HTMLFormElement>) => void;
   onFilterChange: (filter: Filter) => void;
   onFinishWorkout: () => Promise<void>;
+  onOpenAiImport: () => void;
   onSearchValueChange: (value: string) => void;
   onShowSuggestionsChange: (show: boolean) => void;
   workoutEditorContextValue: WorkoutEditorContextValue;
@@ -141,6 +143,7 @@ export function WorkspaceContent({
   onAddExercise,
   onAddTask,
   onFilterChange,
+  onOpenAiImport,
   onSearchValueChange,
   onShowSuggestionsChange,
   workoutEditorContextValue,
@@ -217,35 +220,7 @@ export function WorkspaceContent({
           <div className="eyebrow">TRACK</div>
           <h1>Let’s get started</h1>
           <p>Create a split, then add exercises.</p>
-          <ol className="welcome-start-steps" aria-label="Track II setup steps">
-            <li className="is-current">
-              <span className="workout-start-step-index" aria-hidden="true">
-                1
-              </span>
-              <span>
-                <strong>Create a split</strong>
-                <small>Start with a plan for today.</small>
-              </span>
-            </li>
-            <li>
-              <span className="workout-start-step-index" aria-hidden="true">
-                2
-              </span>
-              <span>
-                <strong>Add an exercise</strong>
-                <small>Choose from the library.</small>
-              </span>
-            </li>
-            <li>
-              <span className="workout-start-step-index" aria-hidden="true">
-                3
-              </span>
-              <span>
-                <strong>Log your first set</strong>
-                <small>Track weight, reps, and RIR.</small>
-              </span>
-            </li>
-          </ol>
+          <WorkoutSetupSteps className="welcome-start-steps" stage={1} />
           <button className="welcome-button ui-button ui-button-primary" onClick={onCreateChecklist}>
             <span>＋</span> Create a new split
           </button>
@@ -270,6 +245,7 @@ export function WorkspaceContent({
             onAddExercise={onAddExercise}
             onAddTask={onAddTask}
             onFilterChange={onFilterChange}
+            onOpenAiImport={onOpenAiImport}
             onSearchValueChange={onSearchValueChange}
             onShowSuggestionsChange={onShowSuggestionsChange}
           />

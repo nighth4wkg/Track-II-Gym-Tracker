@@ -427,6 +427,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onAddExercise: addExercise,
     onAddTask: addTask,
     onFilterChange: workout.setFilter,
+    onOpenAiImport: () => openSettings("ai"),
     onFinishWorkout: finishWorkout,
     onSearchValueChange: workout.setSearchQuery,
     onShowSuggestionsChange: workout.setShowSuggestions,

@@ -2438,3 +2438,107 @@ input[type="number"]::-webkit-outer-spin-button {
 .bottom-tab-bar {
   background: color-mix(in srgb, var(--surface) 96%, var(--raised));
 }
+
+/* Release polish: keep the onboarding path calm, readable, and responsive as
+   each step changes while respecting reduced-motion preferences. */
+.settings-title-row {
+  align-items: center;
+}
+.settings-title-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 12px;
+}
+.settings-version-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--muted);
+  padding: 4px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+.empty-actions {
+  width: min(620px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 4px auto 0;
+}
+.empty-actions .empty-action {
+  width: 100%;
+  margin-top: 0;
+}
+.empty-action-ai span {
+  color: var(--track-accent-online);
+}
+.workout-start-steps li,
+.welcome-start-steps li {
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.38s ease,
+    transform 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 0.38s ease,
+    background-color 0.38s ease,
+    color 0.38s ease;
+}
+.workout-start-steps li.is-upcoming,
+.welcome-start-steps li.is-upcoming {
+  opacity: 0.62;
+}
+.workout-start-steps li.is-current,
+.welcome-start-steps li.is-current {
+  animation: setup-step-focus 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.workout-start-steps li.is-complete {
+  color: color-mix(in srgb, var(--track-accent-online) 72%, var(--ink));
+}
+.workout-start-steps li.is-complete .workout-start-step-index,
+.welcome-start-steps li.is-complete .workout-start-step-index {
+  background: color-mix(in srgb, var(--track-accent-online) 14%, transparent);
+}
+@keyframes setup-step-focus {
+  0% {
+    opacity: 0.58;
+    transform: translate3d(0, 8px, 0) scale(0.985);
+  }
+  58% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+.workout-setup-complete {
+  animation: setup-complete-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@keyframes setup-complete-in {
+  0% {
+    opacity: 0.45;
+    transform: scale(0.985);
+  }
+  52% {
+    opacity: 1;
+    transform: scale(1.012);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .workout-start-steps li,
+  .welcome-start-steps li,
+  .workout-setup-complete {
+    animation: none;
+    transition: none;
+  }
+}

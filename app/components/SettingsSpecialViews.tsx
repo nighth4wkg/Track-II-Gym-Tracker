@@ -9,9 +9,16 @@ export function SettingsUpdatesView({
   releaseAvailable,
   updateVersion,
   updatesViewBusy,
+  updatesViewStatus,
   updatesViewMessage,
   onCheckForUpdates,
 }: SettingsViewContentProps) {
+  const updateError = nativeApp && updatesViewStatus === "error";
+  const updateChecking = nativeApp && updatesViewStatus === "checking";
+  const updateAvailable = nativeApp && !updateError && (releaseAvailable || updatesViewStatus === "available");
+  const showNativeStatus =
+    nativeApp && !updateError && (updateChecking || updateAvailable || updatesViewStatus === "current");
+
   return (
     <section className="updates-page">
       <div className="updates-page-intro">
@@ -25,17 +32,33 @@ export function SettingsUpdatesView({
       <div className="updates-page-card">
         <div className="updates-page-card-heading">
           <span className="updates-page-card-label">Release status</span>
-          <span className={nativeApp && releaseAvailable ? "updates-page-status ready" : "updates-page-status"}>
-            {nativeApp ? (releaseAvailable ? "Update ready" : "Up to date") : "Native only"}
-          </span>
+          {(!nativeApp || showNativeStatus) && (
+            <span className={updateAvailable ? "updates-page-status ready" : "updates-page-status"}>
+              {!nativeApp
+                ? "Native only"
+                : updateChecking
+                  ? "Checking…"
+                  : updateAvailable
+                    ? "Update ready"
+                    : "Up to date"}
+            </span>
+          )}
         </div>
-        <p>
-          {!nativeApp
-            ? "The hosted PC/web beta stays on its current build. Native packages check GitHub releases instead."
-            : releaseAvailable
-              ? `v${updateVersion} is ready to download from the configured release page.`
-              : "No updates yet."}
-        </p>
+        {!updateError && (
+          <p>
+            {!nativeApp
+              ? "The hosted PC/web beta stays on its current build. Native packages check GitHub releases instead."
+              : updateChecking
+                ? "Checking the configured release page…"
+                : updateAvailable
+                  ? updateVersion
+                    ? `v${updateVersion} is ready to download from the configured release page.`
+                    : "A newer Track II release is ready to download."
+                  : updatesViewStatus === "current"
+                    ? "No updates yet."
+                    : "Check for updates to verify this install."}
+          </p>
+        )}
         {nativeApp && (
           <div className="updates-page-actions">
             <button
@@ -45,7 +68,7 @@ export function SettingsUpdatesView({
             >
               {updatesViewBusy ? "Checking…" : "Check for updates"}
             </button>
-            {releaseAvailable && TRACK_RELEASES_URL && (
+            {updateAvailable && TRACK_RELEASES_URL && (
               <a
                 className="ui-button ui-button-secondary updates-release-link"
                 href={TRACK_RELEASES_URL}
@@ -57,8 +80,8 @@ export function SettingsUpdatesView({
             )}
           </div>
         )}
-        {updatesViewMessage && (
-          <div className="updates-page-message" role="status">
+        {updateError && updatesViewMessage && (
+          <div className="updates-page-message error" role="alert">
             {updatesViewMessage}
           </div>
         )}

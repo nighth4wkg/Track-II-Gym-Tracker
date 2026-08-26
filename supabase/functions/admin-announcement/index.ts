@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { createClient } from "@supabase/supabase-js";
 import { checkAdminAccess } from "../_shared/admin.ts";
 import { isAllowedOrigin, responseHeaders } from "../_shared/cors.ts";
 import { isJsonObject, json, type JsonValue } from "../_shared/http.ts";

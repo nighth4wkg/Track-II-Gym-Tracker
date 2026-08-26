@@ -51,9 +51,11 @@ const readCssSource = async () => {
     await Promise.all(
       [
         "app/globals.css",
+        "app/styles/tokens.css",
         "app/styles/base.css",
         "app/styles/components.css",
         "app/styles/pages.css",
+        "app/styles/pages/dashboard.css",
         "app/styles/responsive.css",
         "app/styles/polish.css",
       ].map(read),
@@ -159,7 +161,8 @@ test("Track source exposes the shared app and current release", async () => {
 
   assert.match(page, /export default function Home\(\)/);
   assert.match(trackConfig, /export const TRACK_VERSION = "__TRACK_VERSION__"/);
-  assert.match(packageJson, /"version": "1\.0\.5"/);
+  const packageData = JSON.parse(packageJson);
+  assert.match(String(packageData.version), /^\d+\.\d+\.\d+$/);
   assert.match(await read("vite.pages.config.ts"), /output\.code = replaceBuildTokens\(output\.code\)/);
   assert.match(api, /save_track_state/);
   assert.match(syncHook, /useTrackLocalSnapshot/);
@@ -326,7 +329,7 @@ test("Dashboard exposes timeframe inspection, progression, volume guidance, and 
   assert.match(sync, /createPortal/);
   assert.match(css, /--track-layer-critical:\s*3200/);
   assert.match(css, /\.progress-sync-backdrop \{[\s\S]*?z-index:\s*var\(--track-layer-critical\)/);
-  assert.match(css, /\.dashboard-screen,[\s\S]*?padding:\s*0/);
+  assert.match(css, /\.dashboard-screen\s*\{[\s\S]*?padding:\s*0/);
   assert.match(css, /\.dashboard-stat-grid article \{[\s\S]*?height: 128px;[\s\S]*?padding: 16px/);
   assert.match(css, /\.dashboard-stat-grid strong\.baseline \{[\s\S]*?font-size: 22px/);
   assert.match(css, /\.content:has\(\.dashboard-screen\) \{[\s\S]*?padding-bottom: calc\(112px/);
@@ -347,18 +350,21 @@ test("release notes stay external and the web app has no Changelog tab", async (
 });
 
 test("release metadata keeps web and native package versions aligned", async () => {
-  const [trackConfig, packageJson, packageLock, notes] = await Promise.all([
+  const [trackConfig, packageJson, packageLock] = await Promise.all([
     read("app/trackConfig.ts"),
     read("package.json"),
     read("package-lock.json"),
-    read("release-notes/v1.0.md"),
   ]);
+  const packageData = JSON.parse(packageJson);
+  const lockData = JSON.parse(packageLock);
+  const version = String(packageData.version);
+  const notes = await read(`release-notes/v${version}.md`);
 
   assert.match(trackConfig, /export const TRACK_VERSION = "__TRACK_VERSION__"/);
-  assert.match(packageJson, /"version": "1\.0\.5"/);
-  assert.match(packageLock, /"version": "1\.0\.5"/);
-  assert.match(notes, /Track II v1\.0/);
-  assert.match(notes, /distributed database-backed limiter/);
+  assert.equal(lockData.version, version);
+  assert.equal(lockData.packages[""].version, version);
+  assert.match(notes, new RegExp(`^# Track II v${version.replaceAll(".", "\\.")}\\s`, "m"));
+  assert.match(notes, /distributed database-backed limiter/i);
   assert.match(packageJson, /"@capacitor\/core": "\^8/);
   assert.match(packageJson, /"@capacitor\/haptics": "\^8/);
   assert.match(packageJson, /"@capacitor\/local-notifications": "\^8/);
@@ -632,6 +638,27 @@ test("private sync and announcements are server-scoped", async () => {
   assert.match(announcementFunction, /auth\.getUser\(\)/);
   assert.match(announcementFunction, /Administrator access required/);
   assert.match(config, /\[functions\.admin-announcement\]\s+verify_jwt = true/);
+});
+
+test("dashboard summaries are session-based, cached, and protected", async () => {
+  const [migration, metrics, api, identity] = await Promise.all([
+    read("supabase/migrations/20260831_dashboard_summary.sql"),
+    read("app/dashboardMetrics.ts"),
+    read("app/data/trackApi.ts"),
+    read("app/hooks/useTrackIdentityLifecycle.ts"),
+  ]);
+
+  assert.match(migration, /create or replace function public\.get_dashboard_revision/);
+  assert.match(migration, /create or replace function public\.get_dashboard_summary/);
+  assert.match(migration, /security invoker/);
+  assert.match(migration, /partition by raw_logs\.session_key, raw_logs\.exercise_key, raw_logs\.set_number/);
+  assert.match(migration, /'volumeByPeriod'/);
+  assert.match(migration, /'weeklyMuscleTotals'/);
+  assert.match(migration, /grant execute on function public\.get_dashboard_summary\(text\) to authenticated/);
+  assert.match(metrics, /task\.sessionId\?\.trim\(\)/);
+  assert.match(api, /supabase\.rpc\("get_dashboard_summary"/);
+  assert.match(identity, /dashboardSummaryCache/);
+  assert.match(identity, /dashboardSummaryRevisionCache/);
 });
 
 test("finish workout is a pinned header action", async () => {
@@ -1541,7 +1568,8 @@ test("native Capacitor configuration packages the shared app with haptics, notif
   assert.match(capacitor, /webDir: "work\/cloudflare-pages"/);
   assert.match(packageJson, /"@capacitor\/haptics": "\^8/);
   assert.match(packageJson, /"@capacitor\/app-launcher": "\^8/);
-  assert.match(packageJson, /"@capacitor\/assets": "\^3/);
+  assert.match(packageJson, /"generate:native-icons": "node scripts\/generate-native-icons\.mjs"/);
+  assert.doesNotMatch(packageJson, /"@capacitor\/assets"/);
   assert.match(packageJson, /"@capacitor\/local-notifications": "\^8/);
   assert.match(packageJson, /"generate:native-icons"/);
   assert.match(page, /LocalNotifications\.schedule/);

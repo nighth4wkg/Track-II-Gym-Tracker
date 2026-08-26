@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { normalizeUsername } from "../_shared/admin.ts";
 import { isAllowedOrigin, responseHeaders } from "../_shared/cors.ts";
 import { isJsonObject, json, type JsonObject, type JsonValue } from "../_shared/http.ts";

@@ -1,4 +1,5 @@
 import { calendarDateKey } from "../calendarTypes";
+import { parseDashboardSummary, type DashboardSummary } from "../dashboardSummary";
 import { rankHistoryGroupKey, type RankHistoryRow } from "../historyKeys";
 import { supabase } from "../supabase";
 import type { RankTask } from "../rankData";
@@ -264,6 +265,13 @@ export async function fetchRecentRankTasks(
   return [...grouped.values()];
 }
 
+export async function fetchDashboardSummary(): Promise<DashboardSummary | null> {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  const { data, error } = await supabase.rpc("get_dashboard_summary", { time_zone: timeZone });
+  if (error || !isJsonObject(data)) return null;
+  return parseDashboardSummary(data);
+}
+
 export async function fetchSavedSplitIdsForToday(userId: string) {
   // Use the browser's local day boundaries when asking the server. Filtering a
   // large, limited result set in the browser can miss today's session and the
@@ -372,6 +380,11 @@ export async function fetchOnlineLists(
 }
 
 export async function fetchTrackRevision(userId: string): Promise<number | null> {
+  const dashboardRevision = await supabase.rpc("get_dashboard_revision");
+  if (!dashboardRevision.error && dashboardRevision.data !== null && dashboardRevision.data !== undefined) {
+    const revision = Number(dashboardRevision.data);
+    if (Number.isFinite(revision)) return Math.max(0, revision);
+  }
   const { data, error } = await supabase
     .from("track_state_revisions")
     .select("revision")

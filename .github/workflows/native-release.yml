@@ -6,7 +6,6 @@ on:
       tag:
         description: Release tag in v1.2.3 format
         required: true
-        default: v1.0.5
 
 permissions:
   contents: read
@@ -16,8 +15,37 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  validate:
+    name: Validate release metadata
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ inputs.tag }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Require package version and release notes to match
+        run: |
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag must use v1.2.3 format."
+            exit 1
+          fi
+          PACKAGE_VERSION="$(node -p "require('./package.json').version")"
+          EXPECTED_TAG="v${PACKAGE_VERSION}"
+          if [[ "$RELEASE_TAG" != "$EXPECTED_TAG" ]]; then
+            echo "Release tag $RELEASE_TAG must equal package.json version $EXPECTED_TAG."
+            exit 1
+          fi
+          NOTES_FILE="release-notes/${RELEASE_TAG}.md"
+          if [[ ! -f "$NOTES_FILE" ]]; then
+            echo "Missing release notes: $NOTES_FILE"
+            exit 1
+          fi
+          grep -Eq "^# Track II ${RELEASE_TAG}([[:space:]]|$)" "$NOTES_FILE"
+
   android:
     name: Android test APK
+    needs: validate
     runs-on: ubuntu-latest
     env:
       NEXT_PUBLIC_TRACK_VERSION: ${{ inputs.tag }}
@@ -88,6 +116,7 @@ jobs:
 
   ios:
     name: Unsigned iOS IPA
+    needs: validate
     runs-on: macos-15
     env:
       RELEASE_TAG: ${{ inputs.tag }}
@@ -176,7 +205,7 @@ jobs:
 
   release:
     name: Publish GitHub release
-    needs: [android, ios]
+    needs: [validate, android, ios]
     runs-on: ubuntu-latest
     permissions:
       contents: write

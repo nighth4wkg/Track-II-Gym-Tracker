@@ -7,7 +7,8 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.resolve(scriptDirectory, "..");
 const playwrightCli = path.join(projectRoot, "node_modules", "@playwright", "test", "cli.js");
 
-await startPagesServer();
+const managedServer = !process.env.E2E_BASE_URL;
+if (managedServer) await startPagesServer();
 let exitCode = 1;
 try {
   exitCode = await new Promise((resolve, reject) => {
@@ -21,6 +22,6 @@ try {
     child.once("exit", (code) => resolve(code ?? 1));
   });
 } finally {
-  await stopPagesServer();
+  if (managedServer) await stopPagesServer();
 }
 process.exitCode = exitCode;

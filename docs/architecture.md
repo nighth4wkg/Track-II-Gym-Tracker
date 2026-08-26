@@ -20,7 +20,8 @@ the deployable bundle to `work/cloudflare-pages/`. The hosted runtime uses
 - `app/contexts/` contains focused context providers for the shared UI.
 - `app/hooks/` contains state, persistence, gesture, lifecycle, and sync hooks.
 - `app/data/` contains Supabase reads, writes, and pagination helpers.
-- `app/styles/` contains the ordered CSS layers imported by `app/globals.css`.
+- `app/styles/` contains the ordered CSS layers imported by `app/globals.css`;
+  lazy screens may import their page-specific CSS beside the screen module.
 - `app/TrackAppCore.tsx` composes the state hooks and passes behavior into the
   presentation shell.
 - `supabase/migrations/` contains the ordered database changes.
@@ -51,12 +52,14 @@ other actual account data are the parts that synchronize.
 ## Database and functions
 
 Apply the migrations in filename order. The current source includes migrations
-through `20260830_history_read_optimization.sql`, including owner RLS,
+through `20260831_dashboard_summary.sql`, including owner RLS,
 personal-information protection, input validation, bounded calendar deletion,
 private Realtime channels, administrator roster safeguards, announcements, and
-sync-payload integrity checks. The latest migration adds owner-scoped compact
-history RPCs and supporting indexes so startup and calendar refreshes do not
-download complete workout-history tables.
+sync-payload integrity checks. The latest migrations add owner-scoped compact
+history and dashboard-summary RPCs plus supporting indexes so startup,
+calendar, and dashboard refreshes do not download complete workout-history
+tables. The dashboard summary is keyed by the authenticated user's revision
+and aggregates modern rows by `session_id`.
 
 The active functions are:
 
@@ -65,6 +68,8 @@ The active functions are:
 - `admin-member-data` for administrator-only directory and read-only member
   operations.
 - `admin-announcement` for administrator-only announcements.
+- `get_dashboard_summary` and `get_dashboard_revision` for the authenticated,
+  owner-scoped dashboard data path.
 
 Server-only administrator configuration stays in Supabase secrets. The browser
 receives only the minimum directory fields and never receives service-role

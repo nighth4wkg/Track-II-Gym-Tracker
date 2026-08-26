@@ -1,34 +1,36 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { buildRankSummaries } from "../rankData";
+import "../styles/pages/dashboard.css";
 import { detectExerciseTargets } from "../exerciseClassifier.js";
+import { buildRankSummaries } from "../rankData";
 import {
-  averageVolumeForDates,
+  aggregateSessions,
+  averageVolumeForSessions,
   buildActivityPoints,
-  dateKeyTimestamp,
   formatShortDate,
-  performedDateKey,
   performedTimestamp,
-  splitVolumeTrend,
+  splitVolumeTrendForSessions,
+  startOfLocalDay,
   timeframeBounds,
-  volumeByWorkoutDate,
-  WEEK_MS,
+  type DashboardSessionMetric,
   type DashboardTimeframe,
 } from "../dashboardMetrics";
+import type { DashboardSummary, DashboardVolumePeriod } from "../dashboardSummary";
 import { buildProgressFeed } from "../dashboardProgressFeed";
-import type { RankTask } from "../rankModels";
+import type { RankSummary, RankTask } from "../rankModels";
 import type { Checklist } from "../trackTypes";
 import { TRACK_LIMITS } from "../trackConstants";
 import { DashboardActivityGraph } from "./DashboardActivityGraph";
 import { MotionSelect } from "./MotionSelect";
 
-type DashboardScreenProps = {
+export type DashboardScreenProps = {
   lists: Checklist[];
   rankTasks: RankTask[];
   historyTasks: RankTask[];
   workoutDates: Set<string>;
   bodyWeightKg: number;
+  dashboardSummary?: DashboardSummary | null;
 };
 
 const WEEKLY_SET_TARGET = TRACK_LIMITS.weeklyMuscleSetTarget;
@@ -43,6 +45,10 @@ function formatVolumeLoad(value: number) {
   return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(Math.max(0, value)))} kg`;
 }
 
+function formatLiftLoad(value: number, unit: "kg" | "lb") {
+  return `${new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(Math.round(Math.max(0, value)))} ${unit}`;
+}
+
 function formatVolumeDelta(value: number) {
   const direction = value > 0 ? "↑" : value < 0 ? "↓" : "→";
   return `${direction} ${Math.abs(value)}%`;
@@ -52,89 +58,141 @@ function titleCase(value: string) {
   return value.replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export function buildDashboardMetrics(
-  { lists, rankTasks, historyTasks, workoutDates, bodyWeightKg }: DashboardScreenProps,
-  timeframe: DashboardTimeframe = "week",
+function sessionTimestamp(session: DashboardSessionMetric) {
+  const timestamp = new Date(session.createdAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : 0;
+}
+
+function summaryProgressFeed(summary: DashboardSummary) {
+  return summary.progressFeed.map((item) => ({
+    id: item.id,
+    exercise: item.exercise,
+    detail: `${formatLiftLoad(item.weight, item.unit)} × ${item.reps} reps${item.isPr ? " · PR" : ""}`,
+    timestamp: new Date(item.createdAt).getTime(),
+    pr: item.isPr,
+  }));
+}
+
+function sessionSource(
+  summary: DashboardSummary | null | undefined,
+  historyTasks: RankTask[],
+  workoutDates: Set<string>,
 ) {
-  const now = Date.now();
-  const canonicalWorkoutDates = new Set([...workoutDates].filter((dateKey) => dateKeyTimestamp(dateKey) > 0));
-  if (!canonicalWorkoutDates.size) {
-    historyTasks
-      .map(performedDateKey)
-      .filter(Boolean)
-      .forEach((dateKey) => canonicalWorkoutDates.add(dateKey));
-  }
-  const workoutTimestamps = [...canonicalWorkoutDates].map(dateKeyTimestamp);
-  const allTimestamps = workoutTimestamps;
-  const { start, end } = timeframeBounds(timeframe, allTimestamps, now);
+  if (summary && (summary.sessions.length > 0 || summary.sessionCount === 0)) return summary.sessions;
+  return aggregateSessions(historyTasks, workoutDates);
+}
+
+export type DashboardStableMetrics = {
+  splitCount: number;
+  exerciseCount: number;
+  totalSets: number;
+  overallScore: number;
+  muscleBalance: Array<RankSummary & { weeklySets: number }>;
+  progressFeed: ReturnType<typeof buildProgressFeed>;
+  sessions: DashboardSessionMetric[];
+  totalVolume: number;
+  volumeByPeriod: Partial<Record<DashboardTimeframe, DashboardVolumePeriod>>;
+};
+
+/** Stable calculations intentionally do not depend on the selected timeframe. */
+export function buildDashboardStableMetrics({
+  lists,
+  rankTasks,
+  historyTasks,
+  workoutDates,
+  bodyWeightKg,
+  dashboardSummary,
+}: DashboardScreenProps): DashboardStableMetrics {
+  const sessions = sessionSource(dashboardSummary, historyTasks, workoutDates);
   const summaries = buildRankSummaries([...rankTasks, ...historyTasks], { bodyWeightKg });
   const ranked = summaries.filter((summary) => summary.score > 0);
   const overallScore = ranked.length ? ranked.reduce((sum, summary) => sum + summary.score, 0) / ranked.length : 0;
-  const selectedWorkoutDates = [...canonicalWorkoutDates]
-    .filter((dateKey) => {
-      const timestamp = dateKeyTimestamp(dateKey);
-      return timestamp >= start && timestamp <= end;
-    })
-    .sort();
-  const selectedDateSet = new Set(selectedWorkoutDates);
-  const selectedHistory = historyTasks.filter((task) => selectedDateSet.has(performedDateKey(task)));
-  const historyVolumeByDate = volumeByWorkoutDate(historyTasks);
-  const recentAverageVolume = averageVolumeForDates(selectedHistory, selectedWorkoutDates);
-  const volumeChange = splitVolumeTrend(selectedHistory, selectedWorkoutDates);
-  const totalVolume = [...canonicalWorkoutDates].reduce(
-    (sum, dateKey) => sum + (historyVolumeByDate.get(dateKey) ?? 0),
-    0,
-  );
-  const activity = buildActivityPoints(workoutTimestamps, timeframe, start, end);
-  const activityWorkoutCount = activity.reduce((sum, point) => sum + point.count, 0);
-  const recentWorkouts = selectedWorkoutDates.length;
   const totalSets = lists.reduce(
     (sum, list) => sum + list.tasks.reduce((taskSum, task) => taskSum + Math.max(1, task.sets?.length ?? 0), 0),
     0,
   );
   const weeklySets = new Map<string, number>();
-  historyTasks
-    .filter((task) => performedTimestamp(task) >= now - WEEK_MS)
-    .forEach((task) => {
+  if (dashboardSummary?.weeklyMuscleTotals.length) {
+    for (const item of dashboardSummary.weeklyMuscleTotals) weeklySets.set(item.group, item.setCount);
+  } else if (dashboardSummary?.weeklyExerciseSets.length) {
+    for (const item of dashboardSummary.weeklyExerciseSets) {
+      const primaryGroup = detectExerciseTargets(item.exerciseName).targets[0]?.group;
+      if (primaryGroup) weeklySets.set(primaryGroup, (weeklySets.get(primaryGroup) ?? 0) + item.setCount);
+    }
+  } else {
+    const now = Date.now();
+    for (const task of historyTasks) {
+      if (performedTimestamp(task) < startOfLocalDay(now - 6 * 24 * 60 * 60 * 1000)) continue;
       const primaryGroup = detectExerciseTargets(task.text).targets[0]?.group;
-      if (!primaryGroup) return;
-      weeklySets.set(primaryGroup, (weeklySets.get(primaryGroup) ?? 0) + (task.sets?.length ?? 0));
-    });
+      if (primaryGroup) weeklySets.set(primaryGroup, (weeklySets.get(primaryGroup) ?? 0) + (task.sets?.length ?? 0));
+    }
+  }
   const muscleBalance = summaries
-    .map((summary) => ({
-      group: summary.group,
-      score: summary.score,
-      label: summary.label,
-      color: summary.color,
-      progress: summary.progress,
-      weeklySets: weeklySets.get(summary.group) ?? 0,
-    }))
+    .map((summary) => ({ ...summary, weeklySets: weeklySets.get(summary.group) ?? 0 }))
     .sort((left, right) => right.score - left.score);
 
   return {
     splitCount: lists.length,
     exerciseCount: rankTasks.length,
     totalSets,
-    recentWorkouts,
-    recentAverageVolume,
     overallScore,
-    volumeChange,
-    totalVolume,
-    activity,
-    activityWorkoutCount,
     muscleBalance,
-    progressFeed: buildProgressFeed(selectedHistory),
+    progressFeed: dashboardSummary?.progressFeed.length
+      ? summaryProgressFeed(dashboardSummary)
+      : buildProgressFeed(historyTasks),
+    sessions,
+    totalVolume:
+      dashboardSummary?.volumeByPeriod.all?.volumeKg ??
+      sessions.reduce((sum, session) => sum + Math.max(0, session.volumeKg), 0),
+    volumeByPeriod: dashboardSummary?.volumeByPeriod ?? {},
   };
+}
+
+export function buildDashboardTimeframeMetrics(
+  stable: DashboardStableMetrics,
+  timeframe: DashboardTimeframe = "week",
+  now = Date.now(),
+) {
+  const timestamps = stable.sessions.map(sessionTimestamp).filter((timestamp) => timestamp > 0);
+  const { start, end } = timeframeBounds(timeframe, timestamps, now);
+  const selectedSessions = stable.sessions.filter((session) => {
+    const timestamp = sessionTimestamp(session);
+    return timestamp >= start && timestamp <= end;
+  });
+  const activity = buildActivityPoints(timestamps, timeframe, start, end);
+  const progressFeed = stable.progressFeed.filter((item) => item.timestamp >= start && item.timestamp <= end);
+  const serverPeriod = stable.volumeByPeriod[timeframe];
+  return {
+    ...stable,
+    recentWorkouts: serverPeriod?.sessionCount ?? selectedSessions.length,
+    recentAverageVolume:
+      serverPeriod && serverPeriod.sessionCount > 0
+        ? serverPeriod.volumeKg / serverPeriod.sessionCount
+        : averageVolumeForSessions(selectedSessions),
+    volumeChange: splitVolumeTrendForSessions(selectedSessions),
+    activity,
+    activityWorkoutCount: activity.reduce((sum, point) => sum + point.count, 0),
+    progressFeed,
+  };
+}
+
+export function buildDashboardMetrics(
+  props: DashboardScreenProps,
+  timeframe: DashboardTimeframe = "week",
+  now = Date.now(),
+) {
+  return buildDashboardTimeframeMetrics(buildDashboardStableMetrics(props), timeframe, now);
 }
 
 export function DashboardScreen(props: DashboardScreenProps) {
   const [timeframe, setTimeframe] = useState<DashboardTimeframe>("week");
-  const { lists, rankTasks, historyTasks, workoutDates, bodyWeightKg } = props;
-  const metrics = useMemo(
-    () => buildDashboardMetrics({ lists, rankTasks, historyTasks, workoutDates, bodyWeightKg }, timeframe),
-    [bodyWeightKg, historyTasks, lists, rankTasks, timeframe, workoutDates],
+  const { lists, rankTasks, historyTasks, workoutDates, bodyWeightKg, dashboardSummary } = props;
+  const stableMetrics = useMemo(
+    () => buildDashboardStableMetrics({ lists, rankTasks, historyTasks, workoutDates, bodyWeightKg, dashboardSummary }),
+    [bodyWeightKg, dashboardSummary, historyTasks, lists, rankTasks, workoutDates],
   );
-  const timeframeLabel = TIMEFRAME_OPTIONS.find((option) => option.value === timeframe)?.label ?? "All time";
+  const metrics = useMemo(() => buildDashboardTimeframeMetrics(stableMetrics, timeframe), [stableMetrics, timeframe]);
+  const timeframeLabel = TIMEFRAME_OPTIONS.find((option) => option.value === timeframe)?.label ?? "Last week";
 
   return (
     <section className="dashboard-screen">

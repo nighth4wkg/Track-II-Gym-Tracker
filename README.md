@@ -135,6 +135,11 @@ announcements server-side, and `20260827_private_sync_channels.sql` limits
 Realtime broadcasts to the signed-in user's own private channel. Do not skip
 these migrations; the app no longer uses a public cross-user broadcast channel.
 
+The `20260831_dashboard_summary.sql` migration adds the owner-scoped dashboard
+summary and revision RPCs. It aggregates modern workout rows by session ID,
+uses the requested local timezone for period boundaries, and returns the
+dashboard's volume periods, progression feed, and weekly muscle totals.
+
 In the admin member directory, open a member's `…` menu to promote or demote
 them. The last remaining administrator cannot be demoted, so an installation
 always keeps a way back into the admin panel. Role changes are server-side and
@@ -202,8 +207,8 @@ npm.cmd run package:pages:release
 ```
 
 The files are written to `release-artifacts` with names like
-`Track-II-web-v1.0-build-20260820-184500.zip` and
-`Track-II-web-v1.0-rollback-20260820-184500.zip`. The command never
+`Track-II-web-vX.Y.Z-build-YYYYMMDD-HHMMSS.zip` and
+`Track-II-web-vX.Y.Z-rollback-YYYYMMDD-HHMMSS.zip`. The command never
 overwrites an existing archive. The rollback archive points to the previous
 verified web build; on the first run it preserves the current verified build
 as the initial rollback point. Upload the release ZIP for a new deployment or

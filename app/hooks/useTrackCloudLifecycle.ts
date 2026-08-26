@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { supabase } from "../supabase";
-import { CALENDAR_SYNC_POLL_MS, MILLISECONDS_PER_DAY, TRACK_LIMITS, TRACK_TIMING } from "../trackConstants";
+import { CALENDAR_SYNC_POLL_MS, MILLISECONDS_PER_DAY, TRACK_LIMITS } from "../trackConstants";
 import { showSystemNotification } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
+
+const ANNOUNCEMENT_FALLBACK_POLL_MS = 5 * 60 * 1000;
+
+type AnnouncementRow = { id?: unknown; message?: unknown };
 
 export function useTrackCloudLifecycle({
   user,
@@ -15,7 +19,7 @@ export function useTrackCloudLifecycle({
   readWorkoutDates,
   applyWorkoutDates,
 }: UseTrackAppLifecycleOptions) {
-  const { setAnnouncement, setAnnouncementOffset, setAdminAuthorized } = identity;
+  const { setAnnouncement, setAnnouncementOffset } = identity;
   const { setCalendarMonth } = rank;
   const { calendarInitializedFor: calendarInitializedForRef, latestAnnouncementId: latestAnnouncementIdRef } = refs;
 
@@ -58,7 +62,21 @@ export function useTrackCloudLifecycle({
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
+    let realtimeConnected = false;
     latestAnnouncementIdRef.current = null;
+
+    const applyAnnouncement = (row: AnnouncementRow) => {
+      if (cancelled) return;
+      const id = String(row.id ?? "");
+      const message = String(row.message ?? "")
+        .trim()
+        .slice(0, TRACK_LIMITS.maxAnnouncementChars);
+      if (!id || !message || latestAnnouncementIdRef.current === id) return;
+      latestAnnouncementIdRef.current = id;
+      setAnnouncement({ id, message });
+      void showSystemNotification(message, id);
+    };
+
     const loadLatestAnnouncement = async () => {
       const cutoff = new Date(Date.now() - TRACK_LIMITS.announcementLookbackDays * MILLISECONDS_PER_DAY).toISOString();
       const { data, error } = await supabase
@@ -68,20 +86,23 @@ export function useTrackCloudLifecycle({
         .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (cancelled || error || !data) return;
-      const id = String(data.id ?? "");
-      const message = String(data.message ?? "")
-        .trim()
-        .slice(0, TRACK_LIMITS.maxAnnouncementChars);
-      if (!id || !message || latestAnnouncementIdRef.current === id) return;
-      latestAnnouncementIdRef.current = id;
-      setAnnouncement({ id, message });
-      void showSystemNotification(message, id);
+      if (!error && data) applyAnnouncement(data);
     };
+
     void loadLatestAnnouncement();
-    const interval = window.setInterval(() => {
-      if (!document.hidden) void loadLatestAnnouncement();
-    }, TRACK_TIMING.announcementPollMs);
+    const channel = supabase
+      .channel("track-announcements")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "track_announcements" }, (payload) =>
+        // SAFETY: Realtime payloads are object-shaped records; applyAnnouncement only reads id/message and bounds both values.
+        applyAnnouncement(payload.new as AnnouncementRow),
+      )
+      .subscribe((status) => {
+        realtimeConnected = status === "SUBSCRIBED";
+        if (realtimeConnected) void loadLatestAnnouncement();
+      });
+    const fallbackInterval = window.setInterval(() => {
+      if (!realtimeConnected && !document.hidden) void loadLatestAnnouncement();
+    }, ANNOUNCEMENT_FALLBACK_POLL_MS);
     const resume = () => {
       if (!document.hidden) void loadLatestAnnouncement();
     };
@@ -90,41 +111,13 @@ export function useTrackCloudLifecycle({
     document.addEventListener("visibilitychange", resume);
     return () => {
       cancelled = true;
-      window.clearInterval(interval);
+      window.clearInterval(fallbackInterval);
+      void supabase.removeChannel(channel);
       window.removeEventListener("focus", resume);
       window.removeEventListener("online", resume);
       document.removeEventListener("visibilitychange", resume);
     };
   }, [latestAnnouncementIdRef, setAnnouncement, user?.id]);
-
-  useEffect(() => {
-    let cancelled = false;
-    if (!user?.id) {
-      setAdminAuthorized(false);
-      return () => {
-        cancelled = true;
-      };
-    }
-    setAdminAuthorized(false);
-    let lastHeartbeat = 0;
-    const sendHeartbeat = async () => {
-      if (document.visibilityState !== "visible" || Date.now() - lastHeartbeat < TRACK_TIMING.adminHeartbeatStaleMs)
-        return;
-      lastHeartbeat = Date.now();
-      const { data } = await supabase.functions.invoke("admin-member-data", { body: { action: "heartbeat" } });
-      if (!cancelled) setAdminAuthorized(data?.isAdmin === true);
-    };
-    void sendHeartbeat();
-    const interval = window.setInterval(sendHeartbeat, TRACK_TIMING.adminHeartbeatPollMs);
-    document.addEventListener("visibilitychange", sendHeartbeat);
-    window.addEventListener("focus", sendHeartbeat);
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-      document.removeEventListener("visibilitychange", sendHeartbeat);
-      window.removeEventListener("focus", sendHeartbeat);
-    };
-  }, [setAdminAuthorized, user?.id]);
 
   useEffect(() => {
     if (!announcement) return;

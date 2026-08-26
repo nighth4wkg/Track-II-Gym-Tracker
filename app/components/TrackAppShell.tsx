@@ -17,6 +17,7 @@ import { SplitMenu } from "./SplitMenu";
 import { UndoToast } from "./UndoToast";
 import { UpdateNotification } from "./UpdateNotification";
 import { WorkspaceContent } from "./WorkspaceContent";
+import type { ActivePage } from "../navigationPage";
 
 type MainHandlers = Pick<
   ComponentProps<"main">,
@@ -29,11 +30,7 @@ export type TrackAppShellProps = {
   settingsOpen: boolean;
   mobileSidebarOpen: boolean;
   isAdmin: boolean;
-  active: boolean;
-  showDashboard: boolean;
-  showTimer: boolean;
-  showCalendar: boolean;
-  showRank: boolean;
+  activePage: ActivePage;
   settingsContextValue: ComponentProps<typeof SettingsProvider>["value"];
   mainHandlers: MainHandlers;
   onOpenAdminUsers: () => void;
@@ -58,11 +55,7 @@ export function TrackAppShell({
   settingsOpen,
   mobileSidebarOpen,
   isAdmin,
-  active,
-  showDashboard,
-  showTimer,
-  showCalendar,
-  showRank,
+  activePage,
   settingsContextValue,
   mainHandlers,
   onOpenAdminUsers,
@@ -86,25 +79,18 @@ export function TrackAppShell({
         <AccountPromptModals {...accountPromptProps} />
         {announcementProps && <AnnouncementBanner {...announcementProps} />}
         {updateNotificationProps && <UpdateNotification {...updateNotificationProps} />}
-        {active &&
-          !showDashboard &&
-          !showTimer &&
-          !showCalendar &&
-          !showRank &&
-          !settingsOpen &&
-          !mobileSidebarOpen &&
-          workspaceProps.workoutActionsAvailable && (
-            <div className={`desktop-finish-action${isAdmin ? " has-admin" : ""}`}>
-              <FinishWorkoutButton
-                className="header-finish-button"
-                completionEnabled={workspaceProps.completionEnabled}
-                openCount={workspaceProps.openCount}
-                progressFading={workspaceProps.progressFading}
-                workoutActionsExiting={workspaceProps.workoutActionsExiting}
-                onFinishWorkout={workspaceProps.onFinishWorkout}
-              />
-            </div>
-          )}
+        {activePage === "workout" && !settingsOpen && !mobileSidebarOpen && workspaceProps.workoutActionsAvailable && (
+          <div className={`desktop-finish-action${isAdmin ? " has-admin" : ""}`}>
+            <FinishWorkoutButton
+              className="header-finish-button"
+              completionEnabled={workspaceProps.completionEnabled}
+              openCount={workspaceProps.openCount}
+              progressFading={workspaceProps.progressFading}
+              workoutActionsExiting={workspaceProps.workoutActionsExiting}
+              onFinishWorkout={workspaceProps.onFinishWorkout}
+            />
+          </div>
+        )}
         {isAdmin && (
           <div className="admin-users-desktop-trigger">
             <AdminUsersButton onClick={onOpenAdminUsers} />
@@ -136,11 +122,7 @@ export function TrackAppShell({
               </button>
             </div>
             <div className="mobile-actions">
-              {active &&
-                !showDashboard &&
-                !showTimer &&
-                !showCalendar &&
-                !showRank &&
+              {activePage === "workout" &&
                 !settingsOpen &&
                 !mobileSidebarOpen &&
                 workspaceProps.workoutActionsAvailable && (
@@ -169,13 +151,9 @@ export function TrackAppShell({
         </section>
 
         {globalThis.document && createPortal(<BottomTabBar {...bottomTabProps} />, document.body)}
-        {active &&
-          !showDashboard &&
-          !showTimer &&
-          !showCalendar &&
-          !showRank &&
-          !settingsOpen &&
-          !mobileSidebarOpen && <ScrollShortcuts {...scrollShortcutsProps} />}
+        {activePage === "workout" && !settingsOpen && !mobileSidebarOpen && (
+          <ScrollShortcuts {...scrollShortcutsProps} />
+        )}
         {splitMenuProps && <SplitMenu {...splitMenuProps} />}
         <ActionModalOverlays {...actionModalProps} />
         {settingsOpen && <SettingsModal {...settingsModalProps} />}

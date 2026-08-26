@@ -1,3 +1,6 @@
+[functions]
+import_map = "./functions/import_map.json"
+
 [functions.username-auth]
 verify_jwt = false
 

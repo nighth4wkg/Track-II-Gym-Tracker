@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
 import type { RankTask } from "../rankData";
+import type { DashboardSummary } from "../dashboardSummary";
 
 export function useRankCalendarState() {
   const [rankHistoryTasks, setRankHistoryTasks] = useState<RankTask[]>([]);
@@ -14,6 +15,7 @@ export function useRankCalendarState() {
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [workoutDates, setWorkoutDates] = useState<Set<string>>(new Set());
+  const [dashboardSummary, setDashboardSummary] = useState<DashboardSummary | null>(null);
 
   return {
     rankHistoryTasks,
@@ -28,6 +30,8 @@ export function useRankCalendarState() {
     setCalendarMonth,
     workoutDates,
     setWorkoutDates,
+    dashboardSummary,
+    setDashboardSummary,
   };
 }
 

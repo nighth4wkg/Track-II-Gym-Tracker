@@ -111,6 +111,7 @@ export function useTrackAppRuntimeLifecycle({
       setRankEquipmentOverrides: rankState.setRankEquipmentOverrides,
       rankHistoryVersion: rankState.rankHistoryVersion,
       setRankHistoryTasks: rankState.setRankHistoryTasks,
+      setDashboardSummary: rankState.setDashboardSummary,
       setCalendarMonth: rankState.setCalendarMonth,
     },
     timer: {

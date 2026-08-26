@@ -14,13 +14,21 @@ import { createSettingsContextValue } from "./createSettingsContextValue";
 import { createSettingsModalProps } from "./createSettingsModalProps";
 import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../exerciseProgress";
 import { createTrackAppOverlayProps } from "./createTrackAppOverlayProps";
+import { activePageFromNavigation } from "../navigationPage";
 
 export function TrackAppView({ active: activeResult, controllers, local, nativeApp, state, tasks }: TrackAppViewProps) {
   const active = activeResult ?? null;
   const { identity, navigation, rank, settings, timer, workout } = state;
   const { siteUpdateSeconds, syncLabel } = identity;
   const { completionEnabled, dirtySplits, settingsOpen } = settings;
-  const { calendarMonth, rankCategoryOverrides, rankEquipmentOverrides, rankHistoryTasks, workoutDates } = rank;
+  const {
+    calendarMonth,
+    dashboardSummary,
+    rankCategoryOverrides,
+    rankEquipmentOverrides,
+    rankHistoryTasks,
+    workoutDates,
+  } = rank;
   const { showCalendar, showDashboard, showRank, showTimer } = navigation;
   const {
     customRestInput,
@@ -87,6 +95,13 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   }, [lists]);
   const allSplitRankTasks = useMemo(() => buildAllSplitRankTasks(lists), [lists]);
   const activeBottomTab = bottomTabFromNavigation({ showCalendar, showDashboard, showRank, showTimer });
+  const activePage = activePageFromNavigation({
+    active: Boolean(active),
+    showDashboard,
+    showRank,
+    showCalendar,
+    showTimer,
+  });
   const accountUsername = String(user?.user_metadata?.username ?? "").trim() || "username";
   const accountRoleLabel = isAdmin ? "Admin" : "User";
   const accountRoleInitial = isAdmin ? "A" : "U";
@@ -217,10 +232,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const workspaceProps = {
     homeTransition,
     cloudReady: identity.cloudReady,
-    showDashboard,
-    showRank,
-    showCalendar,
-    showTimer,
+    activePage,
     active,
     lists,
     tasks,
@@ -240,6 +252,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     composerRef,
     inputRef,
     rankHistoryTasks,
+    dashboardSummary,
     personalInfo,
     rankCategoryOverrides,
     rankEquipmentOverrides,
@@ -355,11 +368,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       settingsOpen={settingsOpen}
       mobileSidebarOpen={mobileSidebarOpen}
       isAdmin={isAdmin}
-      active={Boolean(active)}
-      showDashboard={showDashboard}
-      showTimer={showTimer}
-      showCalendar={showCalendar}
-      showRank={showRank}
+      activePage={activePage}
       settingsContextValue={settingsContextValue}
       mainHandlers={mainHandlers}
       onOpenAdminUsers={() => {

@@ -1,31 +1,6 @@
 .calendar-detail-modal.ui-panel {
   border-radius: 18px;
 }
-.ui-status {
-  min-width: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.ui-status > i {
-  width: 6px;
-  height: 6px;
-  flex: 0 0 6px;
-  border-radius: 50%;
-  background: currentColor;
-  box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 14%, transparent);
-}
-.ui-empty {
-  text-align: center;
-  color: var(--muted);
-}
-.ui-empty h2 {
-  color: var(--ink);
-}
-.ui-empty p {
-  color: var(--muted);
-}
-
 .workout-page .task {
   background: var(--soft);
 }

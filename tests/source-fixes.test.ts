@@ -5,9 +5,11 @@ import { rankHistoryGroupKey } from "../app/historyKeys.ts";
 import { formatPersonalInput, toMetricPersonalInput } from "../app/personalMeasurements.ts";
 import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../app/exerciseProgress.ts";
 import {
+  aggregateSessions,
   averageVolumeForDates,
   buildActivityPoints,
   dateKeyTimestamp,
+  timeframeBounds,
   splitVolumeTrend,
 } from "../app/dashboardMetrics.ts";
 import { normalizeSettingsView } from "../app/trackConstants.ts";
@@ -204,4 +206,47 @@ test("dashboard volume uses the filtered workout dates and compares its two halv
     yearToDatePoints.reduce((sum, point) => sum + point.count, 0),
     6,
   );
+});
+
+test("dashboard buckets use local days while modern sessions stay distinct", () => {
+  const sessions = aggregateSessions([
+    {
+      text: "Bench Press",
+      sessionId: "session-a",
+      exerciseId: "bench",
+      performedAt: "2026-08-05T10:00:00.000Z",
+      sets: [{ weight: 20, unit: "kg" as const, reps: 5 }],
+    },
+    {
+      text: "Cable Row",
+      sessionId: "session-a",
+      exerciseId: "row",
+      performedAt: "2026-08-05T10:10:00.000Z",
+      sets: [{ weight: 30, unit: "kg" as const, reps: 5 }],
+    },
+    {
+      text: "Bench Press",
+      sessionId: "session-b",
+      exerciseId: "bench",
+      performedAt: "2026-08-05T18:00:00.000Z",
+      sets: [{ weight: 25, unit: "kg" as const, reps: 5 }],
+    },
+  ]);
+
+  assert.equal(sessions.length, 2);
+  assert.deepEqual(
+    sessions.map(({ id, volumeKg, exerciseCount }) => ({ id, volumeKg, exerciseCount })),
+    [
+      { id: "session-a", volumeKg: 250, exerciseCount: 2 },
+      { id: "session-b", volumeKg: 125, exerciseCount: 1 },
+    ],
+  );
+
+  const now = new Date(2026, 7, 26, 18, 0, 0, 0).getTime();
+  const week = timeframeBounds("week", [], now);
+  const all = timeframeBounds("all", [new Date(2026, 7, 5, 23, 30).getTime()], now);
+  assert.equal(new Date(week.start).getDate(), 20);
+  assert.equal(new Date(week.end).getTime(), now);
+  assert.equal(new Date(all.start).getDate(), 5);
+  assert.equal(new Date(all.end).getTime(), now);
 });

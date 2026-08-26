@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { createClient } from "@supabase/supabase-js";
 import { isAllowedOrigin, responseHeaders } from "../_shared/cors.ts";
 import { isBooleanValue, isFiniteNumberValue, isIntegerValue, isJsonObject, isStringValue, json, type JsonValue } from "../_shared/http.ts";
 import { consumeRateLimit } from "../_shared/rateLimit.ts";

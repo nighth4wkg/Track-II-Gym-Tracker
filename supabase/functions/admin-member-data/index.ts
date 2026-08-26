@@ -1,4 +1,4 @@
-import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.111.0";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { checkAdminAccess, loadAdminIds, normalizeUsername } from "../_shared/admin.ts";
 import { isAllowedOrigin, responseHeaders } from "../_shared/cors.ts";
 import { json } from "../_shared/http.ts";
@@ -136,6 +136,19 @@ Deno.serve(async (request) => {
       if (roleChange?.reason === "last-admin") return json(request, { error: "At least one administrator must remain." }, 409);
       if (roleChange?.reason === "not-found") return json(request, { error: "No member was found for that username." }, 404);
       if (roleChange?.ok !== true) return json(request, { error: "Could not change administrator access." }, 502);
+      // app_metadata is only written from this protected service-role path.
+      // The client may use the signed JWT metadata to shape its UI, but every
+      // privileged operation above still verifies the admin roster server-side.
+      const authTarget = await adminClient.auth.admin.getUserById(target.user_id);
+      if (!authTarget.error && authTarget.data.user) {
+        await adminClient.auth.admin.updateUserById(target.user_id, {
+          app_metadata: {
+            ...(authTarget.data.user.app_metadata ?? {}),
+            role: roleChange.isAdmin === true ? "admin" : "user",
+            is_admin: roleChange.isAdmin === true,
+          },
+        });
+      }
       return json(request, { ok: true, isAdmin: roleChange.isAdmin === true, username });
     }
 

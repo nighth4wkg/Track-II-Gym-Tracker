@@ -6,8 +6,8 @@ The default checks are intentionally split by responsibility:
   behavior tests.
 - `npm.cmd run typecheck` validates TypeScript contracts.
 - `npm.cmd run lint` runs ESLint and the anti-slop rules.
-- `npm.cmd run check:maintainability` prevents components over 700 lines and
-  prevents the existing CSS override count from growing past its budget.
+- `npm.cmd run check:maintainability` keeps components, hooks, data modules,
+  utility modules, and CSS under separate size and duplication budgets.
 - `npm.cmd run test:e2e` runs real browser smoke tests with a local dev server.
 - `npm.cmd run build:pages` and `npm.cmd run package:pages:release` validate the
   static deployment path and release archive.
@@ -25,6 +25,11 @@ npm.cmd run validate:production
 browser cases when those variables are absent. `validate:production` fails fast
 unless both variables exist. Authenticated tests run serially and remove the
 temporary exercise records they create.
+
+On GitHub, the `Validate` workflow runs the unauthenticated browser suite on
+every push. The protected `Validate protected staging` workflow runs the
+authenticated suite only against the configured `staging` environment, using
+its `E2E_BASE_URL`, `E2E_USERNAME`, and `E2E_PASSWORD` secrets.
 
 The test account must point at a dedicated test Supabase project. Never place
 credentials in source files or commit them. Browser tests cover the native

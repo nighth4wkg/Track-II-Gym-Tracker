@@ -60,6 +60,7 @@ export type LifecycleRankState = Pick<
   | "setRankEquipmentOverrides"
   | "rankHistoryVersion"
   | "setRankHistoryTasks"
+  | "setDashboardSummary"
   | "setCalendarMonth"
 >;
 

@@ -1,10 +1,18 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
-import { fetchRecentRankTasks } from "../data/trackApi";
+import { fetchDashboardSummary, fetchRecentRankTasks, fetchTrackRevision } from "../data/trackApi";
+import type { DashboardSummary } from "../dashboardSummary";
 import { TRACK_LIMITS, USERNAME_PATTERN } from "../trackConstants";
 import { parsedPersonalInfo } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
+
+const dashboardSummaryCache = new Map<string, DashboardSummary>();
+const dashboardSummaryRevisionCache = new Map<string, number>();
+
+function verifiedAdminRole(user: User | null) {
+  return user?.app_metadata?.role === "admin" || user?.app_metadata?.is_admin === true;
+}
 
 export function useTrackIdentityLifecycle({
   user,
@@ -25,9 +33,11 @@ export function useTrackIdentityLifecycle({
     setPersonalWeightInput,
     setPersonalInfoPromptOpen,
     setPersonalInfoMessage,
+    setAdminAuthorized,
   } = identity;
-  const { rankHistoryVersion, setRankHistoryTasks } = rank;
+  const { rankHistoryVersion, setDashboardSummary, setRankHistoryTasks } = rank;
   const { activeUserIdRef, openPasswordResetRef, clearAccountClientStateRef } = refs;
+  const loadedDataUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     const adoptSessionUser = (nextUser: User | null) => {
@@ -41,6 +51,7 @@ export function useTrackIdentityLifecycle({
       if (previousUserId && previousUserId !== nextUserId) clearAccountClientStateRef.current(previousUserId);
       activeUserIdRef.current = nextUserId;
       setUser(nextUser);
+      setAdminAuthorized(verifiedAdminRole(nextUser));
       setAuthLoading(false);
     };
     supabase.auth
@@ -55,7 +66,7 @@ export function useTrackIdentityLifecycle({
       if (event === "PASSWORD_RECOVERY") openPasswordResetRef.current();
     });
     return () => data.subscription.unsubscribe();
-  }, [activeUserIdRef, clearAccountClientStateRef, openPasswordResetRef, setAuthLoading, setUser]);
+  }, [activeUserIdRef, clearAccountClientStateRef, openPasswordResetRef, setAdminAuthorized, setAuthLoading, setUser]);
 
   useEffect(() => {
     if (!user) return;
@@ -161,13 +172,49 @@ export function useTrackIdentityLifecycle({
   ]);
 
   useEffect(() => {
-    if (!user || (!showRank && !showDashboard)) return;
+    if (!user || (!showRank && !showDashboard)) {
+      if (!user) {
+        loadedDataUserIdRef.current = null;
+        setDashboardSummary(null);
+        setRankHistoryTasks([]);
+      }
+      return;
+    }
     let cancelled = false;
-    void fetchRecentRankTasks(user.id, showDashboard ? null : undefined).then((history) => {
-      if (!cancelled) setRankHistoryTasks(history);
-    });
+    const loadRankAndDashboardData = async () => {
+      if (loadedDataUserIdRef.current !== user.id) {
+        loadedDataUserIdRef.current = user.id;
+        setDashboardSummary(null);
+        setRankHistoryTasks([]);
+      }
+
+      const cachedRevision = dashboardSummaryRevisionCache.get(user.id);
+      const cached =
+        cachedRevision === undefined ? undefined : dashboardSummaryCache.get(`${user.id}:${cachedRevision}`);
+      if (showDashboard && cached) setDashboardSummary(cached);
+
+      let refreshSummary = showDashboard && !cached;
+      if (showDashboard && cached) {
+        const revision = await fetchTrackRevision(user.id);
+        if (cancelled) return;
+        refreshSummary = revision === null || revision !== cached.revision;
+      }
+
+      const [history, summary] = await Promise.all([
+        fetchRecentRankTasks(user.id, TRACK_LIMITS.rankHistoryDays),
+        refreshSummary ? fetchDashboardSummary() : Promise.resolve(cached ?? null),
+      ]);
+      if (cancelled) return;
+      setRankHistoryTasks(history);
+      if (showDashboard && summary) {
+        dashboardSummaryCache.set(`${user.id}:${summary.revision}`, summary);
+        dashboardSummaryRevisionCache.set(user.id, summary.revision);
+        setDashboardSummary(summary);
+      }
+    };
+    void loadRankAndDashboardData();
     return () => {
       cancelled = true;
     };
-  }, [rankHistoryVersion, setRankHistoryTasks, showDashboard, showRank, user]);
+  }, [rankHistoryVersion, setDashboardSummary, setRankHistoryTasks, showDashboard, showRank, user]);
 }

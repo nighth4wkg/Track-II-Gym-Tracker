@@ -15,6 +15,8 @@ import { WorkoutPage } from "./WorkoutPage";
 import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
 import type { CalendarScreenProps } from "./CalendarScreen";
 import type { Checklist, Filter, PersonalInfo, Task } from "../trackTypes";
+import type { DashboardSummary } from "../dashboardSummary";
+import type { ActivePage } from "../navigationPage";
 
 const TimerScreen = lazy(async () => ({ default: (await import("./TimerScreen")).TimerScreen }));
 const DashboardScreen = lazy(async () => ({ default: (await import("./DashboardScreen")).DashboardScreen }));
@@ -24,10 +26,7 @@ const CalendarScreen = lazy(async () => ({ default: (await import("./CalendarScr
 type WorkspaceContentProps = {
   homeTransition: boolean;
   cloudReady: boolean;
-  showDashboard: boolean;
-  showRank: boolean;
-  showCalendar: boolean;
-  showTimer: boolean;
+  activePage: ActivePage;
   active: Checklist | null;
   lists: Checklist[];
   tasks: Task[];
@@ -47,6 +46,7 @@ type WorkspaceContentProps = {
   composerRef: RefObject<HTMLFormElement | null>;
   inputRef: RefObject<HTMLInputElement | null>;
   rankHistoryTasks: RankTask[];
+  dashboardSummary: DashboardSummary | null;
   personalInfo: PersonalInfo | null;
   rankCategoryOverrides: Record<string, MuscleGroup>;
   rankEquipmentOverrides: Record<string, EquipmentType>;
@@ -97,10 +97,7 @@ type WorkspaceContentProps = {
 export function WorkspaceContent({
   homeTransition,
   cloudReady,
-  showDashboard,
-  showRank,
-  showCalendar,
-  showTimer,
+  activePage,
   active,
   lists,
   tasks,
@@ -118,6 +115,7 @@ export function WorkspaceContent({
   composerRef,
   inputRef,
   rankHistoryTasks,
+  dashboardSummary,
   personalInfo,
   rankCategoryOverrides,
   rankEquipmentOverrides,
@@ -158,131 +156,141 @@ export function WorkspaceContent({
   onShowSuggestionsChange,
   workoutEditorContextValue,
 }: WorkspaceContentProps) {
-  return (
-    <div
-      key={
-        showDashboard
-          ? "dashboard"
-          : showRank
-            ? "rank"
-            : showCalendar
-              ? "calendar"
-              : showTimer
-                ? "timer"
-                : (active?.id ?? "home")
-      }
-      className={homeTransition ? "content content-exit" : "content"}
-    >
-      {!cloudReady ? (
-        showDashboard ? (
-          <DashboardScreenSkeleton />
-        ) : showRank ? (
-          <RankScreenSkeleton />
-        ) : showCalendar ? (
-          <CalendarScreenSkeleton />
-        ) : showTimer ? (
-          <TimerScreenSkeleton />
-        ) : (
-          <WorkoutScreenSkeleton />
-        )
-      ) : showDashboard ? (
-        <Suspense fallback={<DashboardScreenSkeleton />}>
-          <DashboardScreen
-            lists={lists}
-            rankTasks={rankTasks}
-            historyTasks={rankHistoryTasks}
-            workoutDates={workoutDates}
-            bodyWeightKg={personalInfo?.weightKg ?? 0}
-          />
-        </Suspense>
-      ) : showRank ? (
-        <Suspense fallback={<RankScreenSkeleton />}>
-          <RankScreen
-            tasks={rankTasks}
-            historyTasks={rankHistoryTasks}
-            bodyWeightKg={personalInfo?.weightKg ?? 0}
-            heightCm={personalInfo?.heightCm ?? 0}
-            categoryOverrides={rankCategoryOverrides}
-            equipmentOverrides={rankEquipmentOverrides}
-            onCategoryOverride={onRankCategoryOverride}
-            onEquipmentOverride={onRankEquipmentOverride}
-          />
-        </Suspense>
-      ) : showCalendar ? (
-        <Suspense fallback={<CalendarScreenSkeleton />}>
-          <CalendarScreen
-            month={calendarMonth}
-            onMonthChange={onCalendarMonthChange}
-            workoutDates={workoutDates}
-            userId={userId}
-            onWorkoutDateRemoved={onWorkoutDateRemoved}
-            onWorkoutDateRestored={onWorkoutDateRestored}
-            onOfferUndo={onOfferUndo}
-            onWorkoutDateEvent={onWorkoutDateEvent}
-          />
-        </Suspense>
-      ) : showTimer ? (
-        <Suspense fallback={<TimerScreenSkeleton />}>
-          <TimerScreen
-            mode={timerMode}
-            running={timerRunning}
-            elapsed={timerElapsed}
-            restRemaining={restRemaining}
-            restSeconds={restSeconds}
-            restCustom={restCustom}
-            customRestInput={customRestInput}
-            laps={timerLaps}
-            transition={timerTransition}
-            transitionKey={timerTransitionKey}
-            onBeginSwipe={onBeginTimerSwipe}
-            onFinishSwipe={onFinishTimerSwipe}
-            onCancelSwipe={onCancelTimerSwipe}
-            onChooseMode={onChooseTimerMode}
-            onToggle={onToggleTimer}
-            onLapOrReset={onLapOrReset}
-            onClearLaps={onClearLaps}
-            onStartRest={onStartRest}
-          />
-        </Suspense>
-      ) : !active ? (
-        <div className="welcome-screen ui-empty">
-          <div className="welcome-mark">
-            <span className="dumbbell-icon" />
+  const renderPage = activePage === "workout" && !active ? "welcome" : activePage;
+  const skeleton = (() => {
+    switch (renderPage) {
+      case "dashboard":
+        return <DashboardScreenSkeleton />;
+      case "rank":
+        return <RankScreenSkeleton />;
+      case "calendar":
+        return <CalendarScreenSkeleton />;
+      case "timer":
+        return <TimerScreenSkeleton />;
+      default:
+        return <WorkoutScreenSkeleton />;
+    }
+  })();
+
+  const content = (() => {
+    switch (renderPage) {
+      case "dashboard":
+        return (
+          <Suspense fallback={<DashboardScreenSkeleton />}>
+            <DashboardScreen
+              lists={lists}
+              rankTasks={rankTasks}
+              historyTasks={rankHistoryTasks}
+              workoutDates={workoutDates}
+              bodyWeightKg={personalInfo?.weightKg ?? 0}
+              dashboardSummary={dashboardSummary}
+            />
+          </Suspense>
+        );
+      case "rank":
+        return (
+          <Suspense fallback={<RankScreenSkeleton />}>
+            <RankScreen
+              tasks={rankTasks}
+              historyTasks={rankHistoryTasks}
+              bodyWeightKg={personalInfo?.weightKg ?? 0}
+              heightCm={personalInfo?.heightCm ?? 0}
+              categoryOverrides={rankCategoryOverrides}
+              equipmentOverrides={rankEquipmentOverrides}
+              onCategoryOverride={onRankCategoryOverride}
+              onEquipmentOverride={onRankEquipmentOverride}
+            />
+          </Suspense>
+        );
+      case "calendar":
+        return (
+          <Suspense fallback={<CalendarScreenSkeleton />}>
+            <CalendarScreen
+              month={calendarMonth}
+              onMonthChange={onCalendarMonthChange}
+              workoutDates={workoutDates}
+              userId={userId}
+              onWorkoutDateRemoved={onWorkoutDateRemoved}
+              onWorkoutDateRestored={onWorkoutDateRestored}
+              onOfferUndo={onOfferUndo}
+              onWorkoutDateEvent={onWorkoutDateEvent}
+            />
+          </Suspense>
+        );
+      case "timer":
+        return (
+          <Suspense fallback={<TimerScreenSkeleton />}>
+            <TimerScreen
+              mode={timerMode}
+              running={timerRunning}
+              elapsed={timerElapsed}
+              restRemaining={restRemaining}
+              restSeconds={restSeconds}
+              restCustom={restCustom}
+              customRestInput={customRestInput}
+              laps={timerLaps}
+              transition={timerTransition}
+              transitionKey={timerTransitionKey}
+              onBeginSwipe={onBeginTimerSwipe}
+              onFinishSwipe={onFinishTimerSwipe}
+              onCancelSwipe={onCancelTimerSwipe}
+              onChooseMode={onChooseTimerMode}
+              onToggle={onToggleTimer}
+              onLapOrReset={onLapOrReset}
+              onClearLaps={onClearLaps}
+              onStartRest={onStartRest}
+            />
+          </Suspense>
+        );
+      case "workout":
+        if (!active) return null;
+        return (
+          <WorkoutEditorProvider value={workoutEditorContextValue}>
+            <WorkoutPage
+              active={active}
+              completionEnabled={completionEnabled}
+              composerRef={composerRef}
+              exerciseSuggestions={exerciseSuggestions}
+              filter={filter}
+              inputRef={inputRef}
+              openCount={openCount}
+              progressFading={progressFading}
+              quickPickExercises={quickPickExercises}
+              searchQueryActive={searchQueryActive}
+              showSuggestions={showSuggestions}
+              tasks={tasks}
+              value={value}
+              visible={visible}
+              onAddExercise={onAddExercise}
+              onAddTask={onAddTask}
+              onFilterChange={onFilterChange}
+              onOpenAiImport={onOpenAiImport}
+              onSearchValueChange={onSearchValueChange}
+              onShowSuggestionsChange={onShowSuggestionsChange}
+            />
+          </WorkoutEditorProvider>
+        );
+      default:
+        return (
+          <div className="welcome-screen ui-empty">
+            <div className="welcome-mark">
+              <span className="dumbbell-icon" />
+            </div>
+            <div className="eyebrow">TRACK</div>
+            <h1>Let’s get started</h1>
+            <p>Create a split, then add exercises.</p>
+            <WorkoutSetupSteps className="welcome-start-steps" stage={1} />
+            <button className="welcome-button ui-button ui-button-primary" onClick={onCreateChecklist}>
+              <span>＋</span> Create a new split
+            </button>
           </div>
-          <div className="eyebrow">TRACK</div>
-          <h1>Let’s get started</h1>
-          <p>Create a split, then add exercises.</p>
-          <WorkoutSetupSteps className="welcome-start-steps" stage={1} />
-          <button className="welcome-button ui-button ui-button-primary" onClick={onCreateChecklist}>
-            <span>＋</span> Create a new split
-          </button>
-        </div>
-      ) : (
-        <WorkoutEditorProvider value={workoutEditorContextValue}>
-          <WorkoutPage
-            active={active}
-            completionEnabled={completionEnabled}
-            composerRef={composerRef}
-            exerciseSuggestions={exerciseSuggestions}
-            filter={filter}
-            inputRef={inputRef}
-            openCount={openCount}
-            progressFading={progressFading}
-            quickPickExercises={quickPickExercises}
-            searchQueryActive={searchQueryActive}
-            showSuggestions={showSuggestions}
-            tasks={tasks}
-            value={value}
-            visible={visible}
-            onAddExercise={onAddExercise}
-            onAddTask={onAddTask}
-            onFilterChange={onFilterChange}
-            onOpenAiImport={onOpenAiImport}
-            onSearchValueChange={onSearchValueChange}
-            onShowSuggestionsChange={onShowSuggestionsChange}
-          />
-        </WorkoutEditorProvider>
-      )}
+        );
+    }
+  })();
+
+  return (
+    <div key={renderPage} className={homeTransition ? "content content-exit" : "content"}>
+      {!cloudReady ? skeleton : content}
     </div>
   );
 }

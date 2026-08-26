@@ -2,7 +2,6 @@ name: Validate
 
 on:
   push:
-    branches: [main]
   pull_request:
 
 permissions:
@@ -46,3 +45,11 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
           NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
         run: npm run build:pages
+
+      - name: Install Chromium for unauthenticated browser coverage
+        run: npx playwright install --with-deps chromium
+
+      - name: Run unauthenticated browser tests
+        env:
+          E2E_REQUIRE_AUTH: "0"
+        run: npm run test:e2e:built

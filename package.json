@@ -3,7 +3,7 @@
   "version": "1.0.5",
   "private": true,
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.18.0"
   },
   "scripts": {
     "generate:exercise-catalog": "node scripts/generate-exercise-primary-catalog.mjs",

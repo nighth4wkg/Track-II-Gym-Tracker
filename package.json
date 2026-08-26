@@ -2,6 +2,16 @@
   "name": "track-lifting",
   "version": "1.0.5",
   "private": true,
+  "description": "Responsive lifting-session tracker for planning splits, recording sets, and syncing workout history.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nighth4wkg/Track-II-Gym-Tracker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nighth4wkg/Track-II-Gym-Tracker/issues"
+  },
+  "homepage": "https://github.com/nighth4wkg/Track-II-Gym-Tracker#readme",
+  "license": "MIT",
   "engines": {
     "node": ">=22.18.0"
   },

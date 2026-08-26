@@ -870,7 +870,7 @@
   .rank-title-row {
     align-items: flex-start;
     flex-direction: column;
-    gap: 14px;
+    gap: 0;
   }
   .rank-map-toggle {
     align-self: stretch;
@@ -1305,16 +1305,16 @@
 
 /* v3.1 clarity system: one visual language for action, surface, state, and empty space. */
 .ui-button {
-  min-height: 36px;
+  min-height: 38px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: var(--track-space-2);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: var(--track-radius-control);
   background: var(--raised);
   color: var(--ink);
-  padding: 0 13px;
+  padding: 0 14px;
   cursor: pointer;
   font: inherit;
   font-size: 12px;
@@ -1384,10 +1384,12 @@
 .ui-panel {
   border: 1px solid color-mix(in srgb, var(--line) 88%, transparent);
   background: var(--raised);
+  box-shadow: var(--track-shadow-card);
 }
 .settings-modal.ui-panel {
-  border-radius: 20px;
+  border-radius: var(--track-radius-dialog);
+  box-shadow: var(--track-shadow-float);
 }
 .calendar-card.ui-panel {
-  border-radius: 18px;
+  border-radius: var(--track-radius-card);
 }

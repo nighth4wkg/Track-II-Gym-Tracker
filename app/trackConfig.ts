@@ -12,15 +12,17 @@ export const TRACK_DISPLAY_VERSION = TRACK_VERSION;
 // updater detect a fresh deployment even when the public version stays the same.
 export const TRACK_BUILD_ID = "__TRACK_BUILD_ID__";
 
-// These values are intentionally supplied by the deployer. Keeping them out of
-// the source lets the same Beta build work with any Pages site or release repo.
+// The Pages/native build can override these values for a fork or staging site.
+// The public release endpoint stays available as a safe default so a native
+// package cannot silently lose its update check when build variables are absent.
 const configuredTrackWebOrigin = process.env.NEXT_PUBLIC_TRACK_WEB_ORIGIN ?? "";
 const configuredTrackReleasesUrl = process.env.NEXT_PUBLIC_TRACK_RELEASES_URL ?? "";
 const configuredTrackIssuesUrl = process.env.NEXT_PUBLIC_TRACK_ISSUES_URL ?? "";
 const configuredTrackDiscordHandle = process.env.NEXT_PUBLIC_TRACK_DISCORD_HANDLE ?? "n1ghthawq";
+const defaultTrackReleasesUrl = "https://github.com/nighth4wkg/Track-II-Gym-Tracker/releases/latest";
 
 export const TRACK_WEB_ORIGIN = configuredTrackWebOrigin.trim();
-export const TRACK_RELEASES_URL = configuredTrackReleasesUrl.trim();
+export const TRACK_RELEASES_URL = (configuredTrackReleasesUrl || defaultTrackReleasesUrl).trim();
 export const TRACK_ISSUES_URL = configuredTrackIssuesUrl.trim();
 // Public support contact; deployments can replace it without editing source.
 export const TRACK_DISCORD_HANDLE = configuredTrackDiscordHandle.trim().replace(/^@/, "");

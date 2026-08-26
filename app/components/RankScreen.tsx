@@ -132,10 +132,8 @@ export function RankScreen({
     <div className="rank-screen">
       <div className="eyebrow">TRAINING INSIGHTS</div>
       <div className="rank-title-row">
-        <div>
-          <h1>Rank</h1>
-          <p>Your strength by muscle group.</p>
-        </div>
+        <h1>Rank</h1>
+        <p>Your strength by muscle group.</p>
       </div>
       <section className="rank-insight-strip" aria-label="Rank overview">
         <div className="rank-insight-card">

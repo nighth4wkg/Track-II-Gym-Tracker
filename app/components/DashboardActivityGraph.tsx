@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type PointerEvent as ReactPointerEvent } from "react";
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { ActivityPoint } from "../dashboardMetrics";
 
 const VIEWBOX_WIDTH = 296;
@@ -14,6 +14,7 @@ const REFERENCE_COUNT = 4;
 
 export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
+  const graphRef = useRef<SVGSVGElement>(null);
   const geometry = useMemo(() => {
     const max = Math.max(REFERENCE_COUNT, ...points.map((point) => point.count));
     const graphWidth = VIEWBOX_WIDTH - HORIZONTAL_INSET * 2;
@@ -30,9 +31,18 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
   }, [points]);
 
   const selectFromPointer = (event: ReactPointerEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (event.clientX - rect.left) / Math.max(1, rect.width)));
-    setActiveIndex(Math.round(ratio * Math.max(0, points.length - 1)));
+    const rect = graphRef.current?.getBoundingClientRect();
+    if (!rect || !points.length) return;
+    const graphX = Math.max(
+      HORIZONTAL_INSET,
+      Math.min(
+        VIEWBOX_WIDTH - HORIZONTAL_INSET,
+        ((event.clientX - rect.left) / Math.max(1, rect.width)) * VIEWBOX_WIDTH,
+      ),
+    );
+    const slotWidth = (VIEWBOX_WIDTH - HORIZONTAL_INSET * 2) / points.length;
+    const index = Math.max(0, Math.min(points.length - 1, Math.floor((graphX - HORIZONTAL_INSET) / slotWidth)));
+    setActiveIndex(index);
   };
   const activePoint = activeIndex === null ? null : points[activeIndex];
   const tooltipPlacement = activePoint && geometry.yFor(activePoint.count) < TOOLTIP_FLIP_Y ? " is-below" : "";
@@ -44,15 +54,15 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
         : "";
 
   return (
-    <div
-      className={activePoint ? "dashboard-graph-wrap is-inspecting" : "dashboard-graph-wrap"}
-      onPointerDown={selectFromPointer}
-      onPointerMove={(event) => activePoint && selectFromPointer(event)}
-      onPointerUp={() => setActiveIndex(null)}
-      onPointerCancel={() => setActiveIndex(null)}
-      onPointerLeave={() => setActiveIndex(null)}
-    >
-      <div className="dashboard-graph-stage">
+    <div className={activePoint ? "dashboard-graph-wrap is-inspecting" : "dashboard-graph-wrap"}>
+      <div
+        className="dashboard-graph-stage"
+        onPointerDown={selectFromPointer}
+        onPointerMove={(event) => (event.pointerType === "mouse" || activePoint) && selectFromPointer(event)}
+        onPointerUp={(event) => event.pointerType !== "mouse" && setActiveIndex(null)}
+        onPointerCancel={() => setActiveIndex(null)}
+        onPointerLeave={() => setActiveIndex(null)}
+      >
         {activePoint && activeIndex !== null && (
           <output
             className={`dashboard-graph-tooltip${tooltipPlacement}${tooltipEdge}`}
@@ -67,6 +77,7 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
           </output>
         )}
         <svg
+          ref={graphRef}
           className="dashboard-activity-graph"
           viewBox={`0 0 ${VIEWBOX_WIDTH} ${VIEWBOX_HEIGHT}`}
           preserveAspectRatio="none"
@@ -108,7 +119,7 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
           <span>Now</span>
         )}
       </div>
-      <small className="dashboard-graph-hint">Hold and slide across the graph to inspect each period.</small>
+      <small className="dashboard-graph-hint">Hold and slide across the graph, or hover to inspect each period.</small>
     </div>
   );
 }

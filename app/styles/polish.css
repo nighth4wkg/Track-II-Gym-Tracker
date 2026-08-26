@@ -2600,3 +2600,484 @@ input[type="number"]::-webkit-outer-spin-button {
     transition: none;
   }
 }
+
+/* Deslop UI refinement: a single surface, spacing, and interaction language
+   across the shell and every primary page. Keep this pass token-led so future
+   visual changes stay local and the page styles do not drift apart again. */
+:root {
+  --track-card-fill: color-mix(in srgb, var(--raised) 92%, var(--surface));
+  --track-card-border: color-mix(in srgb, var(--line) 88%, transparent);
+  --track-text-secondary: color-mix(in srgb, var(--ink) 64%, var(--muted));
+}
+
+body {
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.sidebar {
+  background: color-mix(in srgb, var(--sidebar) 94%, var(--surface));
+  border-right-color: var(--track-card-border);
+}
+
+:is(
+  .dashboard-stat-grid article,
+  .dashboard-card,
+  .calendar-card.ui-panel,
+  .calendar-insight-card,
+  .rank-insight-card,
+  .rank-hero-card,
+  .rank-card,
+  .composer,
+  .task,
+  .updates-page-card,
+  .admin-card,
+  .settings-view > .setting-section,
+  .exercise-confirm,
+  .progress-sync-confirm,
+  .password-reset-modal
+) {
+  border-color: var(--track-card-border);
+}
+
+:is(.dashboard-stat-grid article, .dashboard-card, .calendar-insight-card, .rank-insight-card, .rank-card) {
+  background: var(--track-card-fill);
+  box-shadow: var(--track-shadow-card);
+}
+
+:is(.dashboard-stat-grid article, .dashboard-card, .calendar-card.ui-panel, .rank-card, .task, .composer) {
+  border-radius: var(--track-radius-card);
+}
+
+:is(
+  .settings-nav button,
+  .nav-item,
+  .recent,
+  .new-button,
+  .timer-nav,
+  .calendar-nav,
+  .calendar-today,
+  .ui-button,
+  .motion-select-trigger,
+  .theme-button,
+  .sidebar-inline-toggle
+):focus-visible,
+:is(
+  .bottom-tab,
+  .calendar-cell,
+  .rank-card,
+  .timer-swipe-hint button,
+  .timer-controls button,
+  .settings-close
+):focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ink) 46%, transparent);
+  outline-offset: 3px;
+}
+
+.dashboard-title-row,
+.calendar-title-row,
+.rank-title-row {
+  align-items: flex-end;
+}
+
+.rank-title-row {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.rank-title-row h1,
+.rank-title-row p {
+  text-align: left;
+}
+
+.dashboard-title-row {
+  margin: 4px 0 24px;
+}
+
+.dashboard-title-row p,
+.calendar-title-row p,
+.rank-title-row p {
+  line-height: 1.45;
+}
+
+.dashboard-period-select .motion-select-trigger {
+  min-height: 40px;
+  border-radius: var(--track-radius-control);
+  background: var(--track-card-fill);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.dashboard-stat-grid article {
+  border-radius: var(--track-radius-card);
+  padding: var(--track-space-4);
+}
+
+.dashboard-stat-grid small {
+  color: var(--track-text-secondary);
+}
+
+.dashboard-card {
+  padding: var(--track-space-5);
+}
+
+.dashboard-card-heading {
+  min-height: 36px;
+  margin-bottom: var(--track-space-5);
+}
+
+.dashboard-card-heading strong {
+  letter-spacing: -0.025em;
+}
+
+.dashboard-card-description,
+.dashboard-volume-note,
+.dashboard-graph-hint {
+  color: var(--track-text-secondary);
+}
+
+.dashboard-graph-stage {
+  padding-inline: var(--track-space-3);
+}
+
+.dashboard-graph-tooltip {
+  border-color: color-mix(in srgb, var(--ink) 22%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--raised) 96%, transparent);
+  box-shadow: var(--track-shadow-float);
+}
+
+.dashboard-muscle-list i,
+.dashboard-volume-list i {
+  background: color-mix(in srgb, var(--ink) 14%, var(--soft));
+}
+
+.dashboard-volume-list {
+  gap: var(--track-space-4);
+}
+
+.dashboard-volume-note {
+  margin-top: var(--track-space-5);
+}
+
+.workout-page .composer {
+  background: var(--track-card-fill);
+  box-shadow: var(--track-shadow-card);
+}
+
+.workout-page .task {
+  background: var(--track-card-fill);
+  box-shadow: var(--track-shadow-card);
+}
+
+.workout-page .task:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--track-shadow-float);
+}
+
+.workout-page .set-input > input,
+.workout-page .exercise-edit input,
+.workout-page .exercise-edit select {
+  border-radius: var(--track-radius-control);
+  transition:
+    border-color var(--track-motion-fast) ease,
+    box-shadow var(--track-motion-fast) ease,
+    background-color var(--track-motion-fast) ease;
+}
+
+.workout-page .set-input > input:focus,
+.workout-page .exercise-edit input:focus,
+.workout-page .exercise-edit select:focus {
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--line));
+  box-shadow: var(--track-focus-ring);
+}
+
+.workout-page .add-set {
+  min-height: 36px;
+  border-radius: var(--track-radius-control);
+}
+
+.calendar-title-row {
+  margin-bottom: var(--track-space-5);
+}
+
+.calendar-insight-strip,
+.rank-insight-strip {
+  gap: var(--track-space-3);
+  margin-top: 0;
+}
+
+.calendar-insight-card,
+.rank-insight-card {
+  border-radius: var(--track-radius-card);
+  padding: var(--track-space-4);
+}
+
+.calendar-card {
+  margin-top: var(--track-space-4);
+  padding: var(--track-space-5);
+}
+
+.calendar-heading {
+  margin-bottom: var(--track-space-5);
+}
+
+.calendar-nav,
+.calendar-today {
+  border-radius: var(--track-radius-control);
+  transition:
+    transform var(--track-motion-interactive) var(--track-ease-gentle),
+    background-color var(--track-motion-fast) ease,
+    border-color var(--track-motion-fast) ease;
+}
+
+.calendar-nav:hover,
+.calendar-today:hover {
+  transform: translateY(-1px);
+}
+
+.calendar-cell {
+  border-radius: var(--track-radius-control);
+  transition:
+    transform var(--track-motion-interactive) var(--track-ease-gentle),
+    border-color var(--track-motion-fast) ease,
+    background-color var(--track-motion-fast) ease;
+}
+
+.calendar-cell:hover:not(:disabled) {
+  transform: translateY(-2px);
+}
+
+.calendar-legend {
+  margin-top: var(--track-space-5);
+  padding-top: var(--track-space-4);
+}
+
+.rank-title-row {
+  margin-bottom: var(--track-space-5);
+}
+
+.rank-hero-card {
+  margin-top: var(--track-space-4);
+  border-radius: var(--track-radius-dialog);
+  box-shadow: var(--track-shadow-card);
+}
+
+.rank-map-toggle {
+  border-radius: var(--track-radius-control);
+}
+
+.rank-map-toggle button {
+  border-radius: 8px;
+}
+
+.rank-selected-detail {
+  border-radius: var(--track-radius-card);
+  background: var(--track-card-fill);
+}
+
+.rank-section-heading {
+  margin: var(--track-space-7) 0 var(--track-space-4);
+}
+
+.rank-grid {
+  gap: var(--track-space-3);
+}
+
+.rank-card {
+  gap: var(--track-space-4);
+  padding: 18px;
+  border-radius: var(--track-radius-card);
+  background: var(--track-card-fill);
+}
+
+.rank-card:hover,
+.rank-card.selected {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--ink) 34%, var(--line));
+  background: var(--hover);
+  box-shadow: var(--track-shadow-float);
+}
+
+.rank-meter {
+  height: 7px;
+  background: color-mix(in srgb, var(--ink) 12%, var(--soft));
+}
+
+.timer-mode-stage > h1 {
+  font-size: clamp(30px, 4vw, 40px);
+  letter-spacing: -0.045em;
+}
+
+.timer-mode-stage > p {
+  max-width: 420px;
+  margin-inline: auto;
+  line-height: 1.5;
+}
+
+.timer-swipe-hint {
+  margin-top: var(--track-space-5);
+}
+
+.timer-display-wrap {
+  margin-top: 56px;
+}
+
+.timer-controls {
+  gap: var(--track-space-4);
+}
+
+.timer-controls button {
+  box-shadow:
+    0 0 0 2px currentColor,
+    0 12px 28px color-mix(in srgb, var(--surface) 32%, transparent);
+}
+
+.laps-panel {
+  margin-top: 48px;
+  overflow: hidden;
+  border: 1px solid var(--track-card-border);
+  border-radius: var(--track-radius-card);
+  background: var(--track-card-fill);
+  box-shadow: var(--track-shadow-card);
+}
+
+.laps-heading {
+  height: 52px;
+  padding-inline: var(--track-space-4);
+}
+
+.laps-panel li {
+  height: 48px;
+  padding-inline: var(--track-space-4);
+}
+
+.timer-rest-settings {
+  margin-top: 40px;
+}
+
+.timer-rest-presets {
+  border-radius: var(--track-radius-card);
+  box-shadow: var(--track-shadow-card);
+}
+
+.timer-custom-rest input {
+  border-radius: var(--track-radius-control);
+}
+
+.settings-nav {
+  padding-block: var(--track-space-6);
+}
+
+.settings-nav button {
+  height: 42px;
+}
+
+.settings-content {
+  padding: var(--track-space-7) 40px 40px;
+}
+
+.settings-title-row {
+  padding-bottom: var(--track-space-5);
+}
+
+.settings-title-row h2 {
+  font-size: 30px;
+  line-height: 1.06;
+  letter-spacing: -0.04em;
+}
+
+.settings-view > .setting-section {
+  margin-top: var(--track-space-4);
+  border-radius: var(--track-radius-card);
+  background: var(--track-card-fill);
+  box-shadow: var(--track-shadow-card);
+}
+
+.theme-preview-tile,
+.personal-unit-selector,
+.exercise-unit-settings,
+.updates-page-card,
+.admin-card,
+.ai-exercise {
+  border-radius: var(--track-radius-control);
+}
+
+.settings-title-row .settings-close.ui-button {
+  border-radius: var(--track-radius-control);
+  box-shadow: var(--track-shadow-card);
+}
+
+.progress-sync-confirm,
+.exercise-confirm,
+.password-reset-modal {
+  border-radius: var(--track-radius-dialog);
+  box-shadow: var(--track-shadow-float);
+}
+
+.bottom-tab-bar {
+  border-color: var(--track-card-border);
+}
+
+.bottom-tab-active-indicator,
+.bottom-tab {
+  border-radius: var(--track-radius-control);
+}
+
+@media (max-width: 1200px) {
+  .content {
+    padding-top: 28px;
+  }
+
+  .dashboard-title-row,
+  .calendar-title-row,
+  .rank-title-row {
+    gap: var(--track-space-3);
+  }
+
+  .dashboard-period-select {
+    align-self: flex-start;
+  }
+
+  .dashboard-card,
+  .calendar-card {
+    padding: var(--track-space-4);
+  }
+
+  .settings-content {
+    padding-inline: 24px;
+  }
+
+  .timer-display-wrap {
+    margin-top: 48px;
+  }
+}
+
+@media (max-width: 560px) {
+  .dashboard-title-row {
+    align-items: flex-start;
+  }
+
+  .dashboard-title-row h1 {
+    font-size: 32px;
+  }
+
+  .dashboard-title-row p {
+    max-width: 190px;
+  }
+
+  .dashboard-stat-grid article {
+    padding: var(--track-space-4);
+  }
+
+  .settings-content {
+    padding-inline: 16px;
+  }
+
+  .timer-controls button {
+    width: 72px;
+    height: 72px;
+  }
+}

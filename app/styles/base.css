@@ -78,15 +78,15 @@
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --ink: #f2f2f0;
-  --muted: #969692;
-  --line: #262626;
-  --soft: #111111;
-  --sidebar: #050505;
-  --surface: #000;
-  --hover: #171717;
-  --raised: #0b0b0b;
-  --subtle: #1f1f1f;
+  --ink: #f4f4f5;
+  --muted: #a1a1aa;
+  --line: #29292f;
+  --soft: #111114;
+  --sidebar: #0c0c0f;
+  --surface: #09090b;
+  --hover: #1b1b20;
+  --raised: #151517;
+  --subtle: #1f1f24;
   --control: #f2f2f0;
   --control-ink: #050505;
   --track-interactive-surface: #161618;
@@ -113,6 +113,19 @@
   --track-accent-online: #34c759;
   --track-accent-online-ink: #48b875;
   --track-surface-shadow: rgba(0, 0, 0, 0.28);
+  --track-space-1: 4px;
+  --track-space-2: 8px;
+  --track-space-3: 12px;
+  --track-space-4: 16px;
+  --track-space-5: 20px;
+  --track-space-6: 24px;
+  --track-space-7: 32px;
+  --track-radius-control: 10px;
+  --track-radius-card: 16px;
+  --track-radius-dialog: 20px;
+  --track-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 28px rgba(0, 0, 0, 0.08);
+  --track-shadow-float: 0 18px 48px rgba(0, 0, 0, 0.2), 0 3px 10px rgba(0, 0, 0, 0.1);
+  --track-focus-ring: 0 0 0 3px color-mix(in srgb, var(--ink) 12%, transparent);
 }
 @keyframes backdrop-in {
   from {
@@ -206,6 +219,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
+  color: var(--ink);
 }
 button,
 input {
@@ -887,18 +901,19 @@ nav {
   letter-spacing: 0.15em;
   font-weight: 700;
   color: #8a8a84;
-  margin-bottom: 14px;
+  line-height: 1.2;
+  margin-bottom: var(--track-space-3);
 }
 .title-row {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 20px;
+  gap: var(--track-space-5);
 }
 h1 {
   margin: 0;
   font-size: 36px;
-  line-height: 1.15;
+  line-height: 1.08;
   letter-spacing: -1.25px;
   font-weight: 650;
 }

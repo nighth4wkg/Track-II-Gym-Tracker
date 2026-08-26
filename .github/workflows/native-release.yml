@@ -6,7 +6,7 @@ on:
       tag:
         description: Release tag in v1.2.3 format
         required: true
-        default: v1.0.0
+        default: v1.0.5
 
 permissions:
   contents: read
@@ -52,6 +52,18 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+
+      - name: Set Android package version
+        working-directory: android
+        env:
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          VERSION_NAME="${RELEASE_TAG#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION_NAME"
+          VERSION_CODE=$((MAJOR * 10000 + MINOR * 100 + PATCH))
+          sed -i -E "s/versionCode [0-9]+/versionCode ${VERSION_CODE}/" app/build.gradle
+          sed -i -E "s/versionName \"[^\"]+\"/versionName \"${VERSION_NAME}\"/" app/build.gradle
+          grep -q "versionName \"${VERSION_NAME}\"" app/build.gradle
 
       - name: Generate Android app icons
         run: npm run generate:native-icons

@@ -145,7 +145,16 @@ export function useTrackAppRuntime({
     accountLocalReadyFor,
     setAccountLocalReadyFor,
   } = settingsState;
-  const { showTimer, setShowTimer, showCalendar, setShowCalendar, showRank, setShowRank } = navigationState;
+  const {
+    showDashboard,
+    setShowDashboard,
+    showTimer,
+    setShowTimer,
+    showCalendar,
+    setShowCalendar,
+    showRank,
+    setShowRank,
+  } = navigationState;
   const {
     setRankHistoryTasks,
     rankCategoryOverrides,
@@ -296,6 +305,7 @@ export function useTrackAppRuntime({
     offerUndo: undoState.offerUndo,
     setLists,
     setActiveId,
+    setShowDashboard,
     setShowTimer,
     setShowCalendar,
     setShowRank,
@@ -311,7 +321,15 @@ export function useTrackAppRuntime({
     setFinishedDates,
     setDirtySplits,
   });
-  const activeBottomTab: BottomTabId = showRank ? "rank" : showCalendar ? "calendar" : showTimer ? "timer" : "workout";
+  const activeBottomTab: BottomTabId = showDashboard
+    ? "dashboard"
+    : showRank
+      ? "rank"
+      : showCalendar
+        ? "calendar"
+        : showTimer
+          ? "timer"
+          : "workout";
   const tasks = active?.tasks ?? EMPTY_TASKS;
   const workoutEditor = useWorkoutEditorController({
     activeId,
@@ -416,6 +434,7 @@ export function useTrackAppRuntime({
       activeUserIdRef,
     },
     settingsState,
+    showDashboard,
     showCalendar,
     showRank,
     timerState,
@@ -522,6 +541,7 @@ export function useTrackAppRuntime({
       setAiBusy,
       setLists,
       setActiveId,
+      setShowDashboard,
       setShowTimer,
       setShowCalendar,
       setShowRank,
@@ -571,6 +591,7 @@ export function useTrackAppRuntime({
     setSettingsClosing,
     setSettingsOpen,
     setSettingsView,
+    setShowDashboard,
     setShowCalendar,
     setShowRank,
     setShowSuggestions,

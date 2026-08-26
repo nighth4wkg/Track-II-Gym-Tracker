@@ -8,6 +8,7 @@ type SidebarProps = {
   sidebarCollapsed: boolean;
   nativeApp: boolean;
   activeId: string;
+  showDashboard: boolean;
   showTimer: boolean;
   showCalendar: boolean;
   showRank: boolean;
@@ -51,6 +52,7 @@ export function Sidebar({
   sidebarCollapsed,
   nativeApp,
   activeId,
+  showDashboard,
   showTimer,
   showCalendar,
   showRank,
@@ -162,8 +164,9 @@ export function Sidebar({
                   key={list.id}
                   data-split-id={list.id}
                   className={
-                    (!showTimer && !showCalendar && !showRank && list.id === activeId ? "recent active" : "recent") +
-                    (draggingSplit === list.id ? " split-dragging" : "")
+                    (!showDashboard && !showTimer && !showCalendar && !showRank && list.id === activeId
+                      ? "recent active"
+                      : "recent") + (draggingSplit === list.id ? " split-dragging" : "")
                   }
                   onClick={(event) => {
                     if (splitHoldTriggered.current) {
@@ -215,7 +218,7 @@ export function Sidebar({
             </div>
             <button
               className="settings-button"
-              onClick={onOpenSettings}
+              onClick={() => onOpenSettings()}
               aria-expanded={settingsOpen}
               aria-label="Open settings"
               title="Settings"

@@ -29,7 +29,7 @@ type TimerActionsOptions = {
   setRestRemaining: Dispatch<SetStateAction<number>>;
   setRestCustom: Dispatch<SetStateAction<boolean>>;
   setCustomRestInput: Dispatch<SetStateAction<string>>;
-  setTimerTransition: Dispatch<SetStateAction<"forward" | "backward">>;
+  setTimerTransition: Dispatch<SetStateAction<"idle" | "forward" | "backward">>;
   setTimerTransitionKey: Dispatch<SetStateAction<number>>;
   onTimerChanged?: () => void;
 };
@@ -55,6 +55,13 @@ export function useTimerActions({
   setTimerTransitionKey,
   onTimerChanged,
 }: TimerActionsOptions) {
+  const currentStopwatchElapsed = useCallback(
+    () =>
+      timerRunning && timerMode === "stopwatch" && timerStartedAtRef.current > 0
+        ? Date.now() - timerStartedAtRef.current
+        : timerElapsed,
+    [timerElapsed, timerMode, timerRunning, timerStartedAtRef],
+  );
   const chooseTimerMode = useCallback(
     (mode: TimerMode) => {
       if (mode === timerMode) return;
@@ -190,6 +197,7 @@ export function useTimerActions({
   );
 
   return {
+    currentStopwatchElapsed,
     toggleTimer,
     chooseTimerMode,
     beginTimerSwipe,

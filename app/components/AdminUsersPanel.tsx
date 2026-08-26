@@ -14,64 +14,15 @@ import { applyAnimatedStyles } from "../domMotion";
 import { AdminDirectorySkeleton } from "./LoadingSkeletons";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { TRACK_TIMING } from "../trackConstants";
-
-type WeightUnit = "kg" | "lb";
-type MemberSet = { weight: number; unit: WeightUnit; reps: number; rir: number };
-type MemberExercise = { name: string; completed: boolean; sets: MemberSet[] };
-type MemberSplit = { id: string; name: string; updatedAt?: string; exercises: MemberExercise[] };
-type AdminMemberResult = { username: string; createdAt?: string; splits: MemberSplit[]; sessions: number };
-type DirectoryUser = { id: string; username: string; lastSeenAt?: string; isAdmin?: boolean };
-type ContextMenu = { user: DirectoryUser; x: number; y: number };
-
-type AdminUsersPanelProps = {
-  open: boolean;
-  onClose: () => void;
-  currentUserId?: string;
-};
-
-export function formatLastSeen(value?: string, now = Date.now(), isCurrentUser = false) {
-  if (isMemberOnline(value, now, isCurrentUser)) return "Online now";
-  const timestamp = value ? new Date(value).getTime() : Number.NaN;
-  if (!Number.isFinite(timestamp)) return "Last seen unavailable";
-  const elapsedSeconds = Math.max(0, Math.floor((now - timestamp) / 1000));
-  const elapsedMinutes = Math.floor(elapsedSeconds / 60);
-  if (elapsedMinutes < 60) return `Last online ${elapsedMinutes} min${elapsedMinutes === 1 ? "" : "s"} ago`;
-  const elapsedHours = Math.floor(elapsedMinutes / 60);
-  if (elapsedHours < 24) return `Last online ${elapsedHours} hour${elapsedHours === 1 ? "" : "s"} ago`;
-  const elapsedDays = Math.floor(elapsedHours / 24);
-  return `Last online ${elapsedDays} day${elapsedDays === 1 ? "" : "s"} ago`;
-}
-
-export function isMemberOnline(value?: string, now = Date.now(), isCurrentUser = false) {
-  if (isCurrentUser) return true;
-  const timestamp = value ? new Date(value).getTime() : Number.NaN;
-  if (!Number.isFinite(timestamp)) return false;
-  return Math.max(0, Math.floor((now - timestamp) / 1000)) < 60;
-}
-
-function PeopleIcon() {
-  return (
-    <span className="admin-people-glyph" aria-hidden="true">
-      <i />
-      <i />
-      <i />
-    </span>
-  );
-}
-
-export function AdminUsersButton({
-  onClick,
-  label = "Open member directory",
-}: {
-  onClick: () => void;
-  label?: string;
-}) {
-  return (
-    <button type="button" className="admin-users-button" onClick={onClick} aria-label={label} title="Member directory">
-      <PeopleIcon />
-    </button>
-  );
-}
+import {
+  formatLastSeen,
+  isMemberOnline,
+  type AdminMemberResult,
+  type AdminUsersPanelProps,
+  type ContextMenu,
+  type DirectoryUser,
+} from "./AdminUsersDirectoryModels";
+export { AdminUsersButton, formatLastSeen, isMemberOnline } from "./AdminUsersDirectoryModels";
 
 export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPanelProps) {
   const [users, setUsers] = useState<DirectoryUser[]>([]);
@@ -94,9 +45,6 @@ export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPane
   async function loadDirectory() {
     setDirectoryNow(Date.now());
     try {
-      // Refresh the signed-in administrator's heartbeat before reading the
-      // directory so the current account is not shown as recently offline.
-      await supabase.functions.invoke("admin-member-data", { body: { action: "heartbeat" } });
       const { data, error: invokeError } = await supabase.functions.invoke("admin-member-data", {
         body: { action: "list-users" },
       });

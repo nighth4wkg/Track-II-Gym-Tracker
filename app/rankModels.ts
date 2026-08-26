@@ -4,6 +4,7 @@ export type RankLevel = "newbie" | "intermediate" | "gym-bro" | "advanced" | "el
 export type RankConfidence = "low" | "medium" | "high";
 
 export type RankSet = {
+  setNumber?: number;
   weight?: string | number;
   unit?: "kg" | "lb";
   reps?: string | number;
@@ -13,6 +14,7 @@ export type RankSet = {
 export type RankTask = {
   id?: string;
   exerciseId?: string;
+  sessionId?: string;
   rankGroupOverride?: MuscleGroup;
   rankEquipmentOverride?: EquipmentType;
   text: string;

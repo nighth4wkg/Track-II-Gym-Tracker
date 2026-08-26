@@ -49,6 +49,7 @@ export const TRACK_LIMITS = {
   maxAiImageBytes: 8 * 1024 * 1024,
   maxAnnouncementChars: 240,
   maxSplitNameChars: 40,
+  weeklyMuscleSetTarget: 16,
   usernameCheckDebounceMs: 250,
   undoDragRange: 180,
   undoSwipeDistance: 64,
@@ -112,11 +113,13 @@ export const TRACK_TIMING = {
   splitCreateDelayMs: 360,
   splitHoldMenuMs: 420,
   touchDoubleTapGuardMs: 320,
-  stopwatchTickMs: 31,
+  stopwatchTickMs: 250,
   restTimerTickMs: 200,
   releaseCountdownTickMs: 200,
   workoutFinishSavedDelayMs: 360,
   workoutFinishTransitionMs: 440,
+  dropdownCloseAnimationMs: 160,
+  lapClearAnimationMs: 220,
 } as const;
 
 export const REST_PRESETS = [
@@ -143,6 +146,16 @@ export const SETTINGS_LABELS = {
   about: "About Track II",
   admin: "Admin Panel",
 } satisfies Record<SettingsView, string>;
+
+export const DEFAULT_SETTINGS_VIEW: SettingsView = "appearance";
+
+export function normalizeSettingsView(value: SettingsView, isAdmin = false): SettingsView {
+  const supported =
+    SETTINGS_CONTENT_VIEWS.includes(value) || value === "updates" || value === "about" || value === "admin";
+  if (!supported) return DEFAULT_SETTINGS_VIEW;
+  if (value === "admin" && !isAdmin) return DEFAULT_SETTINGS_VIEW;
+  return value;
+}
 
 export const TRACK_UI_COPY = {
   status: {

@@ -1,5 +1,6 @@
 "use client";
 
+import { CapacitorHttp } from "@capacitor/core";
 import { useCallback, useEffect, useRef, type Dispatch, type SetStateAction } from "react";
 import { haptic } from "../haptics";
 import { TRACK_BUILD_ID, TRACK_RELEASES_URL, TRACK_WEB_ORIGIN, isNewerTrackVersion } from "../trackConfig";
@@ -174,6 +175,18 @@ export function useReleaseManager({
     };
     const readJsonRelease = async (url: string, options: RequestInit): Promise<RemoteRelease | null> => {
       try {
+        if (nativeApp) {
+          const headers = Object.fromEntries(new Headers(options.headers).entries());
+          const response = await CapacitorHttp.get({
+            url,
+            headers,
+            connectTimeout: TRACK_TIMING.cloudRequestTimeoutMs,
+            readTimeout: TRACK_TIMING.cloudRequestTimeoutMs,
+            responseType: "json",
+          });
+          if (response.status < 200 || response.status >= 300) return null;
+          return parseRemoteReleasePayload(response.data);
+        }
         const response = await fetch(url, options);
         if (!response.ok) return null;
         return parseRemoteReleasePayload(await response.json());

@@ -2,7 +2,12 @@
 
 import { lazy, Suspense, type RefObject } from "react";
 import type { EquipmentType, MuscleGroup, RankTask } from "../rankData";
-import { CalendarScreenSkeleton, RankScreenSkeleton, WorkoutScreenSkeleton } from "./LoadingSkeletons";
+import {
+  CalendarScreenSkeleton,
+  DashboardScreenSkeleton,
+  RankScreenSkeleton,
+  WorkoutScreenSkeleton,
+} from "./LoadingSkeletons";
 import { TimerScreenSkeleton } from "./TimerScreenSkeleton";
 import type { RestTimerSelection, TimerMode, TimerTransition } from "./TimerScreen";
 import { WorkoutEditorProvider, type WorkoutEditorContextValue } from "../contexts/WorkoutEditorContext";
@@ -12,16 +17,19 @@ import type { CalendarScreenProps } from "./CalendarScreen";
 import type { Checklist, Filter, PersonalInfo, Task } from "../trackTypes";
 
 const TimerScreen = lazy(async () => ({ default: (await import("./TimerScreen")).TimerScreen }));
+const DashboardScreen = lazy(async () => ({ default: (await import("./DashboardScreen")).DashboardScreen }));
 const RankScreen = lazy(async () => ({ default: (await import("./RankScreen")).RankScreen }));
 const CalendarScreen = lazy(async () => ({ default: (await import("./CalendarScreen")).CalendarScreen }));
 
 type WorkspaceContentProps = {
   homeTransition: boolean;
   cloudReady: boolean;
+  showDashboard: boolean;
   showRank: boolean;
   showCalendar: boolean;
   showTimer: boolean;
   active: Checklist | null;
+  lists: Checklist[];
   tasks: Task[];
   rankTasks: RankTask[];
   visible: Task[];
@@ -89,10 +97,12 @@ type WorkspaceContentProps = {
 export function WorkspaceContent({
   homeTransition,
   cloudReady,
+  showDashboard,
   showRank,
   showCalendar,
   showTimer,
   active,
+  lists,
   tasks,
   rankTasks,
   visible,
@@ -150,11 +160,23 @@ export function WorkspaceContent({
 }: WorkspaceContentProps) {
   return (
     <div
-      key={showRank ? "rank" : showCalendar ? "calendar" : showTimer ? "timer" : (active?.id ?? "home")}
+      key={
+        showDashboard
+          ? "dashboard"
+          : showRank
+            ? "rank"
+            : showCalendar
+              ? "calendar"
+              : showTimer
+                ? "timer"
+                : (active?.id ?? "home")
+      }
       className={homeTransition ? "content content-exit" : "content"}
     >
       {!cloudReady ? (
-        showRank ? (
+        showDashboard ? (
+          <DashboardScreenSkeleton />
+        ) : showRank ? (
           <RankScreenSkeleton />
         ) : showCalendar ? (
           <CalendarScreenSkeleton />
@@ -163,6 +185,16 @@ export function WorkspaceContent({
         ) : (
           <WorkoutScreenSkeleton />
         )
+      ) : showDashboard ? (
+        <Suspense fallback={<DashboardScreenSkeleton />}>
+          <DashboardScreen
+            lists={lists}
+            rankTasks={rankTasks}
+            historyTasks={rankHistoryTasks}
+            workoutDates={workoutDates}
+            bodyWeightKg={personalInfo?.weightKg ?? 0}
+          />
+        </Suspense>
       ) : showRank ? (
         <Suspense fallback={<RankScreenSkeleton />}>
           <RankScreen

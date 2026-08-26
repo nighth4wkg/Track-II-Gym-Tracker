@@ -95,7 +95,7 @@
   background: rgba(52, 199, 89, 0.12);
   color: #48b875;
   box-shadow: none;
-  animation: finish-button-complete 360ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: finish-button-complete 360ms var(--track-ease-spring) both;
   will-change: transform, opacity;
 }
 
@@ -172,11 +172,11 @@
     font-size: 9px;
   }
   .bottom-tab-bar.is-mobile-sidebar-open {
-    animation: bottom-tab-sidebar-dismiss 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: bottom-tab-sidebar-dismiss 0.38s var(--track-ease-spring) both;
     pointer-events: none;
   }
   .bottom-tab-bar:not(.is-mobile-sidebar-open):not(.is-settings-hidden) {
-    animation: bottom-tab-sidebar-return 0.56s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: bottom-tab-sidebar-return 0.56s var(--track-ease-spring) both;
   }
   .settings-backdrop {
     backdrop-filter: none;
@@ -360,16 +360,6 @@
     transform: translateY(0) scale(1);
   }
 }
-@keyframes mobile-surface-arrive {
-  from {
-    opacity: 0;
-    transform: translateY(7px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
 @keyframes mobile-stage-arrive {
   from {
     opacity: 0;
@@ -445,27 +435,20 @@
   }
 
   .content {
-    animation: mobile-content-arrive 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: mobile-content-arrive 0.38s var(--track-ease-spring) both;
   }
   .content-exit {
     animation: none !important;
     transform: scale(0.99) translateY(6px) !important;
   }
-  .timer-screen,
-  .calendar-screen,
-  .rank-screen,
-  .welcome-screen {
-    animation: mobile-surface-arrive 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+  .timer-mode-stage:not(.timer-transition-idle) {
+    animation: mobile-stage-arrive 0.3s var(--track-ease-spring) both;
   }
-  .timer-mode-stage {
-    animation: mobile-stage-arrive 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
-  }
-  .settings-view,
-  .settings-view[class*="view-"] > .setting-section {
-    animation: mobile-settings-view-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+  .settings-view {
+    animation: mobile-settings-view-in 0.3s var(--track-ease-spring) both !important;
   }
   .track-notification {
-    animation: mobile-notification-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: mobile-notification-in 0.32s var(--track-ease-spring) both;
   }
   .track-update-notification {
     top: calc(74px + env(safe-area-inset-top));
@@ -746,7 +729,7 @@
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: translateY(-2px) rotate(45deg);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.22s var(--track-ease-spring);
 }
 .calendar-detail-expand-icon.expanded {
   transform: translateY(2px) rotate(225deg);
@@ -789,15 +772,7 @@
 .settings-view > .setting-section h3 {
   margin-bottom: 16px;
 }
-.settings-view.view-account > .setting-section:nth-child(3),
-.settings-view.view-account > .setting-section:nth-child(5),
-.settings-view.view-account > .setting-section:nth-child(7) {
-  display: block !important;
-  visibility: visible !important;
-  animation: settings-view-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-.settings-view.view-account > .setting-section:nth-child(3),
-.settings-view.view-account > .setting-section:nth-child(5) {
+.settings-view.view-account > .setting-section:not(:last-child) {
   border-bottom: 1px solid var(--line);
 }
 @media (min-width: 1201px) {
@@ -1245,7 +1220,7 @@
   color: var(--track-accent-online-ink);
 }
 .mobile-actions .header-sync-status.sync-status-busy > i {
-  animation: header-sync-change-drop 0.48s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: header-sync-change-drop 0.48s var(--track-ease-spring) both;
 }
 
 @keyframes header-sync-change-drop {
@@ -1594,17 +1569,17 @@
 .bottom-tab-bar {
   transition:
     opacity 0.24s ease,
-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    left 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    inset-block-end 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.42s var(--track-ease-spring),
+    left 0.42s var(--track-ease-spring),
+    bottom 0.42s var(--track-ease-spring),
+    inset-block-end 0.42s var(--track-ease-spring);
 }
 .undo-toast-positioner {
   transition:
-    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.42s var(--track-ease-spring),
     opacity 0.2s ease,
-    left 0.42s cubic-bezier(0.16, 1, 0.3, 1),
-    bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+    left 0.42s var(--track-ease-spring),
+    bottom 0.42s var(--track-ease-spring);
 }
 .undo-toast-positioner.is-dragging {
   transition: none;
@@ -1911,7 +1886,7 @@ input[type="number"]::-webkit-outer-spin-button {
 .content {
   transition:
     opacity 0.34s ease,
-    transform 0.42s cubic-bezier(0.22, 1, 0.36, 1);
+    transform 0.42s var(--track-ease-gentle);
 }
 .content-exit {
   filter: none;
@@ -1922,6 +1897,10 @@ input[type="number"]::-webkit-outer-spin-button {
   contain: layout paint;
 }
 @media (max-width: 1200px) {
+  .content:has(.dashboard-screen) {
+    padding-bottom: calc(112px + var(--track-safe-bottom));
+    scroll-padding-bottom: calc(112px + var(--track-safe-bottom));
+  }
   .bottom-tab-bar,
   .undo-toast,
   .track-notification {
@@ -1934,48 +1913,7 @@ input[type="number"]::-webkit-outer-spin-button {
   .bottom-tab-bar,
   .undo-toast-positioner,
   .settings-modal {
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-}
-
-@keyframes progress-fade {
-  from {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-  to {
-    opacity: 0;
-    transform: translateY(-7px) scale(0.82);
-  }
-}
-@keyframes welcome-in {
-  from {
-    opacity: 0;
-    transform: scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-@keyframes timer-mode-forward {
-  from {
-    opacity: 0;
-    transform: translateX(28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-@keyframes timer-mode-backward {
-  from {
-    opacity: 0;
-    transform: translateX(-28px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
+    transition-timing-function: var(--track-ease-gentle);
   }
 }
 
@@ -2088,7 +2026,7 @@ input[type="number"]::-webkit-outer-spin-button {
     padding: 0;
     cursor: pointer;
     transition:
-      transform 0.24s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.24s var(--track-ease-gentle),
       background-color 0.24s ease,
       border-color 0.24s ease;
   }
@@ -2127,11 +2065,11 @@ input[type="number"]::-webkit-outer-spin-button {
     overflow: hidden;
     transform: translateY(-6px) scale(0.98);
     transition:
-      max-height 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-      margin-top 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-      padding 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      max-height 0.34s var(--track-ease-gentle),
+      margin-top 0.34s var(--track-ease-gentle),
+      padding 0.34s var(--track-ease-gentle),
       opacity 0.2s ease,
-      transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.34s var(--track-ease-gentle),
       border-color 0.2s ease;
   }
   .workout-page .exercise-composer.is-mobile-search-open {
@@ -2170,7 +2108,7 @@ input[type="number"]::-webkit-outer-spin-button {
   outline: none;
 }
 .workout-page .weight-set-input > .weight-unit-toggle.is-toggling {
-  animation: weight-unit-toggle 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: weight-unit-toggle 0.28s var(--track-ease-gentle);
 }
 @keyframes weight-unit-toggle {
   0%,
@@ -2219,7 +2157,7 @@ input[type="number"]::-webkit-outer-spin-button {
     font-size: 11px;
   }
   .workout-page .weight-set-input > .weight-unit-toggle.is-toggling {
-    animation: weight-unit-toggle-mobile 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+    animation: weight-unit-toggle-mobile 0.28s var(--track-ease-gentle);
   }
 }
 @keyframes weight-unit-toggle-mobile {
@@ -2295,7 +2233,7 @@ input[type="number"]::-webkit-outer-spin-button {
 
 .recent.split-dragging {
   opacity: 1;
-  animation: split-hold-settle 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: split-hold-settle 0.42s var(--track-ease-gentle) both;
 }
 @keyframes split-hold-settle {
   0% {
@@ -2329,7 +2267,7 @@ input[type="number"]::-webkit-outer-spin-button {
   width: min(420px, calc(100vw - 32px));
   border-color: color-mix(in srgb, var(--line) 90%, transparent);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
-  animation: finish-confirm-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: finish-confirm-in 0.42s var(--track-ease-gentle) both;
 }
 .finish-confirm h2 {
   margin-bottom: 8px;
@@ -2388,7 +2326,7 @@ input[type="number"]::-webkit-outer-spin-button {
 /* Undo follows the same Apple-like settle while the existing progress line
    still communicates when the reversible window expires. */
 .undo-toast {
-  animation: undo-toast-in 0.42s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: undo-toast-in 0.42s var(--track-ease-gentle) both;
 }
 @keyframes undo-toast-in {
   0% {
@@ -2439,6 +2377,126 @@ input[type="number"]::-webkit-outer-spin-button {
   background: color-mix(in srgb, var(--surface) 96%, var(--raised));
 }
 
+/* Keep the mobile settings carousel and its continuation control on one
+   physical row, including inside Capacitor's safe-area viewport. */
+@media (max-width: 699px) {
+  .settings-modal > .settings-mobile-tabs-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin: 0;
+    padding: calc(18px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 0
+      max(16px, env(safe-area-inset-left));
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-mobile-tabs {
+    width: 100%;
+    margin: 0;
+    padding-right: 43px;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more {
+    position: absolute;
+    top: calc(21px + env(safe-area-inset-top));
+    right: max(19px, calc(env(safe-area-inset-right) + 3px));
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    transform: none;
+    box-shadow: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more::before {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    left: -18px;
+    width: 18px;
+    background: linear-gradient(90deg, transparent, var(--soft));
+    content: "";
+    pointer-events: none;
+  }
+  .settings-modal > .settings-mobile-tabs-wrap .settings-tabs-more:active {
+    transform: scale(0.92);
+  }
+}
+
+.updates-page-card,
+.admin-card {
+  padding-bottom: 18px;
+}
+.updates-page-message.error,
+.admin-card > .update-check-message {
+  margin-top: 16px;
+  margin-bottom: 0;
+}
+
+.progress-sync-backdrop {
+  position: fixed;
+  z-index: var(--track-layer-critical);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: max(20px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right))
+    max(20px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
+  background: rgba(0, 0, 0, 0.78);
+  animation: backdrop-in var(--track-motion-fast) ease both;
+}
+.progress-sync-confirm {
+  width: min(440px, 100%);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--raised);
+  color: var(--ink);
+  box-shadow: 0 28px 85px rgba(0, 0, 0, 0.42);
+  animation: settings-modal-in var(--track-motion-standard) var(--track-ease-spring) both;
+}
+.progress-sync-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--soft);
+  font-size: 22px;
+}
+.progress-sync-confirm h3 {
+  margin: 0 0 10px;
+  font-size: 21px;
+}
+.progress-sync-confirm p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.progress-sync-confirm > small,
+.progress-sync-message {
+  display: block;
+  margin-top: 12px;
+  color: var(--muted);
+  line-height: 1.45;
+}
+.progress-sync-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 22px;
+}
+.progress-sync-actions .ui-button {
+  width: 100%;
+}
+@media (max-width: 420px) {
+  .progress-sync-actions {
+    grid-template-columns: 1fr;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .progress-sync-backdrop,
+  .progress-sync-confirm {
+    animation: none;
+  }
+}
+
 /* Release polish: keep the onboarding path calm, readable, and responsive as
    each step changes while respecting reduced-motion preferences. */
 .settings-title-row {
@@ -2483,7 +2541,7 @@ input[type="number"]::-webkit-outer-spin-button {
   transform: translate3d(0, 0, 0);
   transition:
     opacity 0.38s ease,
-    transform 0.58s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.58s var(--track-ease-gentle),
     border-color 0.38s ease,
     background-color 0.38s ease,
     color 0.38s ease;
@@ -2494,7 +2552,7 @@ input[type="number"]::-webkit-outer-spin-button {
 }
 .workout-start-steps li.is-current,
 .welcome-start-steps li.is-current {
-  animation: setup-step-focus 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: setup-step-focus 0.58s var(--track-ease-gentle) both;
 }
 .workout-start-steps li.is-complete {
   color: color-mix(in srgb, var(--track-accent-online) 72%, var(--ink));
@@ -2518,7 +2576,7 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 .workout-setup-complete {
-  animation: setup-complete-in 0.62s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: setup-complete-in 0.62s var(--track-ease-gentle) both;
 }
 @keyframes setup-complete-in {
   0% {

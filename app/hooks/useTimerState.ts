@@ -58,7 +58,7 @@ export function useTimerState() {
   const [restRemaining, setRestRemaining] = useState(initialRuntime.restRemainingMs);
   const [timerLaps, setTimerLaps] = useState<number[]>(initialRuntime.laps);
   const [timerRuntime, setTimerRuntime] = useState<TimerRuntimeState>(initialRuntime);
-  const [timerTransition, setTimerTransition] = useState<"forward" | "backward">("forward");
+  const [timerTransition, setTimerTransition] = useState<"idle" | "forward" | "backward">("idle");
   const [timerTransitionKey, setTimerTransitionKey] = useState(0);
 
   useEffect(() => {

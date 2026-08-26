@@ -61,6 +61,20 @@
   --track-empty-action-surface: #181818;
   --track-empty-action-ink: #fff;
   --track-surface-shadow: rgba(0, 0, 0, 0.12);
+  --track-accent-success: #34c759;
+  --track-accent-warning: #ff9f0a;
+  --track-accent-danger: #ff453a;
+  --track-motion-fast: 180ms;
+  --track-motion-interactive: 120ms;
+  --track-motion-standard: 300ms;
+  --track-motion-slow: 420ms;
+  --track-ease-standard: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --track-ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --track-ease-gentle: cubic-bezier(0.22, 1, 0.36, 1);
+  --track-layer-modal: 1000;
+  --track-layer-dialog: 2000;
+  --track-layer-toast: 2400;
+  --track-layer-critical: 3200;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
@@ -99,6 +113,42 @@
   --track-accent-online: #34c759;
   --track-accent-online-ink: #48b875;
   --track-surface-shadow: rgba(0, 0, 0, 0.28);
+}
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes backdrop-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes track-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes track-feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 * {
   box-sizing: border-box;
@@ -176,7 +226,7 @@ button {
     BlinkMacSystemFont,
     "Segoe UI",
     sans-serif;
-  transition: grid-template-columns 0.48s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: grid-template-columns 0.48s var(--track-ease-spring);
 }
 .app-shell.sidebar-collapsed {
   grid-template-columns: 0 1fr;
@@ -201,7 +251,7 @@ button {
   transform: translateX(0);
   transition:
     opacity 0.3s ease,
-    transform 0.48s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.48s var(--track-ease-spring),
     padding 0.4s ease,
     border-color 0.3s ease;
 }
@@ -239,8 +289,8 @@ button {
   font-size: 21px;
   line-height: 1;
   transition:
-    left 0.48s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    left 0.48s var(--track-ease-spring),
+    transform 0.3s var(--track-ease-spring),
     background-color 0.3s ease,
     color 0.3s ease;
 }
@@ -481,7 +531,7 @@ button {
   overflow: hidden;
   transition:
     opacity 0.24s ease,
-    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.28s var(--track-ease-spring);
 }
 .bottom-tab-bar.is-settings-hidden {
   opacity: 0;
@@ -499,7 +549,7 @@ button {
   min-width: 0;
   flex: 1 1 auto;
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: stretch;
   gap: var(--bottom-tab-gap);
 }
@@ -509,7 +559,7 @@ button {
   top: 0;
   bottom: 0;
   left: 0;
-  width: calc((100% - 12px) / 4);
+  width: calc((100% - 16px) / 5);
   border-radius: 13px;
   background: var(--control);
   box-shadow:
@@ -519,7 +569,7 @@ button {
   will-change: transform;
   transform: translate3d(0, 0, 0);
   transition:
-    transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.16s var(--track-ease-gentle),
     box-shadow 0.16s ease;
 }
 .bottom-tab-track[data-indicator-index="1"] .bottom-tab-active-indicator {
@@ -531,13 +581,16 @@ button {
 .bottom-tab-track[data-indicator-index="3"] .bottom-tab-active-indicator {
   transform: translate3d(calc(3 * (100% + 4px)), 0, 0);
 }
+.bottom-tab-track[data-indicator-index="4"] .bottom-tab-active-indicator {
+  transform: translate3d(calc(4 * (100% + 4px)), 0, 0);
+}
 .bottom-tab-active-indicator.is-dragging {
   box-shadow:
     0 11px 26px rgba(0, 0, 0, 0.28),
     0 0 0 4px color-mix(in srgb, var(--control) 22%, transparent),
     inset 0 0 0 1px color-mix(in srgb, var(--control-ink) 18%, transparent);
   transition: box-shadow 0.16s ease;
-  animation: bottom-tab-bounce 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: bottom-tab-bounce 0.34s var(--track-ease-spring) both;
 }
 .bottom-tab {
   position: relative;
@@ -893,7 +946,10 @@ h1 {
   display: flex;
   align-items: center;
   gap: 12px;
-  transition: 0.2s;
+  transition:
+    border-color var(--track-motion-fast) ease,
+    background-color var(--track-motion-fast) ease,
+    box-shadow var(--track-motion-fast) ease;
 }
 .composer {
   position: relative;
@@ -1027,7 +1083,11 @@ h1 {
   color: var(--control-ink);
   font-size: 20px;
   cursor: pointer;
-  transition: 0.15s;
+  transition:
+    background-color var(--track-motion-interactive) ease,
+    color var(--track-motion-interactive) ease,
+    opacity var(--track-motion-interactive) ease,
+    transform var(--track-motion-interactive) var(--track-ease-gentle);
 }
 .composer button:disabled {
   background: var(--subtle);
@@ -1499,7 +1559,7 @@ h1 {
   border-right: 1.5px solid currentColor;
   border-bottom: 1.5px solid currentColor;
   transform: rotate(45deg) translate(-1px, -1px);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s var(--track-ease-spring);
 }
 .collapse-chevron.expanded {
   transform: rotate(225deg) translate(-1px, -1px);
@@ -1968,10 +2028,10 @@ footer {
   align-items: center;
   justify-content: center;
   text-align: center;
-  animation: welcome-in 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: welcome-in 0.7s var(--track-ease-spring) both;
 }
 .welcome-screen > * {
-  animation: welcome-piece 0.66s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: welcome-piece 0.66s var(--track-ease-spring) both;
 }
 .welcome-screen > :nth-child(2) {
   animation-delay: 0.04s;
@@ -2067,7 +2127,6 @@ footer {
   width: min(680px, 100%);
   margin: 0 auto;
   text-align: center;
-  animation: content-arrive 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
   touch-action: pan-y;
   overscroll-behavior-x: contain;
   user-select: none;
@@ -2276,7 +2335,7 @@ footer {
   gap: 14px;
   padding-top: 18px;
   box-sizing: border-box;
-  animation: content-arrive 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: content-arrive 0.3s var(--track-ease-spring) both;
 }
 .settings-skeleton-heading {
   width: min(230px, 62%);
@@ -2318,7 +2377,6 @@ footer {
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
-  animation: content-arrive 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .skeleton-page-eyebrow {
   width: 118px;
@@ -2680,8 +2738,8 @@ footer {
   background: var(--muted);
   opacity: 0.5;
 }
-.timer-mode-stage {
-  animation: timer-mode-forward 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+.timer-mode-stage.timer-transition-forward {
+  animation: timer-mode-forward 0.38s var(--track-ease-spring) both;
 }
 .timer-mode-stage.timer-transition-backward {
   animation-name: timer-mode-backward;
@@ -2736,7 +2794,7 @@ footer {
   font-size: 13px;
   box-shadow: 0 0 0 2px currentColor;
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s var(--track-ease-spring),
     opacity 0.2s ease;
 }
 .timer-controls button:active {
@@ -2904,9 +2962,42 @@ footer {
   border-bottom: 1px solid var(--line);
   font-size: 13px;
 }
+.laps-panel li.is-new {
+  transform-origin: 50% 0;
+  animation: lap-row-add 0.38s var(--track-ease-spring) both;
+}
+.laps-panel ol.clearing li {
+  animation: lap-row-clear var(--track-motion-fast) cubic-bezier(0.4, 0, 1, 1) both;
+}
 .laps-panel li b {
   font-variant-numeric: tabular-nums;
   font-weight: 500;
+}
+.laps-empty {
+  animation: lap-empty-arrive var(--track-motion-standard) var(--track-ease-gentle) both;
+}
+@keyframes lap-row-add {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes lap-row-clear {
+  to {
+    height: 0;
+    opacity: 0;
+    transform: translateX(12px) scale(0.98);
+  }
+}
+@keyframes lap-empty-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
 }
 .laps-empty {
   padding: 34px 0;
@@ -3211,7 +3302,7 @@ footer {
   background: var(--raised);
   color: var(--ink);
   box-shadow: 0 28px 85px rgba(0, 0, 0, 0.42);
-  animation: settings-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-modal-in 0.3s var(--track-ease-spring) both;
 }
 .calendar-detail-modal {
   height: min(680px, calc(100dvh - 36px));

@@ -5,7 +5,8 @@ import type { ComponentProps } from "react";
 import { SettingsProvider } from "../contexts/SettingsContext";
 import { AccountPromptModals } from "./AccountPromptModals";
 import { ActionModalOverlays } from "./ActionModalOverlays";
-import { AdminUsersButton, AdminUsersPanel } from "./AdminUsersPanel";
+import { AdminUsersPanel } from "./AdminUsersPanel";
+import { AdminUsersButton } from "./AdminUsersDirectoryModels";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { BottomTabBar } from "./BottomTabBar";
 import { FinishWorkoutButton } from "./FinishWorkoutButton";
@@ -29,6 +30,7 @@ export type TrackAppShellProps = {
   mobileSidebarOpen: boolean;
   isAdmin: boolean;
   active: boolean;
+  showDashboard: boolean;
   showTimer: boolean;
   showCalendar: boolean;
   showRank: boolean;
@@ -57,6 +59,7 @@ export function TrackAppShell({
   mobileSidebarOpen,
   isAdmin,
   active,
+  showDashboard,
   showTimer,
   showCalendar,
   showRank,
@@ -84,6 +87,7 @@ export function TrackAppShell({
         {announcementProps && <AnnouncementBanner {...announcementProps} />}
         {updateNotificationProps && <UpdateNotification {...updateNotificationProps} />}
         {active &&
+          !showDashboard &&
           !showTimer &&
           !showCalendar &&
           !showRank &&
@@ -133,6 +137,7 @@ export function TrackAppShell({
             </div>
             <div className="mobile-actions">
               {active &&
+                !showDashboard &&
                 !showTimer &&
                 !showCalendar &&
                 !showRank &&
@@ -164,9 +169,13 @@ export function TrackAppShell({
         </section>
 
         {globalThis.document && createPortal(<BottomTabBar {...bottomTabProps} />, document.body)}
-        {active && !showTimer && !showCalendar && !showRank && !settingsOpen && !mobileSidebarOpen && (
-          <ScrollShortcuts {...scrollShortcutsProps} />
-        )}
+        {active &&
+          !showDashboard &&
+          !showTimer &&
+          !showCalendar &&
+          !showRank &&
+          !settingsOpen &&
+          !mobileSidebarOpen && <ScrollShortcuts {...scrollShortcutsProps} />}
         {splitMenuProps && <SplitMenu {...splitMenuProps} />}
         <ActionModalOverlays {...actionModalProps} />
         {settingsOpen && <SettingsModal {...settingsModalProps} />}

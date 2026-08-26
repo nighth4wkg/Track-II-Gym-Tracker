@@ -1,12 +1,19 @@
 "use client";
 
-import { useState, type PointerEvent as ReactPointerEvent, type TouchEvent as ReactTouchEvent } from "react";
-import { REST_PRESETS, TRACK_INTERACTION } from "../trackConstants";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
+import { REST_PRESETS, TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 import { restMinutesInputFromSeconds, restSecondsFromMinutes } from "../trackUtils";
-import { formatCountdown, formatRestMinutes, formatStopwatch } from "../timerUtils";
+import { formatRestMinutes, formatStopwatch } from "../timerUtils";
+import { TimerDisplayValue } from "./TimerDisplayValue";
 
 export type TimerMode = "stopwatch" | "rest";
-export type TimerTransition = "forward" | "backward";
+export type TimerTransition = "idle" | "forward" | "backward";
 export type RestTimerSelection = { seconds: number; custom: boolean; input: string };
 
 type TimerScreenProps = {
@@ -59,6 +66,8 @@ export function TimerScreen({
     restDraftFromProps(restSeconds, restCustom, customRestInput),
   );
   const [restDraftDirty, setRestDraftDirty] = useState(false);
+  const [clearingLaps, setClearingLaps] = useState(false);
+  const clearLapsTimerRef = useRef<number | null>(null);
   const renderedRestDraft = restDraftDirty ? restDraft : restDraftFromProps(restSeconds, restCustom, customRestInput);
 
   function chooseRestPreset(seconds: number) {
@@ -92,6 +101,26 @@ export function TimerScreen({
     setRestDraft({ seconds, custom: currentDraft.custom, input: restMinutesInputFromSeconds(seconds) });
     setRestDraftDirty(false);
   }
+
+  function clearLapsWithMotion() {
+    if (!laps.length || clearingLaps) return;
+    if (globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches) {
+      onClearLaps();
+      return;
+    }
+    setClearingLaps(true);
+    clearLapsTimerRef.current = window.setTimeout(() => {
+      onClearLaps();
+      setClearingLaps(false);
+    }, TRACK_TIMING.lapClearAnimationMs);
+  }
+
+  useEffect(
+    () => () => {
+      if (clearLapsTimerRef.current !== null) window.clearTimeout(clearLapsTimerRef.current);
+    },
+    [],
+  );
 
   function handleTouchStart(event: ReactTouchEvent<HTMLElement>) {
     if (event.touches.length === 1)
@@ -160,7 +189,7 @@ export function TimerScreen({
             className={`timer-display${running ? " running" : ""}${mode === "rest" && restRemaining <= 10_000 && running ? " rest-ending" : ""}`}
             aria-live={mode === "rest" ? "polite" : "off"}
           >
-            {mode === "stopwatch" ? formatStopwatch(elapsed) : formatCountdown(restRemaining)}
+            <TimerDisplayValue mode={mode} running={running} elapsed={elapsed} restRemaining={restRemaining} />
           </div>
         </div>
         <div className="timer-controls">
@@ -183,19 +212,22 @@ export function TimerScreen({
           <div className="laps-panel">
             <div className="laps-heading">
               <h2>Laps</h2>
-              <button onClick={onClearLaps} disabled={laps.length === 0}>
-                Clear laps
+              <button onClick={clearLapsWithMotion} disabled={laps.length === 0 || clearingLaps}>
+                {clearingLaps ? "Clearing…" : "Clear laps"}
               </button>
             </div>
             {laps.length === 0 ? (
               <div className="laps-empty">Your laps will appear here.</div>
             ) : (
-              <ol>
+              <ol className={clearingLaps ? "clearing" : ""}>
                 {[...laps].reverse().map((lap, reversedIndex) => {
                   const originalIndex = laps.length - 1 - reversedIndex;
                   const previous = originalIndex === 0 ? 0 : laps[originalIndex - 1];
                   return (
-                    <li key={`${originalIndex}-${lap}`}>
+                    <li
+                      key={`${originalIndex}-${lap}`}
+                      className={originalIndex === laps.length - 1 ? "is-new" : undefined}
+                    >
                       <span>Lap {originalIndex + 1}</span>
                       <b>{formatStopwatch(lap - previous)}</b>
                     </li>

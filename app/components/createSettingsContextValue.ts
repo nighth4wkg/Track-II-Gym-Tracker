@@ -7,12 +7,14 @@ import type { useTrackExportActions } from "../hooks/useTrackExportActions";
 import type { useWorkoutEditorController } from "../hooks/useWorkoutEditorController";
 import type { useWorkoutImportActions } from "../hooks/useWorkoutImportActions";
 import type { Checklist } from "../trackTypes";
-import type { AppLocalState } from "./TrackAppView";
+import type { AppLocalState } from "../trackAppViewTypes";
 import { haptic } from "../haptics";
+import type { ExerciseProgressSyncPreview } from "../exerciseProgress";
 
 type CreateSettingsContextOptions = {
   active: Checklist | null;
   tasks: Checklist["tasks"];
+  syncProgressPreview: ExerciseProgressSyncPreview;
   isAdmin: boolean;
   nativeApp: boolean;
   releaseAvailable: boolean;
@@ -30,6 +32,7 @@ type CreateSettingsContextOptions = {
 export function createSettingsContextValue({
   active,
   tasks,
+  syncProgressPreview,
   isAdmin,
   nativeApp,
   releaseAvailable,
@@ -70,6 +73,7 @@ export function createSettingsContextValue({
     releaseAvailable,
     rememberExercisesAcrossSplits: settings.rememberExercisesAcrossSplits,
     settingsView: settings.settingsView,
+    syncProgressPreview,
     tasks,
     themeMode: settings.themeMode,
     updateCheckBusy: identity.updateCheckBusy,
@@ -105,5 +109,6 @@ export function createSettingsContextValue({
       settings.setSignOutConfirm(true);
     },
     onSavePersonalInfo: accountActions.savePersonalInfo,
+    onSyncExerciseProgress: workoutEditor.syncLatestProgressAcrossSplits,
   };
 }

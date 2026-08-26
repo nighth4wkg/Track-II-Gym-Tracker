@@ -216,14 +216,23 @@ export async function fetchWorkoutDateKeys(userId: string) {
   );
 }
 
-export async function fetchRecentRankTasks(userId: string): Promise<RankTask[]> {
-  const cutoff = new Date(Date.now() - TRACK_LIMITS.rankHistoryDays * MILLISECONDS_PER_DAY).toISOString();
+export async function fetchRecentRankTasks(
+  userId: string,
+  historyDays: number | null = TRACK_LIMITS.rankHistoryDays,
+): Promise<RankTask[]> {
+  const cutoff = historyDays === null ? null : new Date(Date.now() - historyDays * MILLISECONDS_PER_DAY).toISOString();
   const { rows, error } = await fetchAllPages<RankHistoryRow>((from, to) =>
-    supabase
-      .from("workout_set_logs")
-      .select("session_id,exercise_id,exercise_name,set_number,weight,unit,reps,rir,created_at")
-      .eq("user_id", userId)
-      .gte("created_at", cutoff)
+    (cutoff
+      ? supabase
+          .from("workout_set_logs")
+          .select("session_id,exercise_id,exercise_name,set_number,weight,unit,reps,rir,created_at")
+          .eq("user_id", userId)
+          .gte("created_at", cutoff)
+      : supabase
+          .from("workout_set_logs")
+          .select("session_id,exercise_id,exercise_name,set_number,weight,unit,reps,rir,created_at")
+          .eq("user_id", userId)
+    )
       .order("created_at", { ascending: false })
       .range(from, to),
   );
@@ -233,15 +242,18 @@ export async function fetchRecentRankTasks(userId: string): Promise<RankTask[]> 
     const exerciseName = String(row.exercise_name ?? "").trim();
     if (!exerciseName) continue;
     const exerciseId = row.exercise_id ? String(row.exercise_id) : undefined;
+    const sessionId = row.session_id ? String(row.session_id) : undefined;
     const key = rankHistoryGroupKey(row, index);
     const task = grouped.get(key) ?? {
       exerciseId,
+      sessionId,
       text: exerciseName,
       sets: [],
       performedAt: String(row.created_at),
       source: "history" as const,
     };
     task.sets!.push({
+      setNumber: Number(row.set_number) || undefined,
       weight: Number(row.weight) || 0,
       unit: row.unit === "lb" ? "lb" : "kg",
       reps: Number(row.reps) || 0,

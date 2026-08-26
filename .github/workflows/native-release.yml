@@ -20,6 +20,7 @@ jobs:
     name: Android test APK
     runs-on: ubuntu-latest
     env:
+      NEXT_PUBLIC_TRACK_VERSION: ${{ inputs.tag }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       NEXT_PUBLIC_TRACK_WEB_ORIGIN: ${{ vars.TRACK_WEB_ORIGIN }}
@@ -78,6 +79,7 @@ jobs:
     runs-on: macos-15
     env:
       RELEASE_TAG: ${{ inputs.tag }}
+      NEXT_PUBLIC_TRACK_VERSION: ${{ inputs.tag }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       NEXT_PUBLIC_TRACK_WEB_ORIGIN: ${{ vars.TRACK_WEB_ORIGIN }}

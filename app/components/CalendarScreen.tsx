@@ -12,16 +12,12 @@ import {
 import { supabase } from "../supabase";
 import { applyAnimatedStyles } from "../domMotion";
 import { haptic } from "../haptics";
-import { calendarDateKey, type WorkoutDateSyncEvent } from "../calendarTypes";
+import type { WorkoutDateSyncEvent } from "../calendarTypes";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { fetchWorkoutDayDetail, type WorkoutDayDetail } from "../data/calendarWorkoutData";
 import { CalendarDetailModal } from "./CalendarDetailModal";
 import { TRACK_TIMING } from "../trackConstants";
-
-function formatSummaryDate(dateKey: string | null) {
-  if (!dateKey) return "—";
-  return new Date(`${dateKey}T00:00:00`).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+import { CalendarMonthOverview } from "./CalendarMonthOverview";
 
 export type CalendarScreenProps = {
   month: Date;
@@ -46,16 +42,6 @@ export function CalendarScreen({
 }: CalendarScreenProps) {
   const year = month.getFullYear();
   const monthIndex = month.getMonth();
-  const monthName = month.toLocaleDateString(undefined, { month: "long", year: "numeric" });
-  const firstDayOffset = (new Date(year, monthIndex, 1).getDay() + 6) % 7;
-  const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();
-  const today = calendarDateKey(new Date());
-  const cells = Array.from({ length: firstDayOffset + daysInMonth }, (_, index) =>
-    index < firstDayOffset ? null : index - firstDayOffset + 1,
-  );
-  const monthPrefix = `${year}-${String(monthIndex + 1).padStart(2, "0")}-`;
-  const monthWorkoutCount = [...workoutDates].filter((dateKey) => dateKey.startsWith(monthPrefix)).length;
-  const latestWorkoutDate = [...workoutDates].sort().slice(-1)[0] ?? null;
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [detail, setDetail] = useState<WorkoutDayDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -72,9 +58,8 @@ export function CalendarScreen({
   const detailScrollTrackRef = useRef<HTMLDivElement | null>(null);
   const detailScrollThumbRef = useRef<HTMLDivElement | null>(null);
   const detailScrollDrag = useRef<{ startY: number; startTop: number } | null>(null);
-  const [monthDirection, setMonthDirection] = useState<"next" | "previous">("next");
+  const [monthDirection, setMonthDirection] = useState<"idle" | "next" | "previous">("idle");
   const calendarSwipeStart = useRef<{ x: number; y: number } | null>(null);
-  const monthKey = `${year}-${monthIndex}`;
 
   useModalFocus({ open: Boolean(selectedDate), containerRef: detailModalRef });
 
@@ -351,109 +336,22 @@ export function CalendarScreen({
 
   return (
     <section className="calendar-screen">
-      <div className="calendar-title-row">
-        <div className="calendar-title-copy">
-          <span className="settings-kicker">WORKOUT HISTORY</span>
-          <h1>Calendar</h1>
-        </div>
-        <button
-          className="calendar-today ui-button ui-button-secondary"
-          onClick={() => {
-            haptic(8);
-            onMonthChange(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-          }}
-        >
-          Today
-        </button>
-      </div>
-      <section className="calendar-insight-strip" aria-label="Workout history summary">
-        <div className="calendar-insight-card">
-          <span>This month</span>
-          <strong>{monthWorkoutCount}</strong>
-          <small>{monthWorkoutCount === 1 ? "workout" : "workouts"}</small>
-        </div>
-        <div className="calendar-insight-card">
-          <span>Total logged</span>
-          <strong>{workoutDates.size}</strong>
-          <small>{workoutDates.size === 1 ? "session" : "sessions"}</small>
-        </div>
-        <div className="calendar-insight-card">
-          <span>Latest session</span>
-          <strong>{formatSummaryDate(latestWorkoutDate)}</strong>
-          <small>{latestWorkoutDate ? "completed" : "No sessions yet"}</small>
-        </div>
-      </section>
-      <div className="calendar-card ui-panel" onTouchStart={startCalendarSwipe} onTouchEnd={finishCalendarSwipe}>
-        <div key={monthKey} className={`calendar-month-stage ${monthDirection}`}>
-          <div className="calendar-heading">
-            <button
-              className="calendar-nav"
-              onClick={() => {
-                haptic(6);
-                navigateMonth(-1);
-              }}
-              aria-label="Previous month"
-            >
-              ‹
-            </button>
-            <strong>{monthName}</strong>
-            <button
-              className="calendar-nav"
-              onClick={() => {
-                haptic(6);
-                navigateMonth(1);
-              }}
-              aria-label="Next month"
-            >
-              ›
-            </button>
-          </div>
-          <div className="calendar-weekdays">
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="calendar-grid">
-            {cells.map((day, index) => {
-              if (!day) return <span className="calendar-cell empty" key={`empty-${index}`} />;
-              const date = new Date(year, monthIndex, day);
-              const key = calendarDateKey(date);
-              const workedOut = workoutDates.has(key);
-              return (
-                <button
-                  className={`${workedOut ? "calendar-cell workout-day" : "calendar-cell"}${key === today ? " today" : ""}`}
-                  key={key}
-                  title={workedOut ? "View workout details" : undefined}
-                  disabled={!workedOut}
-                  onClick={() => {
-                    if (workedOut) {
-                      haptic(8);
-                      setSelectedDate(key);
-                    }
-                  }}
-                >
-                  <b>{day}</b>
-                  {workedOut && <i aria-label="Workout completed" />}
-                </button>
-              );
-            })}
-          </div>
-          <div className="calendar-legend">
-            <span>
-              <i /> Completed
-            </span>
-            <span>
-              {workoutDates.size} {workoutDates.size === 1 ? "workout" : "workouts"}
-            </span>
-          </div>
-        </div>
-      </div>
-      {workoutDates.size === 0 && (
-        <div className="calendar-empty-note ui-empty" role="status">
-          <strong>Your workout history will appear here.</strong>
-          <span>Finish a session to start building your calendar.</span>
-        </div>
-      )}
+      <CalendarMonthOverview
+        month={month}
+        monthDirection={monthDirection}
+        workoutDates={workoutDates}
+        onMonthDelta={(delta) => {
+          haptic(6);
+          navigateMonth(delta);
+        }}
+        onToday={() => {
+          haptic(8);
+          onMonthChange(new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+        }}
+        onSelectDate={setSelectedDate}
+        onTouchStart={startCalendarSwipe}
+        onTouchEnd={finishCalendarSwipe}
+      />
       {selectedDate && (
         <CalendarDetailModal
           selectedDate={selectedDate}

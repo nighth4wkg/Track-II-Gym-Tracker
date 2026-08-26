@@ -52,6 +52,7 @@ export type TrackAppInteractionsOptions = {
   setSettingsClosing: StateSetter<boolean>;
   setSettingsOpen: StateSetter<boolean>;
   setSettingsView: StateSetter<SettingsView>;
+  setShowDashboard: StateSetter<boolean>;
   setShowCalendar: StateSetter<boolean>;
   setShowRank: StateSetter<boolean>;
   setShowSuggestions: StateSetter<boolean>;
@@ -97,6 +98,7 @@ export function useTrackAppInteractions({
   setSettingsClosing,
   setSettingsOpen,
   setSettingsView,
+  setShowDashboard,
   setShowCalendar,
   setShowRank,
   setShowSuggestions,
@@ -117,8 +119,9 @@ export function useTrackAppInteractions({
 }: TrackAppInteractionsOptions) {
   const notificationCopy = TRACK_UI_COPY.notifications;
 
-  function navigateBottomTab(id: "workout" | "timer" | "calendar" | "rank") {
+  function navigateBottomTab(id: "dashboard" | "workout" | "timer" | "calendar" | "rank") {
     haptic(8);
+    setShowDashboard(id === "dashboard");
     setShowTimer(id === "timer");
     setShowCalendar(id === "calendar");
     setShowRank(id === "rank");

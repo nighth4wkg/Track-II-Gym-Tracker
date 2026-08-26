@@ -28,6 +28,7 @@ const readPageSource = async () =>
     "app/TrackAppCore.tsx",
     "app/components/TrackAppShell.tsx",
     "app/components/TrackAppView.tsx",
+    "app/trackViewSelectors.ts",
     "app/hooks/useTrackAppLifecycle.ts",
     "app/hooks/useTrackAppRuntimeLifecycle.ts",
     "app/hooks/useTrackBootstrapLifecycle.ts",
@@ -104,6 +105,8 @@ const readAppSource = async () => {
     "app/components/BottomTabBar.tsx",
     "app/components/SettingsNavigation.tsx",
     "app/components/SettingsViewContent.tsx",
+    "app/components/SettingsAiImportView.tsx",
+    "app/components/SettingsStandardViews.tsx",
     "app/components/SettingsSpecialViews.tsx",
     "app/components/createSettingsContextValue.ts",
     "app/components/createWorkoutEditorContextValue.ts",
@@ -112,6 +115,7 @@ const readAppSource = async () => {
     "app/trackConfig.ts",
     "app/trackTypes.ts",
     "app/trackUtils.ts",
+    "app/trackViewSelectors.ts",
     "app/data/trackApi.ts",
     "app/hooks/useBottomTabNavigation.ts",
     "app/hooks/useTrackCloudSync.ts",
@@ -154,7 +158,9 @@ test("Track source exposes the shared app and current release", async () => {
   ]);
 
   assert.match(page, /export default function Home\(\)/);
-  assert.match(trackConfig, /export const TRACK_VERSION = "1\.0"/);
+  assert.match(trackConfig, /export const TRACK_VERSION = "__TRACK_VERSION__"/);
+  assert.match(packageJson, /"version": "1\.0\.5"/);
+  assert.match(await read("vite.pages.config.ts"), /output\.code = replaceBuildTokens\(output\.code\)/);
   assert.match(api, /save_track_state/);
   assert.match(syncHook, /useTrackLocalSnapshot/);
   assert.match(api, /workout_sessions/);
@@ -251,7 +257,9 @@ test("exercise search suggestions fill the composer and use an add affordance", 
 test("beta UX surfaces expose concise summaries and useful empty states", async () => {
   const [workout, calendar, rank, base, css] = await Promise.all([
     read("app/components/WorkoutPage.tsx"),
-    read("app/components/CalendarScreen.tsx"),
+    Promise.all([read("app/components/CalendarScreen.tsx"), read("app/components/CalendarMonthOverview.tsx")]).then(
+      (sources) => sources.join("\n"),
+    ),
     read("app/components/RankScreen.tsx"),
     read("app/styles/base.css"),
     readCssSource(),
@@ -270,6 +278,61 @@ test("beta UX surfaces expose concise summaries and useful empty states", async 
   assert.match(css, /\.calendar-insight-card,[\s\S]*?\.rank-insight-card/);
 });
 
+test("Dashboard exposes timeframe inspection, progression, volume guidance, and stable settings overlays", async () => {
+  const [dashboard, activityGraph, workspace, settings, standardSettings, aiSettings, sync, css] = await Promise.all([
+    read("app/components/DashboardScreen.tsx"),
+    read("app/components/DashboardActivityGraph.tsx"),
+    read("app/components/WorkspaceContent.tsx"),
+    read("app/components/SettingsViewContent.tsx"),
+    read("app/components/SettingsStandardViews.tsx"),
+    read("app/components/SettingsAiImportView.tsx"),
+    read("app/components/SettingsProgressSync.tsx"),
+    readCssSource(),
+  ]);
+
+  assert.match(
+    workspace,
+    /lazy\(async \(\) => \(\{ default: \(await import\("\.\/DashboardScreen"\)\)\.DashboardScreen \}\)\)/,
+  );
+  assert.match(dashboard, /Last week/);
+  assert.match(dashboard, /Last month/);
+  assert.match(dashboard, /Year to date/);
+  assert.match(dashboard, /All time/);
+  assert.match(dashboard, /useState<DashboardTimeframe>\("week"\)/);
+  assert.match(activityGraph, /Hold and slide across the graph/);
+  assert.match(activityGraph, /preserveAspectRatio="none"/);
+  assert.match(activityGraph, /<rect/);
+  assert.match(activityGraph, /dashboard-activity-bar-track/);
+  assert.match(activityGraph, /REFERENCE_COUNT = 4/);
+  assert.match(activityGraph, /gridTemplateColumns/);
+  assert.match(activityGraph, /H\$\{VIEWBOX_WIDTH - HORIZONTAL_INSET\}/);
+  assert.doesNotMatch(activityGraph, /<polyline/);
+  assert.match(activityGraph, /top: `\$\{\(geometry\.yFor\(activePoint\.count\) \/ VIEWBOX_HEIGHT\) \* 100\}%`/);
+  assert.match(dashboard, /titleCase\(item\.group\)/);
+  assert.match(dashboard, /Recent PRs &amp; lifts/);
+  assert.match(dashboard, /Weekly sets by muscle/);
+  assert.match(dashboard, /last 7 days/);
+  assert.match(dashboard, /all-time-volume/);
+  assert.match(dashboard, /Volume load/);
+  assert.match(dashboard, /average per workout/);
+  assert.match(dashboard, /total across all workouts/);
+  assert.match(dashboard, /dashboard-volume-delta/);
+  assert.match(dashboard, /formatVolumeDelta/);
+  assert.match(dashboard, /activityWorkoutCount === 1 \? "workout" : "workouts"/);
+  assert.match(settings, /SettingsStandardViews/);
+  assert.match(standardSettings, /case "appearance"/);
+  assert.match(standardSettings, /case "account"/);
+  assert.match(aiSettings, /const updateSet/);
+  assert.match(sync, /createPortal/);
+  assert.match(css, /--track-layer-critical:\s*3200/);
+  assert.match(css, /\.progress-sync-backdrop \{[\s\S]*?z-index:\s*var\(--track-layer-critical\)/);
+  assert.match(css, /\.dashboard-screen,[\s\S]*?padding:\s*0/);
+  assert.match(css, /\.dashboard-stat-grid article \{[\s\S]*?height: 128px;[\s\S]*?padding: 16px/);
+  assert.match(css, /\.dashboard-stat-grid strong\.baseline \{[\s\S]*?font-size: 22px/);
+  assert.match(css, /\.content:has\(\.dashboard-screen\) \{[\s\S]*?padding-bottom: calc\(112px/);
+  assert.match(css, /\.dashboard-progress-feed > div > i \{[\s\S]*?background:\s*var\(--track-accent-success\)/);
+});
+
 test("release notes stay external and the web app has no Changelog tab", async () => {
   const [page, config, notes] = await Promise.all([
     readPageSource(),
@@ -283,7 +346,7 @@ test("release notes stay external and the web app has no Changelog tab", async (
   assert.match(notes, /native/i);
 });
 
-test("1.0 release metadata identifies the current web and native package", async () => {
+test("release metadata keeps web and native package versions aligned", async () => {
   const [trackConfig, packageJson, packageLock, notes] = await Promise.all([
     read("app/trackConfig.ts"),
     read("package.json"),
@@ -291,9 +354,9 @@ test("1.0 release metadata identifies the current web and native package", async
     read("release-notes/v1.0.md"),
   ]);
 
-  assert.match(trackConfig, /export const TRACK_VERSION = "1\.0"/);
-  assert.match(packageJson, /"version": "1\.0"/);
-  assert.match(packageLock, /"version": "1\.0"/);
+  assert.match(trackConfig, /export const TRACK_VERSION = "__TRACK_VERSION__"/);
+  assert.match(packageJson, /"version": "1\.0\.5"/);
+  assert.match(packageLock, /"version": "1\.0\.5"/);
   assert.match(notes, /Track II v1\.0/);
   assert.match(notes, /distributed database-backed limiter/);
   assert.match(packageJson, /"@capacitor\/core": "\^8/);
@@ -303,12 +366,13 @@ test("1.0 release metadata identifies the current web and native package", async
 });
 
 test("Rank is wired to current task data and has responsive styles", async () => {
-  const [page, workspaceContent, navigationState, rank, rankScreen, css] = await Promise.all([
+  const [page, workspaceContent, navigationState, rank, rankScreen, rankBodyMap, css] = await Promise.all([
     readPageSource(),
     read("app/components/WorkspaceContent.tsx"),
     read("app/hooks/useNavigationState.ts"),
     readRankSource(),
     read("app/components/RankScreen.tsx"),
+    read("app/components/RankBodyMap.tsx"),
     readCssSource(),
   ]);
 
@@ -350,14 +414,14 @@ test("Rank is wired to current task data and has responsive styles", async () =>
   assert.match(rankScreen, /EQUIPMENT_TYPES\.map/);
   assert.match(rankScreen, /summary\.progress/);
   assert.match(rankScreen, /aria-label="Front and back strength maps"/);
-  assert.match(rankScreen, /<BodyMap\s+side="front"/);
-  assert.match(rankScreen, /<BodyMap\s+side="back"/);
-  assert.match(rankScreen, /Biceps and brachialis/);
-  assert.match(rankScreen, /Triceps/);
-  assert.match(rankScreen, /Obliques and serratus/);
-  assert.match(rankScreen, /Calves/);
-  assert.match(rankScreen, /rank-anatomy-separators/);
-  assert.doesNotMatch(rankScreen, /rank-anatomy-midline|rank-anatomy-detail/);
+  assert.match(rankScreen, /<RankBodyMap\s+side="front"/);
+  assert.match(rankScreen, /<RankBodyMap\s+side="back"/);
+  assert.match(rankBodyMap, /Biceps and brachialis/);
+  assert.match(rankBodyMap, /Triceps/);
+  assert.match(rankBodyMap, /Obliques and serratus/);
+  assert.match(rankBodyMap, /Calves/);
+  assert.match(rankBodyMap, /rank-anatomy-separators/);
+  assert.doesNotMatch(rankBodyMap, /rank-anatomy-midline|rank-anatomy-detail/);
   assert.doesNotMatch(rankScreen, /rank-map-toggle/);
   assert.doesNotMatch(rankScreen, /YOUR CURRENT PROFILE/);
   assert.doesNotMatch(rankScreen, /% of exercise standard/);
@@ -444,8 +508,11 @@ test("mobile page tabs stay fixed and hold-slide to a target page", async () => 
     readCssSource(),
   ]);
 
-  assert.match(tabBar, /type BottomTabId = "workout" \| "timer" \| "calendar" \| "rank"/);
-  assert.match(tabBar, /DEFAULT_BOTTOM_TABS: BottomTabId\[\] = \["workout", "calendar", "rank", "timer"\]/);
+  assert.match(tabBar, /type BottomTabId = "dashboard" \| "workout" \| "timer" \| "calendar" \| "rank"/);
+  assert.match(
+    tabBar,
+    /DEFAULT_BOTTOM_TABS: BottomTabId\[\] = \["dashboard", "workout", "calendar", "rank", "timer"\]/,
+  );
   assert.match(tabBar, /data-bottom-tab-id=\{id\}/);
   assert.match(tabBar, /data-indicator-index=\{indicatorIndex\}/);
   assert.match(bottomTabSource, /function beginHold/);
@@ -530,7 +597,7 @@ test("mobile page tabs stay fixed and hold-slide to a target page", async () => 
   assert.match(css, /\.bottom-tab-bar\.is-sidebar-collapsed \{[^}]*left:50vw/);
   assert.match(css, /bottom-tab-sidebar-dismiss/);
   assert.match(css, /bottom-tab-sidebar-return/);
-  assert.match(css, /\.bottom-tab-bar \{[\s\S]*?left 0\.42s cubic-bezier/);
+  assert.match(css, /\.bottom-tab-bar \{[\s\S]*?left 0\.42s var\(--track-ease-spring\)/);
   assert.doesNotMatch(page, /timer-nav|rank-nav-icon/);
   assert.doesNotMatch(css, /bottom-tab-drag-ghost|bottom-tab-dragging/);
   assert.doesNotMatch(css, /dragging-bottom-tab-active/);
@@ -784,7 +851,11 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
   const [calendar, taskCard, settings, navigation, constants, rank, timer, undoToast, css] = await Promise.all([
     readSourceBundle(["app/components/CalendarScreen.tsx", "app/components/CalendarDetailModal.tsx"]),
     read("app/components/TaskCard.tsx"),
-    read("app/components/SettingsViewContent.tsx"),
+    readSourceBundle([
+      "app/components/SettingsViewContent.tsx",
+      "app/components/SettingsStandardViews.tsx",
+      "app/components/SettingsAiImportView.tsx",
+    ]),
     read("app/components/SettingsNavigation.tsx"),
     read("app/trackConstants.ts"),
     read("app/components/RankScreen.tsx"),
@@ -811,11 +882,13 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
   assert.match(settings, /className="export-actions export-card"/);
   assert.match(settings, /className="ai-upload-icon"/);
   assert.match(settings, /notification-setting-help/);
-  assert.match(navigation, /Account &amp; Security|Account & Security/);
+  assert.match(navigation, /label: SETTINGS_LABELS\[item\.view\]/);
+  assert.match(navigation, /label: SETTINGS_LABELS\.admin/);
   assert.doesNotMatch(navigation, /label: "Privacy & Notifications"|label: "Data & Backup"/);
   assert.match(constants, /account: "Account & Security"/);
   assert.match(constants, /about: "About Track II"/);
-  assert.match(css, /\.settings-view\.view-account > \.setting-section:nth-child\(3\)/);
+  assert.match(css, /\.settings-view\.view-account > \.setting-section:not\(:last-child\)/);
+  assert.doesNotMatch(css, /\.settings-view\.view-account > \.setting-section:nth-child/);
   assert.match(css, /\.theme-preview-grid/);
   assert.match(css, /\.exercise-unit-settings,[\s\S]*?-webkit-font-smoothing:antialiased;/);
   assert.match(rank, /className="rank-card-progress"/);
@@ -848,7 +921,7 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
     css,
     /\.undo-toast-positioner\.dismiss-left \{[\s\S]*?transform:translate3d\([\s\S]*?var\(--undo-dismiss-duration,360ms\)/,
   );
-  assert.match(css, /\.undo-toast-positioner \{[\s\S]*?left 0\.42s cubic-bezier/);
+  assert.match(css, /\.undo-toast-positioner \{[\s\S]*?left 0\.42s var\(--track-ease-spring\)/);
   assert.match(css, /\.rank-body-map \{[\s\S]*?shape-rendering:geometricPrecision;/);
   assert.match(css, /\.rank-anatomy-separators \{/);
   assert.match(taskCard, /className="sets-table"/);
@@ -871,6 +944,8 @@ test("account status actions use a crisp, aligned visual system", async () => {
   assert.doesNotMatch(sidebar, /⚙/);
   assert.match(sidebar, /<svg viewBox="0 0 24 24"[^>]*focusable="false">/);
   assert.doesNotMatch(sidebar, /brand-sync-status/);
+  assert.match(sidebar, /onClick=\{\(\) => onOpenSettings\(\)\}/);
+  assert.doesNotMatch(sidebar, /onClick=\{onOpenSettings\}/);
   assert.doesNotMatch(sidebar, /account-panel-heading[\s\S]*account-status/);
   assert.match(
     css,
@@ -885,7 +960,7 @@ test("account status actions use a crisp, aligned visual system", async () => {
 
 test("personal unit controls keep metric storage while displaying correct imperial values", async () => {
   const [settings, measurements] = await Promise.all([
-    read("app/components/SettingsViewContent.tsx"),
+    read("app/components/SettingsStandardViews.tsx"),
     read("app/personalMeasurements.ts"),
   ]);
 
@@ -909,7 +984,9 @@ test("native haptics enhance bottom-tab gestures with a browser fallback", async
 test("calendar no longer renders workout streaks", async () => {
   const [page, calendar, css] = await Promise.all([
     readPageSource(),
-    read("app/components/CalendarScreen.tsx"),
+    Promise.all([read("app/components/CalendarScreen.tsx"), read("app/components/CalendarMonthOverview.tsx")]).then(
+      (sources) => sources.join("\n"),
+    ),
     readCssSource(),
   ]);
 
@@ -1202,7 +1279,10 @@ test("admin member directory is username-gated, private, and stays outside the A
     pagesStyles,
   ] = await Promise.all([
     readAppSource(),
-    read("app/components/AdminUsersPanel.tsx"),
+    Promise.all([
+      read("app/components/AdminUsersPanel.tsx"),
+      read("app/components/AdminUsersDirectoryModels.tsx"),
+    ]).then((sources) => sources.join("\n")),
     read("app/components/AdminMemberViewer.tsx"),
     read("app/components/SettingsModal.tsx"),
     read("supabase/functions/admin-member-data/index.ts"),
@@ -1306,7 +1386,7 @@ test("native updates and notification permissions use native-safe paths", async 
   const [releaseManager, interactions, settings, settingsSpecial, trackUtils, updateNotification] = await Promise.all([
     read("app/hooks/useReleaseManager.ts"),
     read("app/hooks/useTrackAppInteractions.ts"),
-    read("app/components/SettingsViewContent.tsx"),
+    read("app/components/SettingsStandardViews.tsx"),
     read("app/components/SettingsSpecialViews.tsx"),
     read("app/trackUtils.ts"),
     read("app/components/UpdateNotification.tsx"),

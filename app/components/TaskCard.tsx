@@ -8,7 +8,6 @@ import {
   useRef,
   useState,
   type DragEvent,
-  type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
@@ -16,26 +15,8 @@ import { createPortal } from "react-dom";
 import { useConnectedTaskCard } from "../contexts/WorkoutEditorContext";
 import { applyAnimatedStyles } from "../domMotion";
 import { weightProgressionDelta } from "../trackUtils";
-
-export type TaskCardSet = {
-  id: string;
-  weight: string;
-  unit: "kg" | "lb";
-  reps: string;
-  rir: string;
-  lastWeight?: number;
-  lastWeightUnit?: "kg" | "lb";
-  lastReps?: number;
-  lastRir?: number;
-};
-
-export type TaskCardTask = {
-  id: string;
-  text: string;
-  sets?: TaskCardSet[];
-  done: boolean;
-  collapsed?: boolean;
-};
+import { focusNextSetInput, sameTask, summarizeSetValues, type TaskCardSet, type TaskCardTask } from "../taskCardUtils";
+export type { TaskCardSet, TaskCardTask } from "../taskCardUtils";
 
 type TaskCardProps = {
   task: TaskCardTask;
@@ -68,56 +49,6 @@ type TaskCardProps = {
   onRemoveSet: (setId: string) => void;
   onAddSet: () => void;
 };
-
-function sameTask(left: TaskCardTask, right: TaskCardTask) {
-  if (
-    left.id !== right.id ||
-    left.text !== right.text ||
-    left.done !== right.done ||
-    left.collapsed !== right.collapsed
-  )
-    return false;
-  const leftSets = left.sets ?? [];
-  const rightSets = right.sets ?? [];
-  if (leftSets.length !== rightSets.length) return false;
-  return leftSets.every((leftSet, index) => {
-    const rightSet = rightSets[index];
-    return (
-      leftSet.id === rightSet.id &&
-      leftSet.weight === rightSet.weight &&
-      leftSet.unit === rightSet.unit &&
-      leftSet.reps === rightSet.reps &&
-      leftSet.rir === rightSet.rir &&
-      leftSet.lastWeight === rightSet.lastWeight &&
-      leftSet.lastWeightUnit === rightSet.lastWeightUnit &&
-      leftSet.lastReps === rightSet.lastReps &&
-      leftSet.lastRir === rightSet.lastRir
-    );
-  });
-}
-
-function summarizeValues(values: string[], suffix: string) {
-  const numbers = values.map(Number).filter((value) => Number.isFinite(value));
-  if (!numbers.length) return `— ${suffix}`;
-  const minimum = Math.min(...numbers);
-  const maximum = Math.max(...numbers);
-  const format = (value: number) => (Number.isInteger(value) ? String(value) : String(Number(value.toFixed(2))));
-  return minimum === maximum ? `${format(minimum)} ${suffix}` : `${format(minimum)}–${format(maximum)} ${suffix}`;
-}
-
-function focusNextSetInput(event: ReactKeyboardEvent<HTMLInputElement>, field: "reps" | "rir" | null) {
-  if (event.key !== "Enter") return;
-  event.preventDefault();
-  if (!field) {
-    event.currentTarget.blur();
-    return;
-  }
-  const nextInput = event.currentTarget
-    .closest<HTMLElement>(".set-row")
-    ?.querySelector<HTMLInputElement>(`input[data-set-field="${field}"]`);
-  if (nextInput) nextInput.focus();
-  else event.currentTarget.blur();
-}
 
 function TaskCardView({
   task,
@@ -288,19 +219,19 @@ function TaskCardView({
                   {task.sets?.length ?? 1} {(task.sets?.length ?? 1) === 1 ? "set" : "sets"}
                 </i>
                 <i>
-                  {summarizeValues(
+                  {summarizeSetValues(
                     (task.sets ?? []).map((set) => set.weight),
                     (task.sets?.[0]?.unit ?? "kg").toUpperCase(),
                   )}
                 </i>
                 <i>
-                  {summarizeValues(
+                  {summarizeSetValues(
                     (task.sets ?? []).map((set) => set.reps),
                     "REPS",
                   )}
                 </i>
                 <i>
-                  {summarizeValues(
+                  {summarizeSetValues(
                     (task.sets ?? []).map((set) => set.rir),
                     "RIR",
                   )}

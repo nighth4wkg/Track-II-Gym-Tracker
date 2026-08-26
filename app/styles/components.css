@@ -102,7 +102,7 @@
     overflow-y: auto;
     box-shadow: 18px 0 46px rgba(0, 0, 0, 0.22);
     transition:
-      transform 0.46s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.46s var(--track-ease-spring),
       box-shadow 0.35s ease;
   }
   .sidebar.mobile-open,
@@ -126,15 +126,6 @@
   }
 }
 
-@keyframes backdrop-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
 .auth-shell {
   min-height: 100dvh;
   display: grid;
@@ -150,7 +141,7 @@
   border-radius: 22px;
   background: var(--raised);
   box-shadow: 0 24px 70px rgba(0, 0, 0, 0.12);
-  animation: content-arrive 0.52s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: content-arrive var(--track-motion-slow) var(--track-ease-spring) both;
 }
 .auth-brand {
   display: flex;
@@ -228,7 +219,7 @@
   font-weight: 700;
   cursor: pointer;
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s var(--track-ease-spring),
     opacity 0.2s ease;
 }
 .auth-card form > button:active {
@@ -413,7 +404,7 @@
   color: var(--muted);
   padding: 0;
   transition:
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.25s var(--track-ease-spring),
     background-color 0.22s ease,
     color 0.22s ease;
 }
@@ -443,7 +434,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
   background: var(--soft);
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: menu-in 0.22s var(--track-ease-spring) both;
 }
 .settings-panel > div {
   display: grid;
@@ -477,7 +468,7 @@
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.22);
   transform: translateX(0);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s var(--track-ease-spring);
 }
 .account-panel .theme-toggle.on {
   background: #4c8dff;
@@ -500,7 +491,7 @@
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   pointer-events: auto;
-  animation: backdrop-in 0.22s ease both;
+  animation: backdrop-in var(--track-motion-fast) ease both;
 }
 .password-reset-backdrop {
   position: fixed;
@@ -522,7 +513,7 @@
   background: var(--surface);
   color: var(--ink);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.46);
-  animation: settings-modal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-modal-in var(--track-motion-standard) var(--track-ease-spring) both;
 }
 .password-reset-close {
   position: absolute;
@@ -622,14 +613,14 @@
   border-radius: 20px;
   background: var(--surface);
   box-shadow: 0 30px 90px rgba(0, 0, 0, 0.42);
-  animation: settings-modal-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-modal-in var(--track-motion-standard) var(--track-ease-spring) both;
 }
 .settings-backdrop.closing {
   pointer-events: none;
-  animation: backdrop-out 0.26s ease both;
+  animation: backdrop-out var(--track-motion-standard) ease both;
 }
 .settings-backdrop.closing .settings-modal {
-  animation: settings-modal-out 0.26s cubic-bezier(0.4, 0, 1, 1) both;
+  animation: settings-modal-out var(--track-motion-standard) cubic-bezier(0.4, 0, 1, 1) both;
 }
 .settings-nav {
   display: flex;
@@ -732,21 +723,14 @@
   padding: 34px 46px 46px;
 }
 .settings-view {
-  animation: settings-view-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-view-in var(--track-motion-standard) var(--track-ease-spring) both;
 }
 .settings-view > .setting-section {
   display: none;
   border-bottom: 0;
 }
-.settings-view.view-appearance > .setting-section:nth-child(1),
-.settings-view.view-personal > .setting-section:nth-child(2),
-.settings-view.view-privacy > .setting-section:nth-child(3),
-.settings-view.view-workout > .setting-section:nth-child(4),
-.settings-view.view-data > .setting-section:nth-child(5),
-.settings-view.view-ai > .setting-section:nth-child(6),
-.settings-view.view-account > .setting-section:nth-child(7) {
+.settings-view > .setting-section.is-active {
   display: block;
-  animation: settings-view-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .settings-title-row {
   display: flex;
@@ -1021,7 +1005,7 @@
   border-right: 1.5px solid var(--muted);
   border-bottom: 1.5px solid var(--muted);
   transform: translateY(-65%) rotate(45deg);
-  transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.24s var(--track-ease-spring);
 }
 .settings-modal.units-expanded .setting-subhead::after {
   transform: translateY(-35%) rotate(225deg);
@@ -1031,7 +1015,7 @@
 }
 .settings-modal.units-expanded .exercise-unit-settings .exercise-unit-row {
   display: flex;
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: menu-in 0.22s var(--track-ease-spring) both;
 }
 .settings-modal:not(.units-expanded) .setting-subhead {
   border-bottom: 0;
@@ -1110,6 +1094,13 @@
   color: var(--muted);
   font-size: 10px;
 }
+.export-message,
+.notification-setting-message,
+.updates-page-message,
+.update-check-message,
+.personal-info-actions > span:not(:empty) {
+  animation: track-feedback-in var(--track-motion-standard) var(--track-ease-spring) both;
+}
 .exercise-confirm-backdrop {
   position: fixed;
   z-index: 2100;
@@ -1129,7 +1120,7 @@
   background: var(--raised);
   color: var(--ink);
   box-shadow: 0 28px 85px rgba(0, 0, 0, 0.42);
-  animation: settings-modal-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: settings-modal-in 0.3s var(--track-ease-spring) both;
 }
 .exercise-confirm-mark {
   width: 42px;
@@ -1214,7 +1205,7 @@
   display: grid;
   gap: 8px;
   transition:
-    bottom 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    bottom 0.42s var(--track-ease-spring),
     right 0.3s ease;
 }
 .scroll-to-top,
@@ -1231,7 +1222,7 @@
   padding: 0;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
   backdrop-filter: blur(16px);
-  animation: control-pop 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: control-pop 0.28s var(--track-ease-spring) both;
 }
 .scroll-to-top span {
   width: 9px;
@@ -1276,7 +1267,7 @@
   background: #fff;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
   transform: translateX(0);
-  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s var(--track-ease-spring);
 }
 .settings-modal .theme-toggle.on {
   background: #4c8dff;
@@ -1421,7 +1412,7 @@
   padding: 10px 11px;
   font-size: 10px;
   line-height: 1.4;
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: menu-in 0.22s var(--track-ease-spring) both;
 }
 .updates-page {
   max-width: 620px;
@@ -1483,9 +1474,9 @@
   white-space: nowrap;
 }
 .updates-page-status.ready {
-  border-color: color-mix(in srgb, #34c759 48%, var(--line));
-  background: color-mix(in srgb, #34c759 12%, transparent);
-  color: #34c759;
+  border-color: color-mix(in srgb, var(--track-accent-success) 48%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-success) 12%, transparent);
+  color: var(--track-accent-success);
 }
 .updates-page-card > p {
   max-width: 500px;
@@ -1512,11 +1503,11 @@
   padding: 10px 11px;
   font-size: 10px;
   line-height: 1.4;
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: menu-in 0.22s var(--track-ease-spring) both;
 }
 .updates-page-message.error {
-  border: 1px solid color-mix(in srgb, #ff453a 34%, var(--line));
-  background: color-mix(in srgb, #ff453a 10%, var(--raised));
+  border: 1px solid color-mix(in srgb, var(--track-accent-danger) 34%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-danger) 10%, var(--raised));
   color: color-mix(in srgb, #ff8a80 86%, var(--ink));
 }
 .about-page {
@@ -1617,7 +1608,7 @@
   grid-template-columns: minmax(0, 1fr) 40px;
   gap: 8px;
   padding: 2px 0 3px;
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: menu-in 0.22s var(--track-ease-spring) both;
 }
 .announcement-composer input {
   min-width: 0;
@@ -1678,9 +1669,9 @@
   touch-action: none;
   user-select: none;
   transition:
-    transform 0.2s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.2s var(--track-ease-spring),
     opacity 0.2s ease;
-  animation: notification-in 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: notification-in 0.42s var(--track-ease-spring) both;
 }
 .notification-logo {
   width: 43px;
@@ -1967,7 +1958,7 @@
   transition:
     border-color 0.2s ease,
     background-color 0.2s ease,
-    transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.25s var(--track-ease-spring);
 }
 .ai-upload:hover {
   background: var(--subtle);
@@ -2003,6 +1994,7 @@
 }
 .ai-review {
   margin-top: 20px;
+  animation: track-reveal var(--track-motion-standard) var(--track-ease-spring) both;
 }
 .ai-review-heading {
   display: flex;
@@ -2035,6 +2027,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   background: var(--soft);
+  animation: track-reveal var(--track-motion-standard) var(--track-ease-gentle) both;
 }
 .ai-exercise-head {
   display: grid;
@@ -2056,8 +2049,8 @@
 }
 .ai-exercise-head > span {
   border-radius: 999px;
-  background: rgba(255, 159, 10, 0.13);
-  color: #ff9f0a;
+  background: color-mix(in srgb, var(--track-accent-warning) 13%, transparent);
+  color: var(--track-accent-warning);
   padding: 4px 7px;
   font-size: 8px;
   font-weight: 700;
@@ -2326,7 +2319,7 @@
     box-shadow: 0 1px 7px rgba(0, 0, 0, 0.18);
     backdrop-filter: blur(10px);
     transition:
-      transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+      transform 0.24s var(--track-ease-spring),
       color 0.2s ease,
       background-color 0.2s ease;
   }
@@ -2471,7 +2464,7 @@
 
 /* Final restrained motion polish */
 .exercise-card-content {
-  animation: card-content-in 0.34s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: card-content-in 0.34s var(--track-ease-spring) backwards;
   transform-origin: top center;
 }
 .add-set,
@@ -2481,7 +2474,7 @@
 .mobile-overflow,
 .weight-set-input > button {
   transition:
-    transform 0.24s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.24s var(--track-ease-spring),
     background-color 0.22s ease,
     color 0.22s ease,
     border-color 0.22s ease,
@@ -2503,30 +2496,30 @@
   transition:
     background-color 0.24s ease,
     border-color 0.24s ease,
-    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.3s var(--track-ease-spring),
+    transform 0.3s var(--track-ease-spring),
     color 0.24s ease;
 }
 .mobile-exercise-menu {
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: menu-in 0.22s var(--track-ease-spring) backwards;
   transform-origin: top right;
 }
 .split-menu {
-  animation: menu-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: menu-in 0.22s var(--track-ease-spring) backwards;
   transform-origin: top left;
 }
 .suggestions {
-  animation: menu-in 0.24s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: menu-in 0.24s var(--track-ease-spring) backwards;
   transform-origin: top center;
 }
 .collapsed-summary {
-  animation: collapsed-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: collapsed-in 0.3s var(--track-ease-spring) backwards;
 }
 .status-dot,
 .rep-delta {
   transition:
     opacity 0.24s ease,
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.3s var(--track-ease-spring),
     background-color 0.24s ease,
     color 0.24s ease;
 }
@@ -2880,8 +2873,143 @@ html.dragging-task-active [data-task-id] {
 }
 
 /* Unified motion system */
+
+.motion-select {
+  position: relative;
+  min-width: 0;
+}
+.motion-select-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--line);
+  background: var(--raised);
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color var(--track-motion-fast) ease,
+    background-color var(--track-motion-fast) ease,
+    box-shadow var(--track-motion-fast) ease,
+    transform var(--track-motion-interactive) var(--track-ease-gentle);
+}
+.motion-select-trigger:active {
+  transform: scale(0.985);
+}
+.motion-select-trigger > i {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 auto;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  opacity: 0.65;
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.28s var(--track-ease-spring);
+}
+.motion-select.is-open .motion-select-trigger > i {
+  transform: translateY(2px) rotate(225deg);
+}
+.motion-select-value.changed {
+  animation: motion-select-value-change 0.3s var(--track-ease-spring) both;
+}
+.motion-select-menu {
+  position: fixed;
+  z-index: 80;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100vh - 24px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--raised) 96%, transparent);
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  transform-origin: 85% 0;
+  animation: motion-select-open 0.28s var(--track-ease-spring) both;
+}
+.motion-select-menu.above {
+  transform-origin: 85% 100%;
+}
+.motion-select-menu.closing {
+  pointer-events: none;
+  animation: motion-select-close var(--track-motion-fast) cubic-bezier(0.4, 0, 1, 1) both;
+}
+.motion-select-menu > button {
+  width: 100%;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  padding: 0 9px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 650;
+  text-align: left;
+  transition:
+    background-color var(--track-motion-interactive) ease,
+    transform var(--track-motion-interactive) var(--track-ease-gentle);
+}
+.motion-select-menu > button:hover,
+.motion-select-menu > button[aria-selected="true"] {
+  background: var(--hover);
+}
+.motion-select-menu > button:active {
+  transform: scale(0.975);
+}
+.motion-select-menu > button b {
+  color: var(--ink);
+  font-size: 11px;
+}
+@keyframes motion-select-open {
+  from {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes motion-select-close {
+  to {
+    opacity: 0;
+    transform: translateY(-3px) scale(0.975);
+  }
+}
+@keyframes motion-select-value-change {
+  from {
+    opacity: 0.45;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .motion-select-trigger,
+  .motion-select-trigger > i,
+  .motion-select-menu,
+  .motion-select-value.changed,
+  .laps-panel li.is-new,
+  .laps-panel ol.clearing li,
+  .laps-empty {
+    animation: none;
+    transition: none;
+  }
+}
 .content {
-  animation: content-arrive 0.52s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation: content-arrive 0.52s var(--track-ease-spring) backwards;
 }
 .new-button,
 .nav-item,
@@ -2894,7 +3022,7 @@ html.dragging-task-active [data-task-id] {
   transition:
     background-color 0.24s ease,
     color 0.24s ease,
-    transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.34s var(--track-ease-spring),
     box-shadow 0.28s ease,
     opacity 0.2s ease;
 }

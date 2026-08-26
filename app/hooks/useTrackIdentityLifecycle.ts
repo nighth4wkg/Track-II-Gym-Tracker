@@ -6,7 +6,14 @@ import { TRACK_LIMITS, USERNAME_PATTERN } from "../trackConstants";
 import { parsedPersonalInfo } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
-export function useTrackIdentityLifecycle({ user, showRank, identity, rank, refs }: UseTrackAppLifecycleOptions) {
+export function useTrackIdentityLifecycle({
+  user,
+  showDashboard,
+  showRank,
+  identity,
+  rank,
+  refs,
+}: UseTrackAppLifecycleOptions) {
   const {
     setAuthLoading,
     setUser,
@@ -154,13 +161,13 @@ export function useTrackIdentityLifecycle({ user, showRank, identity, rank, refs
   ]);
 
   useEffect(() => {
-    if (!user || !showRank) return;
+    if (!user || (!showRank && !showDashboard)) return;
     let cancelled = false;
-    void fetchRecentRankTasks(user.id).then((history) => {
+    void fetchRecentRankTasks(user.id, showDashboard ? null : undefined).then((history) => {
       if (!cancelled) setRankHistoryTasks(history);
     });
     return () => {
       cancelled = true;
     };
-  }, [rankHistoryVersion, setRankHistoryTasks, showRank, user]);
+  }, [rankHistoryVersion, setRankHistoryTasks, showDashboard, showRank, user]);
 }

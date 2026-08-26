@@ -17,6 +17,7 @@ type UseSplitActionsOptions = {
   offerUndo: (message: string, undo: () => void) => void;
   setLists: Dispatch<SetStateAction<Checklist[]>>;
   setActiveId: Dispatch<SetStateAction<string>>;
+  setShowDashboard: Dispatch<SetStateAction<boolean>>;
   setShowTimer: Dispatch<SetStateAction<boolean>>;
   setShowCalendar: Dispatch<SetStateAction<boolean>>;
   setShowRank: Dispatch<SetStateAction<boolean>>;
@@ -45,6 +46,7 @@ export function useSplitActions({
   offerUndo,
   setLists,
   setActiveId,
+  setShowDashboard,
   setShowTimer,
   setShowCalendar,
   setShowRank,
@@ -61,10 +63,11 @@ export function useSplitActions({
   setDirtySplits,
 }: UseSplitActionsOptions) {
   const showWorkout = useCallback(() => {
+    setShowDashboard(false);
     setShowTimer(false);
     setShowCalendar(false);
     setShowRank(false);
-  }, [setShowCalendar, setShowRank, setShowTimer]);
+  }, [setShowCalendar, setShowDashboard, setShowRank, setShowTimer]);
 
   const newChecklist = useCallback(() => {
     const createSplit = () => {

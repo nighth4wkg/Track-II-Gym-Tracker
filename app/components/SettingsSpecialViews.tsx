@@ -139,7 +139,7 @@ export function SettingsAdminView({
           <div className="setting-row">
             <div>
               <strong>Force update check</strong>
-              <p>Ask Cloudflare for the latest deployed Track II build and refresh when one is available.</p>
+              <p>Ask GitHub for the latest published Track II release and refresh when one is available.</p>
             </div>
             <button className="admin-action-button" onClick={onForceUpdateCheck} disabled={updateCheckBusy}>
               {updateCheckBusy ? "Checking…" : "Check now"}

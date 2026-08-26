@@ -1,17 +1,14 @@
 "use client";
 
-import { lazy, Suspense, useEffect, useRef, type RefObject } from "react";
-import { SettingsScreenSkeleton } from "./LoadingSkeletons";
+import { useEffect, useRef, type RefObject } from "react";
 import { SettingsNavigation } from "./SettingsNavigation";
+import { ConnectedSettingsViewContent } from "./SettingsViewContent";
 import { haptic } from "../haptics";
-import { SETTINGS_LABELS } from "../trackConstants";
+import { normalizeSettingsView, SETTINGS_LABELS } from "../trackConstants";
 import { TRACK_VERSION } from "../trackConfig";
 import type { SettingsView } from "../trackTypes";
 import { useModalFocus } from "../hooks/useModalFocus";
 
-const SettingsViewContent = lazy(async () => ({
-  default: (await import("./SettingsViewContent")).ConnectedSettingsViewContent,
-}));
 type SettingsModalProps = {
   exerciseUnitsExpanded: boolean;
   isAdmin: boolean;
@@ -40,7 +37,12 @@ export function SettingsModal({
   onToggleExerciseUnits,
 }: SettingsModalProps) {
   const modalRef = useRef<HTMLElement>(null);
+  const safeSettingsView = normalizeSettingsView(settingsView, isAdmin);
   useModalFocus({ open: true, containerRef: modalRef });
+
+  useEffect(() => {
+    if (safeSettingsView !== settingsView) onSettingsViewChange(safeSettingsView);
+  }, [onSettingsViewChange, safeSettingsView, settingsView]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -72,7 +74,7 @@ export function SettingsModal({
       });
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [settingsTabsRef, settingsView]);
+  }, [safeSettingsView, settingsTabsRef]);
 
   return (
     <div
@@ -101,7 +103,7 @@ export function SettingsModal({
           isAdmin={isAdmin}
           settingsTabsAtEnd={settingsTabsAtEnd}
           settingsTabsRef={settingsTabsRef}
-          settingsView={settingsView}
+          settingsView={safeSettingsView}
           onScrollSettingsTabs={onScrollSettingsTabs}
           onSettingsViewChange={onSettingsViewChange}
           onShowMoreSettings={() => {
@@ -113,8 +115,8 @@ export function SettingsModal({
           <div className="settings-title-row">
             <div className="settings-title-copy">
               <span className="settings-kicker">TRACK II</span>
-              <div className="settings-heading" key={settingsView}>
-                <h2 id="settings-title">{SETTINGS_LABELS[settingsView]}</h2>
+              <div className="settings-heading" key={safeSettingsView}>
+                <h2 id="settings-title">{SETTINGS_LABELS[safeSettingsView]}</h2>
               </div>
             </div>
             <div className="settings-title-actions">
@@ -133,10 +135,8 @@ export function SettingsModal({
               </button>
             </div>
           </div>
-          <div className={`settings-view view-${settingsView}`} key={settingsView}>
-            <Suspense fallback={<SettingsScreenSkeleton />}>
-              <SettingsViewContent />
-            </Suspense>
+          <div className={`settings-view view-${safeSettingsView}`} key={safeSettingsView}>
+            <ConnectedSettingsViewContent />
           </div>
         </div>
       </section>

@@ -14,6 +14,7 @@ type UseWorkoutImportActionsOptions = {
   setAiBusy: Dispatch<SetStateAction<boolean>>;
   setLists: Dispatch<SetStateAction<Checklist[]>>;
   setActiveId: Dispatch<SetStateAction<string>>;
+  setShowDashboard: Dispatch<SetStateAction<boolean>>;
   setShowTimer: Dispatch<SetStateAction<boolean>>;
   setShowCalendar: Dispatch<SetStateAction<boolean>>;
   setShowRank: Dispatch<SetStateAction<boolean>>;
@@ -31,6 +32,7 @@ export function useWorkoutImportActions({
   setAiBusy,
   setLists,
   setActiveId,
+  setShowDashboard,
   setShowTimer,
   setShowCalendar,
   setShowRank,
@@ -105,6 +107,7 @@ export function useWorkoutImportActions({
       };
       setLists((current) => [...current, importedSplit]);
       setActiveId(importedSplit.id);
+      setShowDashboard(false);
       setShowTimer(false);
       setShowCalendar(false);
       setShowRank(false);
@@ -119,6 +122,7 @@ export function useWorkoutImportActions({
     setAiExercises,
     setLists,
     setSettingsOpen,
+    setShowDashboard,
     setShowCalendar,
     setShowRank,
     setShowTimer,

@@ -66,7 +66,8 @@ export function useBottomTabNavigation({ activeTab, onNavigate }: BottomTabNavig
       indicator.style.transition = "none";
       const getIndicatorLeft = (currentTrack: HTMLDivElement, nextX: number) => {
         const rect = currentTrack.getBoundingClientRect();
-        const indicatorWidth = Math.max(0, (rect.width - 12) / 4);
+        const gapWidth = Math.max(0, DEFAULT_BOTTOM_TABS.length - 1) * 4;
+        const indicatorWidth = Math.max(0, (rect.width - gapWidth) / DEFAULT_BOTTOM_TABS.length);
         const maxLeft = Math.max(0, rect.width - indicatorWidth);
         return {
           indicatorWidth,

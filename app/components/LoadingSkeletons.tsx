@@ -115,6 +115,25 @@ export function RankScreenSkeleton() {
   );
 }
 
+export function DashboardScreenSkeleton() {
+  return (
+    <SkeletonPage className="dashboard-screen-skeleton" label="Loading dashboard">
+      <SkeletonBlock className="skeleton-page-eyebrow" />
+      <SkeletonBlock className="dashboard-skeleton-title" />
+      <SkeletonBlock className="dashboard-skeleton-copy" />
+      <div className="dashboard-skeleton-stats">
+        {[0, 1, 2, 3].map((index) => (
+          <SkeletonBlock key={index} />
+        ))}
+      </div>
+      <div className="dashboard-skeleton-cards">
+        <SkeletonBlock />
+        <SkeletonBlock />
+      </div>
+    </SkeletonPage>
+  );
+}
+
 export function CalendarDetailSkeleton() {
   return (
     <div className="calendar-detail-skeleton" role="status" aria-label="Loading workout details" aria-busy="true">

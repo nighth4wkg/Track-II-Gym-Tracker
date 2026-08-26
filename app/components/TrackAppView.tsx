@@ -1,124 +1,27 @@
 "use client";
 
-import {
-  useMemo,
-  type ComponentProps,
-  type Dispatch,
-  type MutableRefObject,
-  type RefObject,
-  type SetStateAction,
-} from "react";
-import { supabase } from "../supabase";
+import { useMemo, type ComponentProps } from "react";
 import { TrackAppShell } from "./TrackAppShell";
 import type { BottomTabId } from "./BottomTabBar";
-import type { useIdentityState } from "../hooks/useIdentityState";
-import type { useWorkoutState } from "../hooks/useWorkoutState";
-import type { useSettingsState } from "../hooks/useSettingsState";
-import type { useNavigationState } from "../hooks/useNavigationState";
-import type { useRankCalendarState } from "../hooks/useRankCalendarState";
-import type { useTimerState } from "../hooks/useTimerState";
-import type { useBottomTabNavigation } from "../hooks/useBottomTabNavigation";
-import type { useWorkoutEditorController } from "../hooks/useWorkoutEditorController";
-import type { useTrackAccountActions } from "../hooks/useTrackAccountActions";
-import type { useUndoNotice } from "../hooks/useUndoNotice";
-import type { useWorkoutDateSync } from "../hooks/useWorkoutDateSync";
-import type { useTrackExportActions } from "../hooks/useTrackExportActions";
-import type { useTrackAppInteractions } from "../hooks/useTrackAppInteractions";
-import type { useTimerActions } from "../hooks/useTimerActions";
-import type { useSidebarGestures } from "../hooks/useSidebarGestures";
-import type { useSplitReorderGesture } from "../hooks/useSplitReorderGesture";
-import type { useSplitActions } from "../hooks/useSplitActions";
-import type { useWorkoutImportActions } from "../hooks/useWorkoutImportActions";
-import type { AiExercise, Checklist } from "../trackTypes";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
-import { POPULAR_QUICK_PICK_EXERCISES, TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
-import { exerciseSearchScore } from "../exerciseSearch";
+import { POPULAR_QUICK_PICK_EXERCISES } from "../trackConstants";
 import { haptic } from "../haptics";
-import { safeStorageSet, syncStatusTone } from "../trackUtils";
+import { syncStatusTone } from "../trackUtils";
+import type { TrackAppViewProps } from "../trackAppViewTypes";
+import { bottomTabFromNavigation, buildExerciseSuggestions, filterWorkoutTasks } from "../trackViewSelectors";
 import { createWorkoutEditorContextValue } from "./createWorkoutEditorContextValue";
 import { createSettingsContextValue } from "./createSettingsContextValue";
-
-type AppState = {
-  identity: ReturnType<typeof useIdentityState>;
-  workout: ReturnType<typeof useWorkoutState>;
-  settings: ReturnType<typeof useSettingsState>;
-  navigation: ReturnType<typeof useNavigationState>;
-  rank: ReturnType<typeof useRankCalendarState>;
-  timer: ReturnType<typeof useTimerState>;
-};
-
-function buildExerciseSuggestions(exerciseNames: readonly string[], query: string) {
-  if (!query) return [];
-  return exerciseNames
-    .map((name) => ({ name, score: exerciseSearchScore(name, query) }))
-    .filter((result) => Number.isFinite(result.score))
-    .sort((a, b) => a.score - b.score || a.name.localeCompare(b.name))
-    .slice(0, TRACK_INTERACTION.maxExerciseSuggestions)
-    .map((result) => result.name);
-}
-
-export type AppLocalState = {
-  aiBusy: boolean;
-  aiError: string;
-  aiExercises: AiExercise[];
-  aiKey: string;
-  announcementDragStart: MutableRefObject<number | null>;
-  composerRef: RefObject<HTMLFormElement | null>;
-  exportBusy: "csv" | "json" | null;
-  exportMessage: string;
-  inputRef: RefObject<HTMLInputElement | null>;
-  siteUpdateCheckRef: MutableRefObject<((manual?: boolean) => Promise<"update" | "current" | "error">) | null>;
-  setAiExercises: Dispatch<SetStateAction<AiExercise[]>>;
-  setAiKey: Dispatch<SetStateAction<string>>;
-  settingsTabsRef: RefObject<HTMLDivElement | null>;
-};
-
-type AppControllers = {
-  accountActions: ReturnType<typeof useTrackAccountActions>;
-  bottomTabs: ReturnType<typeof useBottomTabNavigation>;
-  exportActions: ReturnType<typeof useTrackExportActions>;
-  finishWorkout: () => Promise<void>;
-  importActions: ReturnType<typeof useWorkoutImportActions>;
-  interactions: ReturnType<typeof useTrackAppInteractions>;
-  sidebarGestures: ReturnType<typeof useSidebarGestures>;
-  splitActions: ReturnType<typeof useSplitActions>;
-  splitReorder: ReturnType<typeof useSplitReorderGesture>;
-  timerActions: ReturnType<typeof useTimerActions>;
-  timerPersistence: { markTimerChanged: () => void };
-  undo: ReturnType<typeof useUndoNotice>;
-  workoutDate: ReturnType<typeof useWorkoutDateSync>;
-  workoutEditor: ReturnType<typeof useWorkoutEditorController>;
-};
-
-export type TrackAppViewProps = {
-  active: Checklist | undefined;
-  controllers: AppControllers;
-  local: AppLocalState;
-  nativeApp: boolean;
-  state: AppState;
-  tasks: Checklist["tasks"];
-};
+import { createSettingsModalProps } from "./createSettingsModalProps";
+import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../exerciseProgress";
+import { createTrackAppOverlayProps } from "./createTrackAppOverlayProps";
 
 export function TrackAppView({ active: activeResult, controllers, local, nativeApp, state, tasks }: TrackAppViewProps) {
   const active = activeResult ?? null;
   const { identity, navigation, rank, settings, timer, workout } = state;
-  const { announcement, announcementOffset, setAnnouncement, setAnnouncementOffset, siteUpdateSeconds, syncLabel } =
-    identity;
-  const {
-    adminUsersOpen,
-    completionEnabled,
-    dirtySplits,
-    exerciseUnitsExpanded,
-    notificationPrompt,
-    notificationRequestBusy,
-    settingsClosing,
-    settingsOpen,
-    settingsTabsAtEnd,
-    settingsView,
-    signOutConfirm,
-  } = settings;
+  const { siteUpdateSeconds, syncLabel } = identity;
+  const { completionEnabled, dirtySplits, settingsOpen } = settings;
   const { calendarMonth, rankCategoryOverrides, rankEquipmentOverrides, rankHistoryTasks, workoutDates } = rank;
-  const { showCalendar, showRank, showTimer } = navigation;
+  const { showCalendar, showDashboard, showRank, showTimer } = navigation;
   const {
     customRestInput,
     restCustom,
@@ -156,7 +59,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     exerciseNames: identity.exerciseNames,
     isAdmin: identity.adminAuthorized,
   };
-  const { announcementDragStart, composerRef, inputRef, settingsTabsRef } = local;
+  const { composerRef, inputRef, settingsTabsRef } = local;
   const {
     accountActions,
     bottomTabs,
@@ -174,20 +77,16 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     workoutEditor,
   } = controllers;
 
-  const { visible, openCount } = useMemo(() => {
-    const nextVisible: Checklist["tasks"] = [];
-    let nextOpenCount = 0;
-    for (const task of tasks) {
-      if (!task.done) nextOpenCount += 1;
-      if (filter === "all" || (filter === "open" && !task.done) || (filter === "done" && task.done))
-        nextVisible.push(task);
-    }
-    return { visible: nextVisible, openCount: nextOpenCount };
-  }, [filter, tasks]);
+  const { visible, openCount } = useMemo(() => filterWorkoutTasks(tasks, filter), [filter, tasks]);
   const searchQueryTerm = searchQuery.trim();
   const exerciseSuggestions = buildExerciseSuggestions(exerciseNames, searchQueryTerm);
   const searchQueryActive = searchQueryTerm.length > 0;
-  const activeBottomTab: BottomTabId = showRank ? "rank" : showCalendar ? "calendar" : showTimer ? "timer" : "workout";
+  const syncProgressPreview = useMemo(() => {
+    const { exerciseCount, splitCount } = buildLatestExerciseProgressPlan(lists);
+    return { exerciseCount, splitCount };
+  }, [lists]);
+  const allSplitRankTasks = useMemo(() => buildAllSplitRankTasks(lists), [lists]);
+  const activeBottomTab = bottomTabFromNavigation({ showCalendar, showDashboard, showRank, showTimer });
   const accountUsername = String(user?.user_metadata?.username ?? "").trim() || "username";
   const accountRoleLabel = isAdmin ? "Admin" : "User";
   const accountRoleInitial = isAdmin ? "A" : "U";
@@ -204,21 +103,19 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const updateVersion = availableUpdateVersion ?? updateReady?.remoteVersion ?? "";
   const debugUpdateVisible = nativeApp && isAdmin && debugUpdateNotification;
 
-  const { savePersonalInfo, savePasswordReset, saveUsername, updateRankCategoryOverride, updateRankEquipmentOverride } =
-    accountActions;
-  const {
-    addExercise,
-    addTask,
-    closeSettings,
-    hideSidebar,
-    navigateBottomTab,
-    openSettings,
-    requestNotifications,
-    toggleSidebar,
-  } = interactions;
+  const { updateRankCategoryOverride, updateRankEquipmentOverride } = accountActions;
+  const { addExercise, addTask, closeSettings, hideSidebar, navigateBottomTab, openSettings, toggleSidebar } =
+    interactions;
   const { broadcastWorkoutDateEvent, removeWorkoutDate, restoreWorkoutDate } = workoutDate;
-  const { beginTimerSwipe, cancelTimerSwipe, chooseTimerMode, finishTimerSwipe, startRestTimer, toggleTimer } =
-    timerActions;
+  const {
+    beginTimerSwipe,
+    cancelTimerSwipe,
+    chooseTimerMode,
+    currentStopwatchElapsed,
+    finishTimerSwipe,
+    startRestTimer,
+    toggleTimer,
+  } = timerActions;
   const { beginDesktopSidebarSwipe, cancelDesktopSidebarSwipe, handleSwipeEnd, handleSwipeStart } = sidebarGestures;
   const { beginSplitHold, cancelSplitPointer, finishSplitHold, moveSplitHold, splitHoldTriggered } = splitReorder;
   const { duplicateSplit, goHome, newChecklist, removeSplit, saveSplitName, selectChecklist } = splitActions;
@@ -230,18 +127,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     indicatorIndex: bottomTabIndicatorIndex,
     trackRef: bottomTabTrackRef,
   } = bottomTabs;
-  const {
-    undoDismissDirection,
-    undoDragging,
-    undoDragX,
-    undoNotice,
-    beginUndoSwipe,
-    cancelUndoSwipe,
-    finishUndoSwipe,
-    moveUndoSwipe,
-    performUndo,
-    offerUndo,
-  } = undo;
+  const { offerUndo } = undo;
   const { markTimerChanged } = timerPersistence;
 
   const workoutEditorContextValue = createWorkoutEditorContextValue({
@@ -254,6 +140,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const settingsContextValue = createSettingsContextValue({
     active,
     tasks,
+    syncProgressPreview,
     isAdmin,
     nativeApp,
     releaseAvailable,
@@ -282,37 +169,12 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     },
   };
 
-  const accountPromptProps = {
-    usernamePromptOpen: identity.usernamePromptOpen,
-    usernameInput: identity.usernameInput,
-    usernameMessage: identity.usernameMessage,
-    usernameSaving: identity.usernameSaving,
-    onUsernameInputChange: identity.setUsernameInput,
-    onSaveUsername: saveUsername,
-    personalInfoPromptOpen: identity.personalInfoPromptOpen,
-    personalHeightInput: identity.personalHeightInput,
-    personalWeightInput: identity.personalWeightInput,
-    personalInfoMessage: identity.personalInfoMessage,
-    personalInfoSaving: identity.personalInfoSaving,
-    onPersonalHeightChange: identity.setPersonalHeightInput,
-    onPersonalWeightChange: identity.setPersonalWeightInput,
-    onSavePersonalInfo: savePersonalInfo,
-    passwordResetOpen: settings.passwordResetOpen,
-    passwordResetBusy: settings.passwordResetBusy,
-    passwordResetValue: settings.passwordResetValue,
-    passwordResetConfirm: settings.passwordResetConfirm,
-    passwordResetMessage: settings.passwordResetMessage,
-    onPasswordResetValueChange: settings.setPasswordResetValue,
-    onPasswordResetConfirmChange: settings.setPasswordResetConfirm,
-    onClosePasswordReset: () => settings.setPasswordResetOpen(false),
-    onSavePasswordReset: savePasswordReset,
-  };
-
   const sidebarProps = {
     mobileOpen: mobileSidebarOpen,
     sidebarCollapsed,
     nativeApp,
     activeId,
+    showDashboard,
     showTimer,
     showCalendar,
     showRank,
@@ -355,12 +217,14 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const workspaceProps = {
     homeTransition,
     cloudReady: identity.cloudReady,
+    showDashboard,
     showRank,
     showCalendar,
     showTimer,
     active,
+    lists,
     tasks,
-    rankTasks: tasks,
+    rankTasks: allSplitRankTasks,
     visible,
     completionEnabled,
     filter,
@@ -411,7 +275,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onToggleTimer: toggleTimer,
     onLapOrReset: () => {
       haptic(14);
-      if (timerRunning) timer.setTimerLaps((laps) => [...laps, timerElapsed]);
+      if (timerRunning) timer.setTimerLaps((laps) => [...laps, currentStopwatchElapsed()]);
       else {
         timer.setTimerElapsed(0);
         timer.setTimerLaps([]);
@@ -472,57 +336,17 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       }
     : undefined;
 
-  const actionModalProps = {
-    pendingExerciseName: settings.pendingExerciseName,
-    onCancelPendingExercise: () => settings.setPendingExerciseName(""),
-    onConfirmPendingExercise: (name: string) => {
-      settings.setPendingExerciseName("");
-      addExercise(name);
-    },
-    signOutConfirm,
-    onCloseSignOut: () => settings.setSignOutConfirm(false),
-    onSignOut: () => {
-      haptic(18);
-      settings.setSignOutConfirm(false);
-      void supabase.auth.signOut({ scope: "local" });
-    },
-    notificationPrompt,
-    notificationRequestBusy,
-    onDismissNotification: () => {
-      safeStorageSet("track-notification-prompt", "dismissed");
-      settings.setNotificationPrompt(false);
-    },
-    onRequestNotifications: requestNotifications,
-  };
-
-  const settingsModalProps = {
-    exerciseUnitsExpanded,
-    isAdmin,
-    settingsClosing,
-    settingsTabsAtEnd,
-    settingsTabsRef,
-    settingsView,
-    onClose: closeSettings,
-    onScrollSettingsTabs: () => {
-      const element = settingsTabsRef.current;
-      if (!element) return;
-      settings.setSettingsTabsAtEnd(element.scrollLeft + element.clientWidth >= element.scrollWidth - 2);
-    },
-    onSettingsViewChange: settings.setSettingsView,
-    onShowMoreSettings: () => {
-      const element = settingsTabsRef.current;
-      if (!element) return;
-      const maxScroll = Math.max(0, element.scrollWidth - element.clientWidth);
-      element.scrollTo({
-        left: Math.min(maxScroll, element.scrollLeft + TRACK_TIMING.settingsTabsScrollStepPx),
-        behavior: "smooth",
-      });
-      window.setTimeout(() => {
-        settings.setSettingsTabsAtEnd(element.scrollLeft + element.clientWidth >= element.scrollWidth - 2);
-      }, TRACK_TIMING.settingsTabsScrollMs);
-    },
-    onToggleExerciseUnits: () => settings.setExerciseUnitsExpanded((expanded) => !expanded),
-  };
+  const settingsModalProps = createSettingsModalProps({ closeSettings, isAdmin, settings, settingsTabsRef });
+  const overlayProps = createTrackAppOverlayProps({
+    controllers,
+    debugUpdateVisible,
+    local,
+    mobileSidebarOpen,
+    nativeApp,
+    sidebarCollapsed,
+    state,
+    updateVersion,
+  });
 
   return (
     <TrackAppShell
@@ -532,6 +356,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       mobileSidebarOpen={mobileSidebarOpen}
       isAdmin={isAdmin}
       active={Boolean(active)}
+      showDashboard={showDashboard}
       showTimer={showTimer}
       showCalendar={showCalendar}
       showRank={showRank}
@@ -545,41 +370,10 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
         haptic(6);
         workout.setMobileSidebarOpen(true);
       }}
-      accountPromptProps={accountPromptProps}
-      announcementProps={
-        announcement
-          ? {
-              announcement,
-              offset: announcementOffset,
-              dragStart: announcementDragStart,
-              onOffsetChange: setAnnouncementOffset,
-              onDismiss: () => setAnnouncement(null),
-            }
-          : undefined
-      }
-      updateNotificationProps={
-        nativeApp && (updateReady || debugUpdateVisible)
-          ? {
-              debug: debugUpdateVisible,
-              isAdmin,
-              nativeApp,
-              updateVersion: debugUpdateVisible ? "" : updateVersion,
-              onDismiss: () => {
-                if (debugUpdateVisible) identity.setDebugUpdateNotification(false);
-                else identity.setUpdateReady(null);
-              },
-            }
-          : undefined
-      }
-      adminUsersPanelProps={
-        isAdmin
-          ? {
-              open: adminUsersOpen,
-              onClose: () => settings.setAdminUsersOpen(false),
-              currentUserId: user?.id,
-            }
-          : undefined
-      }
+      accountPromptProps={overlayProps.accountPromptProps}
+      announcementProps={overlayProps.announcementProps}
+      updateNotificationProps={overlayProps.updateNotificationProps}
+      adminUsersPanelProps={overlayProps.adminUsersPanelProps}
       sidebarProps={sidebarProps}
       workspaceProps={workspaceProps}
       bottomTabProps={bottomTabProps}
@@ -588,25 +382,9 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
         showBottom: settings.showScrollBottom,
       }}
       splitMenuProps={splitMenuProps}
-      actionModalProps={actionModalProps}
+      actionModalProps={overlayProps.actionModalProps}
       settingsModalProps={settingsModalProps}
-      undoToastProps={
-        undoNotice
-          ? {
-              notice: undoNotice,
-              sidebarCollapsed,
-              mobileSidebarOpen,
-              dragX: undoDragX,
-              dragging: undoDragging,
-              dismissDirection: undoDismissDirection,
-              onPointerDown: beginUndoSwipe,
-              onPointerMove: moveUndoSwipe,
-              onPointerUp: finishUndoSwipe,
-              onPointerCancel: cancelUndoSwipe,
-              onUndo: performUndo,
-            }
-          : undefined
-      }
+      undoToastProps={overlayProps.undoToastProps}
     />
   );
 }

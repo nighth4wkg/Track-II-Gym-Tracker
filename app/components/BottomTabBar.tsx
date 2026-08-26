@@ -1,12 +1,13 @@
 import { type MouseEvent as ReactMouseEvent, type PointerEvent as ReactPointerEvent, type RefObject } from "react";
 
-export type BottomTabId = "workout" | "timer" | "calendar" | "rank";
+export type BottomTabId = "dashboard" | "workout" | "timer" | "calendar" | "rank";
 
 // Keep Timer at the right edge. Keeping this order in one component makes the
 // web, tablet, and native shells use the same map for rendering and dragging.
-export const DEFAULT_BOTTOM_TABS: BottomTabId[] = ["workout", "calendar", "rank", "timer"];
+export const DEFAULT_BOTTOM_TABS: BottomTabId[] = ["dashboard", "workout", "calendar", "rank", "timer"];
 
 const BOTTOM_TAB_LABELS = {
+  dashboard: "Dashboard",
   workout: "Workout",
   timer: "Timer",
   calendar: "Calendar",
@@ -15,6 +16,15 @@ const BOTTOM_TAB_LABELS = {
 
 function BottomTabIcon({ id, active = false }: { id: BottomTabId; active?: boolean }) {
   const className = active ? "is-filled" : undefined;
+  if (id === "dashboard")
+    return (
+      <svg className={className} viewBox="0 0 24 24" focusable="false">
+        <rect x="4" y="4" width="6" height="7" rx="1.5" />
+        <rect x="14" y="4" width="6" height="4" rx="1.5" />
+        <rect x="4" y="15" width="6" height="5" rx="1.5" />
+        <rect x="14" y="12" width="6" height="8" rx="1.5" />
+      </svg>
+    );
   if (id === "workout")
     return (
       <svg className={className} viewBox="0 0 24 24" focusable="false">

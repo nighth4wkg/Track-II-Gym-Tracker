@@ -14,6 +14,7 @@ import { haptic } from "../haptics";
 import { hasTouchList, convertSetUnit, normalizeWeightInputOnBlur, sanitizeDecimalInput } from "../trackUtils";
 import { TRACK_INTERACTION } from "../trackConstants";
 import type { Checklist, SetEntry, Task, WeightUnit } from "../trackTypes";
+import { buildLatestExerciseProgressPlan } from "../exerciseProgress";
 
 type WorkoutEditorControllerOptions = {
   activeId: string;
@@ -497,6 +498,29 @@ export function useWorkoutEditorController({
     );
   }
 
+  function syncLatestProgressAcrossSplits() {
+    const plan = buildLatestExerciseProgressPlan(lists);
+    if (!plan.changedSplitIds.length) return plan;
+    const changedIds = new Set(plan.changedSplitIds);
+    const previousLists = new Map(lists.filter((list) => changedIds.has(list.id)).map((list) => [list.id, list]));
+    savedSplitsRef.current = new Set([...savedSplitsRef.current].filter((id) => !changedIds.has(id)));
+    setSavedSplits(new Set(savedSplitsRef.current));
+    setDirtySplits((current) => new Set([...current, ...plan.changedSplitIds]));
+    setWorkoutActionsExiting(false);
+    setLists(plan.nextLists);
+    offerUndo(`Synced ${plan.exerciseCount} ${plan.exerciseCount === 1 ? "exercise" : "exercises"}`, () => {
+      const restoredAt = Date.now();
+      setLists((current) =>
+        current.map((list) => {
+          const previous = previousLists.get(list.id);
+          return previous ? { ...previous, updatedAt: restoredAt } : list;
+        }),
+      );
+      setDirtySplits((current) => new Set([...current, ...plan.changedSplitIds]));
+    });
+    return plan;
+  }
+
   function beginSetWeightEdit(taskId: string, set: SetEntry, input: HTMLInputElement) {
     const key = `${taskId}:${set.id}`;
     if (Number(set.weight) > 0) weightBeforeEdit.current[key] = set.weight;
@@ -535,6 +559,7 @@ export function useWorkoutEditorController({
     toggleSetUnit,
     applyGlobalUnit,
     applyExerciseUnit,
+    syncLatestProgressAcrossSplits,
     beginSetWeightEdit,
     finishSetWeightEdit,
   };

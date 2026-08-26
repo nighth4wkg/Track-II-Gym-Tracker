@@ -1,4 +1,6 @@
-export const TRACK_VERSION = "1.0";
+// The Pages/native build replaces this token with package.json's semver. This
+// keeps the in-app badge, release comparison, IPA, APK, and GitHub tag aligned.
+export const TRACK_VERSION = "__TRACK_VERSION__";
 // Static assets use an independent cache token so a new icon can be deployed
 // without pretending that the public app version changed.
 export const TRACK_ASSET_VERSION = "3.0.2";
@@ -7,7 +9,7 @@ export const TRACK_ASSET_QUERY = `?v=${TRACK_ASSET_VERSION}`;
 // the update checker and native release workflow.
 export const TRACK_DISPLAY_VERSION = TRACK_VERSION;
 // The Pages build replaces this token with an ISO timestamp. It lets the
-// updater detect a fresh deployment even when the public version stays 1.0.
+// updater detect a fresh deployment even when the public version stays the same.
 export const TRACK_BUILD_ID = "__TRACK_BUILD_ID__";
 
 // These values are intentionally supplied by the deployer. Keeping them out of
@@ -22,6 +24,9 @@ export const TRACK_RELEASES_URL = configuredTrackReleasesUrl.trim();
 export const TRACK_ISSUES_URL = configuredTrackIssuesUrl.trim();
 // Public support contact; deployments can replace it without editing source.
 export const TRACK_DISCORD_HANDLE = configuredTrackDiscordHandle.trim().replace(/^@/, "");
+
+export const GEMINI_API_KEY_URL = "https://aistudio.google.com/app/apikey";
+export const GEMINI_API_KEY_DOCS_URL = "https://ai.google.dev/gemini-api/docs/api-key";
 
 export function isNewerTrackVersion(remoteVersion: string, currentVersion = TRACK_VERSION) {
   const parse = (value: string) => {

@@ -1,5 +1,6 @@
 import type { RefObject } from "react";
 import type { SettingsView } from "../trackTypes";
+import { SETTINGS_LABELS } from "../trackConstants";
 
 type SettingsNavigationProps = {
   isAdmin: boolean;
@@ -25,16 +26,24 @@ type SettingsIconName =
 
 type DesktopSettingsItem = { view: SettingsView; icon: SettingsIconName; label: string };
 
-const desktopSettingsItems: DesktopSettingsItem[] = [
-  { view: "appearance", icon: "appearance", label: "Appearance" },
-  { view: "personal", icon: "personal", label: "Personal Info" },
-  { view: "workout", icon: "workout", label: "Workout" },
-  { view: "account", icon: "account", label: "Account & Security" },
-  { view: "ai", icon: "ai", label: "AI Import" },
-  { view: "updates", icon: "updates", label: "Updates" },
-  { view: "about", icon: "about", label: "About Track II" },
+const desktopSettingsViews: { view: SettingsView; icon: SettingsIconName }[] = [
+  { view: "appearance", icon: "appearance" },
+  { view: "personal", icon: "personal" },
+  { view: "workout", icon: "workout" },
+  { view: "account", icon: "account" },
+  { view: "ai", icon: "ai" },
+  { view: "updates", icon: "updates" },
+  { view: "about", icon: "about" },
 ];
-const adminSettingsItem: DesktopSettingsItem = { view: "admin", icon: "admin", label: "Admin Panel" };
+const desktopSettingsItems: DesktopSettingsItem[] = desktopSettingsViews.map((item) => ({
+  ...item,
+  label: SETTINGS_LABELS[item.view],
+}));
+const adminSettingsItem: DesktopSettingsItem = {
+  view: "admin",
+  icon: "admin",
+  label: SETTINGS_LABELS.admin,
+};
 const adminDesktopSettingsItems: DesktopSettingsItem[] = [...desktopSettingsItems, adminSettingsItem];
 
 function SettingsIcon({ name }: { name: SettingsIconName }) {

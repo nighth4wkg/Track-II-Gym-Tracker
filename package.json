@@ -1,6 +1,6 @@
 {
   "name": "track-lifting",
-  "version": "1.0",
+  "version": "1.0.5",
   "private": true,
   "engines": {
     "node": ">=22.13.0"

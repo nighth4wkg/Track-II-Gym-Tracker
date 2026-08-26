@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { DEFAULT_SETTINGS_VIEW } from "../trackConstants";
 import type { SettingsView, ThemeMode, WeightUnit } from "../trackTypes";
 import { safeStorageGet } from "../trackUtils";
 
@@ -8,7 +9,7 @@ export function useSettingsState() {
   const [themeMode, setThemeMode] = useState<ThemeMode>("dark");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsClosing, setSettingsClosing] = useState(false);
-  const [settingsView, setSettingsView] = useState<SettingsView>("appearance");
+  const [settingsView, setSettingsView] = useState<SettingsView>(DEFAULT_SETTINGS_VIEW);
   const [completionEnabled, setCompletionEnabled] = useState(false);
   const [rememberExercisesAcrossSplits, setRememberExercisesAcrossSplits] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);

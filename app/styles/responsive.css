@@ -5,7 +5,7 @@
   opacity: 1;
 }
 .calendar-detail-exercise-info {
-  animation: detail-panel-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: detail-panel-in 0.2s var(--track-ease-spring) both;
 }
 @keyframes detail-panel-in {
   from {
@@ -169,7 +169,6 @@
   width: min(980px, 100%);
   margin: 0 auto;
   padding-bottom: 28px;
-  animation: content-arrive 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 .rank-title-row {
   display: flex;
@@ -224,7 +223,7 @@
 .rank-hero-card.is-overview {
   display: block;
   padding: 28px;
-  animation: rank-overview-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rank-overview-enter 0.34s var(--track-ease-spring) both;
 }
 .rank-map-pair {
   display: flex;
@@ -235,7 +234,7 @@
 }
 .rank-map-pair .rank-map-wrap {
   flex: 0 1 250px;
-  animation: rank-map-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rank-map-enter 0.34s var(--track-ease-spring) both;
 }
 .rank-map-pair .rank-map-wrap:nth-child(2) {
   animation-delay: 0.045s;
@@ -249,7 +248,19 @@
   gap: 32px;
   align-items: center;
   padding: 25px 28px;
-  animation: rank-focus-enter 0.34s cubic-bezier(0.16, 1, 0.3, 1) both;
+  transform-origin: 50% 35%;
+}
+.rank-hero-card.is-focused.rank-switch-forward {
+  animation: rank-focus-forward 0.42s var(--track-ease-spring) both;
+}
+.rank-hero-card.is-focused.rank-switch-backward {
+  animation: rank-focus-backward 0.42s var(--track-ease-spring) both;
+}
+.rank-hero-card.is-focused .rank-map-wrap {
+  animation: rank-focus-map 0.46s var(--track-ease-spring) both;
+}
+.rank-hero-card.is-focused .rank-selected-detail {
+  animation: rank-focus-detail 0.46s 45ms var(--track-ease-spring) both;
 }
 .rank-hero-card.is-focused .rank-selected-detail {
   margin-top: 0;
@@ -334,7 +345,7 @@
   border: 1px solid var(--line);
   border-radius: 11px;
   background: var(--surface);
-  overflow: hidden;
+  overflow: visible;
 }
 .rank-selected-heading {
   display: flex;
@@ -439,9 +450,11 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.rank-category-control select {
-  height: 30px;
+.rank-category-control .motion-select {
   min-width: 104px;
+}
+.rank-category-control .motion-select-trigger {
+  height: 30px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--raised);
@@ -492,7 +505,7 @@
   opacity: 1;
   transform: translate3d(calc(-50% + var(--undo-drag-x, 0px)), 0, 0);
   transition:
-    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.22s var(--track-ease-gentle),
     opacity 0.2s ease;
   will-change: transform, opacity;
   pointer-events: none;
@@ -504,14 +517,14 @@
   opacity: 0;
   transform: translate3d(calc(-50% - 110vw), 0, 0);
   transition:
-    transform var(--undo-dismiss-duration, 360ms) cubic-bezier(0.16, 1, 0.3, 1),
+    transform var(--undo-dismiss-duration, 360ms) var(--track-ease-spring),
     opacity 280ms ease;
 }
 .undo-toast-positioner.dismiss-right {
   opacity: 0;
   transform: translate3d(calc(-50% + 110vw), 0, 0);
   transition:
-    transform var(--undo-dismiss-duration, 360ms) cubic-bezier(0.16, 1, 0.3, 1),
+    transform var(--undo-dismiss-duration, 360ms) var(--track-ease-spring),
     opacity 280ms ease;
 }
 .undo-toast-positioner.is-mobile-sidebar-open {
@@ -543,7 +556,7 @@
   box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  animation: undo-toast-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: undo-toast-in 0.28s var(--track-ease-spring) both;
   pointer-events: auto;
   touch-action: pan-y;
   overscroll-behavior: contain;
@@ -573,23 +586,13 @@
   box-shadow: none;
   transition:
     background-color 0.18s ease,
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+    transform 0.18s var(--track-ease-spring);
 }
 .undo-toast button:hover {
   background: color-mix(in srgb, var(--control) 90%, var(--muted));
 }
 .undo-toast button:active {
   transform: scale(0.96);
-}
-@keyframes undo-toast-in {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
 }
 @keyframes rank-overview-enter {
   from {
@@ -611,10 +614,40 @@
     transform: translateY(0) scale(1);
   }
 }
-@keyframes rank-focus-enter {
+@keyframes rank-focus-forward {
   from {
     opacity: 0;
-    transform: translateY(7px);
+    transform: translateX(18px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes rank-focus-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-18px) scale(0.992);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+@keyframes rank-focus-map {
+  from {
+    opacity: 0.65;
+    transform: scale(0.965);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes rank-focus-detail {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
   }
   to {
     opacity: 1;
@@ -790,7 +823,7 @@
   min-width: 3px;
   border-radius: inherit;
   background: var(--rank-tone-color, var(--muted));
-  transition: width 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: width 0.45s var(--track-ease-spring);
 }
 .rank-card-bottom {
   color: var(--muted);
@@ -888,7 +921,7 @@
   .rank-category-control {
     justify-content: space-between;
   }
-  .rank-category-control select {
+  .rank-category-control .motion-select {
     min-width: 126px;
   }
   .rank-selected-set {
@@ -910,6 +943,11 @@
   .rank-meter i {
     animation: none;
     transition: none;
+  }
+  .rank-hero-card.is-focused,
+  .rank-hero-card.is-focused .rank-map-wrap,
+  .rank-hero-card.is-focused .rank-selected-detail {
+    animation: none;
   }
 }
 
@@ -1283,7 +1321,7 @@
   font-weight: 650;
   line-height: 1;
   transition:
-    transform 0.18s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.18s var(--track-ease-spring),
     background-color 0.18s ease,
     border-color 0.18s ease,
     color 0.18s ease,

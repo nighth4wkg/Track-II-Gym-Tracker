@@ -93,6 +93,7 @@ export type LifecycleRefs = {
 
 export type UseTrackAppLifecycleOptions = {
   user: User | null;
+  showDashboard: boolean;
   showCalendar: boolean;
   showRank: boolean;
   cloudReady: boolean;

@@ -21,6 +21,7 @@ type RuntimeLifecycleOptions = {
   readWorkoutDates: LifecycleOptions["readWorkoutDates"];
   refs: LifecycleOptions["refs"];
   settingsState: ReturnType<typeof useSettingsState>;
+  showDashboard: LifecycleOptions["showDashboard"];
   showCalendar: LifecycleOptions["showCalendar"];
   showRank: LifecycleOptions["showRank"];
   timerState: ReturnType<typeof useTimerState>;
@@ -39,6 +40,7 @@ export function useTrackAppRuntimeLifecycle({
   readWorkoutDates,
   refs,
   settingsState,
+  showDashboard,
   showCalendar,
   showRank,
   timerState,
@@ -54,6 +56,7 @@ export function useTrackAppRuntimeLifecycle({
 
   useTrackAppLifecycle({
     user,
+    showDashboard,
     showCalendar,
     showRank,
     cloudReady,

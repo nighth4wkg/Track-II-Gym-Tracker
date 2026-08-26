@@ -1,14 +1,15 @@
-[functions]
-import_map = "./functions/import_map.json"
-
 [functions.username-auth]
 verify_jwt = false
+import_map = "./functions/import_map.json"
 
 [functions.extract-workout]
 verify_jwt = true
+import_map = "./functions/import_map.json"
 
 [functions.admin-member-data]
 verify_jwt = true
+import_map = "./functions/import_map.json"
 
 [functions.admin-announcement]
 verify_jwt = true
+import_map = "./functions/import_map.json"

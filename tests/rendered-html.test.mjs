@@ -638,6 +638,8 @@ test("private sync and announcements are server-scoped", async () => {
   assert.match(announcementFunction, /auth\.getUser\(\)/);
   assert.match(announcementFunction, /Administrator access required/);
   assert.match(config, /\[functions\.admin-announcement\]\s+verify_jwt = true/);
+  assert.match(config, /\[functions\.username-auth\]\s+verify_jwt = false\s+import_map = "\.\/functions\/import_map\.json"/);
+  assert.match(config, /\[functions\.extract-workout\]\s+verify_jwt = true\s+import_map = "\.\/functions\/import_map\.json"/);
 });
 
 test("dashboard summaries are session-based, cached, and protected", async () => {

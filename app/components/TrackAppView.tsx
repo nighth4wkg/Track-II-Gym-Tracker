@@ -6,7 +6,6 @@ import type { BottomTabId } from "./BottomTabBar";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
 import { POPULAR_QUICK_PICK_EXERCISES } from "../trackConstants";
 import { haptic } from "../haptics";
-import { syncStatusTone } from "../trackUtils";
 import type { TrackAppViewProps } from "../trackAppViewTypes";
 import { bottomTabFromNavigation, buildExerciseSuggestions, filterWorkoutTasks } from "../trackViewSelectors";
 import { createWorkoutEditorContextValue } from "./createWorkoutEditorContextValue";
@@ -14,6 +13,7 @@ import { createSettingsContextValue } from "./createSettingsContextValue";
 import { createSettingsModalProps } from "./createSettingsModalProps";
 import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../exerciseProgress";
 import { createTrackAppOverlayProps } from "./createTrackAppOverlayProps";
+import { createTrackSplitMenuProps } from "./createTrackSplitMenuProps";
 import { activePageFromNavigation } from "../navigationPage";
 
 export function TrackAppView({ active: activeResult, controllers, local, nativeApp, state, tasks }: TrackAppViewProps) {
@@ -71,6 +71,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const {
     accountActions,
     bottomTabs,
+    cloudSync,
     exportActions,
     finishWorkout,
     importActions,
@@ -113,7 +114,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     (dirtySplits.has(activeSplitId) || progressFading || workoutActionsExiting);
   const nativeUpdateCountdownActive = nativeApp && siteUpdateSeconds !== null;
   const headerStatus = nativeUpdateCountdownActive ? `Update in ${siteUpdateSeconds}s` : syncLabel;
-  const syncStatusClass = `sync-status ui-status sync-status-${syncStatusTone(headerStatus)}${nativeUpdateCountdownActive ? " site-update-status" : ""}`;
   const releaseAvailable = nativeApp && Boolean(availableUpdateVersion || updateReady);
   const updateVersion = availableUpdateVersion ?? updateReady?.remoteVersion ?? "";
   const debugUpdateVisible = nativeApp && isAdmin && debugUpdateNotification;
@@ -207,8 +207,11 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     accountRoleInitial,
     accountUsername,
     accountPresenceLabel,
-    syncStatusClass,
     headerStatus,
+    lastSuccessfulSyncAt: identity.lastSuccessfulSyncAt,
+    onRetrySync: cloudSync.retrySync,
+    onUseCloudCopy: cloudSync.resolveSyncConflict,
+    offlineQueueCount: cloudSync.offlineQueueCount,
     settingsOpen,
     onGoHome: goHome,
     onHideSidebar: hideSidebar,
@@ -333,21 +336,15 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onPointerDown: beginBottomTabHold,
   };
 
-  const splitMenuProps = splitMenu
-    ? {
-        menu: splitMenu,
-        onEdit: (id: string) => {
-          const list = lists.find((item) => item.id === id);
-          if (list) {
-            workout.setSplitName(list.title);
-            workout.setRenamingId(list.id);
-          }
-          workout.setSplitMenu(null);
-        },
-        onDuplicate: duplicateSplit,
-        onRemove: removeSplit,
-      }
-    : undefined;
+  const splitMenuProps = createTrackSplitMenuProps({
+    menu: splitMenu,
+    lists,
+    setSplitName: workout.setSplitName,
+    setRenamingId: workout.setRenamingId,
+    closeMenu: () => workout.setSplitMenu(null),
+    onDuplicate: duplicateSplit,
+    onRemove: removeSplit,
+  });
 
   const settingsModalProps = createSettingsModalProps({ closeSettings, isAdmin, settings, settingsTabsRef });
   const overlayProps = createTrackAppOverlayProps({
@@ -394,6 +391,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       actionModalProps={overlayProps.actionModalProps}
       settingsModalProps={settingsModalProps}
       undoToastProps={overlayProps.undoToastProps}
+      workoutDraftRecoveryProps={overlayProps.workoutDraftRecoveryProps}
     />
   );
 }

@@ -1,4 +1,4 @@
-import { exerciseFamilyKey } from "./rankData.ts";
+import { exerciseFamilyKey } from "./rankBenchmarks.ts";
 import type { Checklist, SetEntry, Task } from "./trackTypes.ts";
 
 export type ExerciseProgressSyncPreview = {

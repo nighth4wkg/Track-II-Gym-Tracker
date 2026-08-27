@@ -12,7 +12,16 @@ import {
   timeframeBounds,
   splitVolumeTrend,
 } from "../app/dashboardMetrics.ts";
+import { aggregateWeeklyMuscleSets } from "../app/dashboardMuscleVolume.ts";
+import {
+  buildHistoryTrendPoints,
+  collapseHistoryEntries,
+  groupHistoryEntries,
+  logicalHistorySessionKey,
+  summarizeHistory,
+} from "../app/exerciseHistoryMetrics.ts";
 import { normalizeSettingsView } from "../app/trackConstants.ts";
+import { cloneWorkoutTasks, workoutDraftSignature } from "../app/workoutDraft.ts";
 import {
   convertSetUnit,
   mergeTrackLists,
@@ -31,6 +40,20 @@ const task = (id: string, sets = [setEntry(`${id}-set`, "10")]) => ({
   sets,
 });
 const list = (tasks: ReturnType<typeof task>[]) => ({ id: "split-1", title: "Push", updatedAt: 1, tasks });
+
+test("workout drafts copy set data and ignore presentation-only collapse state", () => {
+  const tasks = [{ ...task("bench"), collapsed: false }];
+  const cloned = cloneWorkoutTasks(tasks);
+  cloned[0].sets![0].weight = "30";
+  assert.equal(tasks[0].sets?.[0].weight, "10");
+
+  const base = { splitId: "split-1", splitTitle: "Push", tasks };
+  assert.equal(
+    workoutDraftSignature(base),
+    workoutDraftSignature({ ...base, tasks: [{ ...tasks[0], collapsed: true }] }),
+  );
+  assert.notEqual(workoutDraftSignature(base), workoutDraftSignature({ ...base, tasks: [{ ...tasks[0], reps: "9" }] }));
+});
 
 test("settings always resolves to a visible safe page", () => {
   assert.equal(normalizeSettingsView("appearance"), "appearance");
@@ -249,4 +272,148 @@ test("dashboard buckets use local days while modern sessions stay distinct", () 
   assert.equal(new Date(week.end).getTime(), now);
   assert.equal(new Date(all.start).getDate(), 5);
   assert.equal(new Date(all.end).getTime(), now);
+});
+
+test("dashboard collapses repeated finishes by local day and split", () => {
+  const sessions = aggregateSessions([
+    {
+      text: "Leg Curl Machine",
+      sessionId: "session-first",
+      splitId: "split-legs",
+      performedAt: "2026-08-14T08:00:00+07:00",
+      sets: [{ setNumber: 1, weight: 65, unit: "kg" as const, reps: 6 }],
+    },
+    {
+      text: "Leg Curl Machine",
+      sessionId: "session-repeat",
+      splitId: "split-legs",
+      performedAt: "2026-08-14T08:20:00+07:00",
+      sets: [{ setNumber: 1, weight: 65, unit: "kg" as const, reps: 6 }],
+    },
+    {
+      text: "Leg Curl Machine",
+      sessionId: "session-other-split",
+      splitId: "split-pull",
+      performedAt: "2026-08-14T08:30:00+07:00",
+      sets: [{ setNumber: 1, weight: 50, unit: "kg" as const, reps: 8 }],
+    },
+  ]);
+
+  assert.equal(sessions.length, 2);
+  assert.deepEqual(
+    sessions.map(({ id, volumeKg, setCount }) => ({ id, volumeKg, setCount })),
+    [
+      { id: "split:split-legs:date:2026-08-14", volumeKg: 390, setCount: 1 },
+      { id: "split:split-pull:date:2026-08-14", volumeKg: 400, setCount: 1 },
+    ],
+  );
+});
+
+test("recovery volume uses canonical muscle detection for every group", () => {
+  const totals = aggregateWeeklyMuscleSets([
+    { exerciseId: "squat", exerciseName: "Back squat", setCount: 4 },
+    { exerciseId: "press", exerciseName: "Shoulder press", setCount: 3 },
+    { exerciseId: "fly", exerciseName: "Machine chest fly", setCount: 2 },
+    { exerciseId: "curl", exerciseName: "Cable curl", setCount: 2 },
+    { exerciseId: "abs", exerciseName: "Cable crunch", setCount: 1 },
+  ]);
+
+  assert.deepEqual(
+    [...totals.entries()],
+    [
+      ["legs", 4],
+      ["shoulders", 3],
+      ["chest", 2],
+      ["arms", 2],
+      ["core", 1],
+    ],
+  );
+});
+
+test("exercise history groups duplicate dates while keeping session identity", () => {
+  const entries = [
+    {
+      id: "set-1",
+      sessionId: "session-a",
+      createdAt: "2026-08-14T08:00:00+07:00",
+      setNumber: 1,
+      weight: 32.5,
+      unit: "kg" as const,
+      reps: 6,
+      rir: 1,
+    },
+    {
+      id: "set-2",
+      sessionId: "session-a",
+      createdAt: "2026-08-14T08:10:00+07:00",
+      setNumber: 2,
+      weight: 32.5,
+      unit: "kg" as const,
+      reps: 6,
+      rir: 1,
+    },
+    {
+      id: "set-3",
+      sessionId: "session-b",
+      createdAt: "2026-08-12T08:00:00+07:00",
+      setNumber: 1,
+      weight: 30,
+      unit: "kg" as const,
+      reps: 7,
+      rir: 1,
+    },
+  ];
+  const groups = groupHistoryEntries(entries);
+
+  assert.equal(groups.length, 2);
+  assert.equal(groups[0].entries.length, 2);
+  assert.equal(summarizeHistory(entries).sessionCount, 2);
+  assert.equal(buildHistoryTrendPoints(groups).length, 2);
+});
+
+test("exercise history collapses repeated same-split finishes but keeps split changes", () => {
+  const entries = [
+    {
+      id: "set-first",
+      sessionId: "session-first",
+      splitId: "split-legs",
+      createdAt: "2026-08-14T08:00:00+07:00",
+      setNumber: 1,
+      weight: 65,
+      unit: "kg" as const,
+      reps: 6,
+      rir: 1,
+    },
+    {
+      id: "set-repeat",
+      sessionId: "session-repeat",
+      splitId: "split-legs",
+      createdAt: "2026-08-14T08:20:00+07:00",
+      setNumber: 1,
+      weight: 65,
+      unit: "kg" as const,
+      reps: 6,
+      rir: 1,
+    },
+    {
+      id: "set-other-split",
+      sessionId: "session-other",
+      splitId: "split-pull",
+      createdAt: "2026-08-14T08:30:00+07:00",
+      setNumber: 1,
+      weight: 50,
+      unit: "kg" as const,
+      reps: 8,
+      rir: 1,
+    },
+  ];
+  const collapsed = collapseHistoryEntries(entries);
+
+  assert.equal(logicalHistorySessionKey(entries[0]), "split:split-legs:date:2026-7-14");
+  assert.equal(collapsed.length, 2);
+  assert.equal(summarizeHistory(collapsed).sessionCount, 2);
+  assert.deepEqual(
+    collapsed.map((entry) => entry.id),
+    ["set-other-split", "set-repeat"],
+  );
 });

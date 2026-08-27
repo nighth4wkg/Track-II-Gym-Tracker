@@ -194,6 +194,32 @@
   padding-inline: 8px;
   animation: track-reveal var(--track-motion-standard) var(--track-ease-gentle) both;
 }
+.dashboard-graph-stage.is-empty {
+  display: grid;
+  place-items: center;
+}
+.dashboard-graph-empty {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: grid;
+  width: min(240px, calc(100% - 32px));
+  gap: 5px;
+  transform: translate(-50%, -55%);
+  text-align: center;
+  pointer-events: none;
+}
+.dashboard-graph-empty strong {
+  color: var(--ink);
+  font-size: 13px;
+  letter-spacing: -0.01em;
+}
+.dashboard-graph-empty span {
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
 .dashboard-activity-graph {
   display: block;
   width: 100%;
@@ -412,6 +438,21 @@
 }
 .dashboard-volume-note {
   margin: 17px 0 0;
+  line-height: 1.45;
+}
+.dashboard-volume-empty {
+  display: grid;
+  gap: 5px;
+  border: 1px dashed color-mix(in srgb, var(--ink) 14%, var(--line));
+  border-radius: 12px;
+  padding: 16px;
+}
+.dashboard-volume-empty strong {
+  font-size: 12px;
+}
+.dashboard-volume-empty span {
+  color: var(--muted);
+  font-size: 10px;
   line-height: 1.45;
 }
 @media (max-width: 760px) {

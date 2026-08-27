@@ -2,16 +2,14 @@
 
 import { useMemo, useState } from "react";
 import "../styles/pages/dashboard.css";
-import { detectExerciseTargets } from "../exerciseClassifier.js";
 import { buildRankSummaries } from "../rankData";
+import { aggregateWeeklyMuscleSets, aggregateWeeklyMuscleSetsFromTasks } from "../dashboardMuscleVolume";
 import {
   aggregateSessions,
   averageVolumeForSessions,
   buildActivityPoints,
   formatShortDate,
-  performedTimestamp,
   splitVolumeTrendForSessions,
-  startOfLocalDay,
   timeframeBounds,
   type DashboardSessionMetric,
   type DashboardTimeframe,
@@ -111,22 +109,19 @@ export function buildDashboardStableMetrics({
     (sum, list) => sum + list.tasks.reduce((taskSum, task) => taskSum + Math.max(1, task.sets?.length ?? 0), 0),
     0,
   );
-  const weeklySets = new Map<string, number>();
-  if (dashboardSummary?.weeklyMuscleTotals.length) {
-    for (const item of dashboardSummary.weeklyMuscleTotals) weeklySets.set(item.group, item.setCount);
-  } else if (dashboardSummary?.weeklyExerciseSets.length) {
-    for (const item of dashboardSummary.weeklyExerciseSets) {
-      const primaryGroup = detectExerciseTargets(item.exerciseName).targets[0]?.group;
-      if (primaryGroup) weeklySets.set(primaryGroup, (weeklySets.get(primaryGroup) ?? 0) + item.setCount);
-    }
-  } else {
-    const now = Date.now();
-    for (const task of historyTasks) {
-      if (performedTimestamp(task) < startOfLocalDay(now - 6 * 24 * 60 * 60 * 1000)) continue;
-      const primaryGroup = detectExerciseTargets(task.text).targets[0]?.group;
-      if (primaryGroup) weeklySets.set(primaryGroup, (weeklySets.get(primaryGroup) ?? 0) + (task.sets?.length ?? 0));
-    }
-  }
+  const groupOverrides = new Map(
+    rankTasks.flatMap((task) =>
+      task.exerciseId && task.rankGroupOverride ? [[task.exerciseId, task.rankGroupOverride] as const] : [],
+    ),
+  );
+  const classifiedWeeklySets = dashboardSummary?.weeklyExerciseSets.length
+    ? aggregateWeeklyMuscleSets(dashboardSummary.weeklyExerciseSets, groupOverrides)
+    : new Map();
+  const weeklySets = classifiedWeeklySets.size
+    ? classifiedWeeklySets
+    : dashboardSummary?.weeklyMuscleTotals.length
+      ? new Map(dashboardSummary.weeklyMuscleTotals.map((item) => [item.group, item.setCount] as const))
+      : aggregateWeeklyMuscleSetsFromTasks(historyTasks);
   const muscleBalance = summaries
     .map((summary) => ({ ...summary, weeklySets: weeklySets.get(summary.group) ?? 0 }))
     .sort((left, right) => right.score - left.score);
@@ -141,9 +136,7 @@ export function buildDashboardStableMetrics({
       ? summaryProgressFeed(dashboardSummary)
       : buildProgressFeed(historyTasks),
     sessions,
-    totalVolume:
-      dashboardSummary?.volumeByPeriod.all?.volumeKg ??
-      sessions.reduce((sum, session) => sum + Math.max(0, session.volumeKg), 0),
+    totalVolume: sessions.reduce((sum, session) => sum + Math.max(0, session.volumeKg), 0),
     volumeByPeriod: dashboardSummary?.volumeByPeriod ?? {},
   };
 }
@@ -161,14 +154,13 @@ export function buildDashboardTimeframeMetrics(
   });
   const activity = buildActivityPoints(timestamps, timeframe, start, end);
   const progressFeed = stable.progressFeed.filter((item) => item.timestamp >= start && item.timestamp <= end);
-  const serverPeriod = stable.volumeByPeriod[timeframe];
   return {
     ...stable,
-    recentWorkouts: serverPeriod?.sessionCount ?? selectedSessions.length,
-    recentAverageVolume:
-      serverPeriod && serverPeriod.sessionCount > 0
-        ? serverPeriod.volumeKg / serverPeriod.sessionCount
-        : averageVolumeForSessions(selectedSessions),
+    // Session identity is the source of truth for both cards. The server
+    // period summary is an optimization, never a second dataset that can
+    // disagree with the sessions rendered in this filter.
+    recentWorkouts: selectedSessions.length,
+    recentAverageVolume: averageVolumeForSessions(selectedSessions),
     volumeChange: splitVolumeTrendForSessions(selectedSessions),
     activity,
     activityWorkoutCount: activity.reduce((sum, point) => sum + point.count, 0),
@@ -232,10 +224,12 @@ export function DashboardScreen(props: DashboardScreenProps) {
           <div className="dashboard-volume-metric">
             <strong className={timeframe === "all" ? "all-time-volume" : "baseline"}>
               {timeframe === "all"
-                ? formatVolumeLoad(metrics.totalVolume)
+                ? metrics.totalVolume > 0
+                  ? formatVolumeLoad(metrics.totalVolume)
+                  : "No volume yet"
                 : metrics.recentWorkouts
                   ? formatVolumeLoad(metrics.recentAverageVolume)
-                  : "—"}
+                  : "No volume yet"}
             </strong>
             {metrics.volumeChange !== null && (
               <small className={`dashboard-volume-delta ${metrics.volumeChange >= 0 ? "positive" : "negative"}`}>
@@ -245,10 +239,14 @@ export function DashboardScreen(props: DashboardScreenProps) {
           </div>
           <small>
             {timeframe === "all"
-              ? "total across all workouts"
-              : metrics.recentWorkouts
-                ? "average per workout"
-                : "no logged workouts"}
+              ? metrics.recentWorkouts
+                ? `total across ${metrics.recentWorkouts} ${metrics.recentWorkouts === 1 ? "workout" : "workouts"}`
+                : "Complete a workout to start all-time volume."
+              : metrics.recentWorkouts === 0
+                ? "Log a workout to start your baseline."
+                : metrics.recentWorkouts === 1
+                  ? "Log 1 more workout to show a trend."
+                  : "average per workout"}
           </small>
         </article>
       </div>
@@ -275,17 +273,21 @@ export function DashboardScreen(props: DashboardScreenProps) {
             </div>
             <small>all muscle groups</small>
           </div>
-          <div className="dashboard-muscle-list">
-            {metrics.muscleBalance.map((item) => (
-              <div key={item.group}>
-                <span>{titleCase(item.group)}</span>
-                <i>
-                  <b style={{ width: `${Math.max(3, item.progress)}%`, backgroundColor: item.color }} />
-                </i>
-                <em style={{ color: item.color, borderColor: item.color }}>{item.label}</em>
-              </div>
-            ))}
-          </div>
+          {metrics.muscleBalance.some((item) => item.score > 0) ? (
+            <div className="dashboard-muscle-list">
+              {metrics.muscleBalance.map((item) => (
+                <div key={item.group}>
+                  <span>{titleCase(item.group)}</span>
+                  <i>
+                    <b style={{ width: `${Math.max(3, item.progress)}%`, backgroundColor: item.color }} />
+                  </i>
+                  <em style={{ color: item.color, borderColor: item.color }}>{item.label}</em>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="dashboard-empty-copy">Log a set to establish your Strength Index.</p>
+          )}
         </article>
 
         <article className="dashboard-card dashboard-feed-card">
@@ -308,7 +310,7 @@ export function DashboardScreen(props: DashboardScreenProps) {
                 </div>
               ))
             ) : (
-              <p className="dashboard-empty-copy">Log another workout to start your progression feed.</p>
+              <p className="dashboard-empty-copy">Finish a set to start your progression feed.</p>
             )}
           </div>
         </article>
@@ -325,19 +327,26 @@ export function DashboardScreen(props: DashboardScreenProps) {
             Shows your sets from the last 7 days against a {WEEKLY_SET_TARGET}-set reference target. Use it as a volume
             guide—not a measure of fatigue or medical recovery.
           </p>
-          <div className="dashboard-volume-list">
-            {metrics.muscleBalance.map((item) => (
-              <div key={item.group}>
-                <span>{titleCase(item.group)}</span>
-                <i>
-                  <b style={{ width: `${Math.min(100, (item.weeklySets / WEEKLY_SET_TARGET) * 100)}%` }} />
-                </i>
-                <small>
-                  {item.weeklySets}/{WEEKLY_SET_TARGET}
-                </small>
-              </div>
-            ))}
-          </div>
+          {metrics.muscleBalance.some((item) => item.weeklySets > 0) ? (
+            <div className="dashboard-volume-list">
+              {metrics.muscleBalance.map((item) => (
+                <div key={item.group}>
+                  <span>{titleCase(item.group)}</span>
+                  <i>
+                    <b style={{ width: `${Math.min(100, (item.weeklySets / WEEKLY_SET_TARGET) * 100)}%` }} />
+                  </i>
+                  <small>
+                    {item.weeklySets}/{WEEKLY_SET_TARGET}
+                  </small>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="dashboard-volume-empty">
+              <strong>No sets logged this week</strong>
+              <span>Complete a workout to see weekly muscle volume here.</span>
+            </div>
+          )}
           <p className="dashboard-volume-note">A guide, not a prescription—recovery needs vary by person.</p>
         </article>
       </div>

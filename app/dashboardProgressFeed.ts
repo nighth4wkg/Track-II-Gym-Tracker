@@ -1,4 +1,4 @@
-import { exerciseFamilyKey } from "./rankData.ts";
+import { exerciseFamilyKey } from "./rankBenchmarks.ts";
 import { performedTimestamp, weightKg } from "./dashboardMetrics.ts";
 import type { RankTask } from "./rankModels.ts";
 

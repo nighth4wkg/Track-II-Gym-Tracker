@@ -58,6 +58,8 @@ export function createSettingsContextValue({
     announcementText: settings.announcementText,
     completionEnabled: settings.completionEnabled,
     defaultUnit: settings.defaultUnit,
+    deleteAccountBusy: settings.deleteAccountBusy,
+    deleteAccountMessage: settings.deleteAccountMessage,
     exportBusy: local.exportBusy,
     exportMessage: local.exportMessage,
     isAdmin,
@@ -90,6 +92,11 @@ export function createSettingsContextValue({
     onApplyTheme: interactions.applyTheme,
     onCheckForUpdates: interactions.checkForUpdatesFromSettings,
     onCompletionEnabledChange: settings.setCompletionEnabled,
+    onSetDeleteAccountConfirm: () => {
+      haptic(10);
+      settings.setDeleteAccountMessage("");
+      settings.setDeleteAccountConfirm(true);
+    },
     onExportWorkoutData: exportActions.exportWorkoutData,
     onFakeUpdateNotification: interactions.showFakeUpdateNotification,
     onForceUpdateCheck: () => {

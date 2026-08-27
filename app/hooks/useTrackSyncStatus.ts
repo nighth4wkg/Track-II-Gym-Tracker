@@ -3,11 +3,12 @@ import { TRACK_TIMING } from "../trackConstants";
 
 type UseTrackSyncStatusOptions = {
   setSyncLabel: Dispatch<SetStateAction<string>>;
+  setLastSuccessfulSyncAt: Dispatch<SetStateAction<number | null>>;
   isBusy: () => boolean;
 };
 
 /** Keeps transient sync feedback from racing itself after realtime refreshes. */
-export function useTrackSyncStatus({ setSyncLabel, isBusy }: UseTrackSyncStatusOptions) {
+export function useTrackSyncStatus({ setSyncLabel, setLastSuccessfulSyncAt, isBusy }: UseTrackSyncStatusOptions) {
   const settleTimer = useRef<number | null>(null);
   const generation = useRef(0);
   const lastLabel = useRef("");
@@ -21,8 +22,9 @@ export function useTrackSyncStatus({ setSyncLabel, isBusy }: UseTrackSyncStatusO
       if (lastLabel.current === label) return;
       lastLabel.current = label;
       setSyncLabel(label);
+      if (/^(saved|updated)$/i.test(label.trim())) setLastSuccessfulSyncAt(Date.now());
     },
-    [setSyncLabel],
+    [setLastSuccessfulSyncAt, setSyncLabel],
   );
 
   const clearSyncStatusTimer = useCallback(() => {

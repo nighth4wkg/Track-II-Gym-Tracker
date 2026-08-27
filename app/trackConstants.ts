@@ -22,13 +22,15 @@ export const FILTER_LABELS = {
 
 // Curated starter suggestions keep the empty state useful until per-user
 // exercise popularity data is available. Names intentionally match the
-// exercise catalog so each chip uses the same add flow as search results.
-export const POPULAR_QUICK_PICK_EXERCISES = [
-  "Back squat",
-  "Barbell bench press",
-  "Conventional deadlift",
-  "Pull-up",
+// exercise catalog so every card uses the same add flow as search results.
+export const POPULAR_QUICK_PICK_STARTERS = [
+  { name: "Barbell bench press", detail: "Chest · Barbell" },
+  { name: "Back squat", detail: "Legs · Barbell" },
+  { name: "Conventional deadlift", detail: "Back · Barbell" },
+  { name: "Pull-up", detail: "Back · Bodyweight" },
 ] as const;
+
+export const POPULAR_QUICK_PICK_EXERCISES = POPULAR_QUICK_PICK_STARTERS.map(({ name }) => name);
 
 // Product limits live in one data-only map so validation and copy stay aligned
 // across the web and native shells.
@@ -48,6 +50,7 @@ export const TRACK_LIMITS = {
   maxWeightKg: 350,
   maxAiImageBytes: 8 * 1024 * 1024,
   maxAnnouncementChars: 240,
+  maxOfflineQueueEntries: 50,
   maxSplitNameChars: 40,
   weeklyMuscleSetTarget: 16,
   usernameCheckDebounceMs: 250,
@@ -87,7 +90,6 @@ export const TRACK_TIMING = {
   settingsCloseAnimationMs: 260,
   settingsTabsScrollMs: 260,
   settingsTabsScrollStepPx: 180,
-  setupCompleteNoticeMs: 1_600,
   undoDismissMs: 360,
   passwordResetCloseMs: 900,
   syncSavedFeedbackMs: 900,
@@ -95,7 +97,6 @@ export const TRACK_TIMING = {
   preferenceSaveRetryMaxMs: 30_000,
   announcementDismissMs: 5_000,
   notificationDeliveryTimeoutMs: 5_000,
-  notificationScheduleDelayMs: 1_000,
   adminHeartbeatStaleMs: 45_000,
   adminHeartbeatPollMs: 60_000,
   preferenceFallbackPollMs: 30_000,
@@ -110,7 +111,6 @@ export const TRACK_TIMING = {
   adminDirectoryClockMs: 30_000,
   adminMemberMenuHoldMs: 520,
   exportUrlRevokeMs: 1_000,
-  splitCreateDelayMs: 360,
   splitHoldMenuMs: 420,
   touchDoubleTapGuardMs: 320,
   stopwatchTickMs: 250,
@@ -168,6 +168,8 @@ export const TRACK_UI_COPY = {
     retrying: "Retrying…",
     retry: "Couldn’t save · Retry",
     offline: "Offline · Retry",
+    offlineQueued: "Offline · queued",
+    needsAttention: "Needs attention · Retry",
     loadRetry: "Couldn’t load · Retry",
   },
   empty: {
@@ -229,5 +231,6 @@ export const ACCOUNT_LOCAL_KEYS = [
   "dirty-splits",
   "finished-signatures",
   "finished-dates",
+  "dismissed-announcements",
   "active-split",
 ] as const;

@@ -37,13 +37,14 @@ export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Pr
   const queryEnd = new Date(selectedDay.getTime() + 2 * MILLISECONDS_PER_DAY).toISOString();
   const sessionsWithNotes = await fetchAllPages<{
     id: string;
+    split_id: string | null;
     split_name: string | null;
     created_at: string;
     notes?: string | null;
   }>((from, to) =>
     supabase
       .from("workout_sessions")
-      .select("id,split_name,created_at,notes")
+      .select("id,split_id,split_name,created_at,notes")
       .eq("user_id", userId)
       .gte("created_at", queryStart)
       .lt("created_at", queryEnd)
@@ -51,15 +52,16 @@ export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Pr
       .range(from, to),
   );
   const sessions = sessionsWithNotes.error
-    ? await fetchAllPages<{ id: string; split_name: string | null; created_at: string }>((from, to) =>
-        supabase
-          .from("workout_sessions")
-          .select("id,split_name,created_at")
-          .eq("user_id", userId)
-          .gte("created_at", queryStart)
-          .lt("created_at", queryEnd)
-          .order("created_at", { ascending: false })
-          .range(from, to),
+    ? await fetchAllPages<{ id: string; split_id: string | null; split_name: string | null; created_at: string }>(
+        (from, to) =>
+          supabase
+            .from("workout_sessions")
+            .select("id,split_id,split_name,created_at")
+            .eq("user_id", userId)
+            .gte("created_at", queryStart)
+            .lt("created_at", queryEnd)
+            .order("created_at", { ascending: false })
+            .range(from, to),
       )
     : sessionsWithNotes;
   const logs = await fetchAllPages<{
@@ -84,6 +86,12 @@ export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Pr
   );
   if (sessions.error || logs.error) return null;
   const daySessions = sessions.rows.filter((session) => calendarDateKey(new Date(session.created_at)) === dateKey);
+  const sessionById = new Map(sessions.rows.map((session) => [session.id, session]));
+  const logicalSessionKeys = new Set(
+    daySessions.map((session) =>
+      session.split_id ? `split:${session.split_id}:date:${dateKey}` : `session:${session.id}`,
+    ),
+  );
   const sessionIds = new Set(daySessions.map((session) => session.id));
   const dayLogs = logs.rows.filter(
     (log) => sessionIds.has(log.session_id ?? "") || calendarDateKey(new Date(log.created_at)) === dateKey,
@@ -93,8 +101,14 @@ export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Pr
   const latestLogs = new Map<string, (typeof dayLogs)[number]>();
   for (const [index, log] of dayLogs.entries()) {
     const exerciseKey = log.exercise_id ? String(log.exercise_id) : String(log.exercise_name).trim().toLowerCase();
+    const session = log.session_id ? sessionById.get(log.session_id) : undefined;
+    const logicalSessionKey = session?.split_id
+      ? `split:${session.split_id}:date:${calendarDateKey(new Date(session.created_at))}`
+      : log.session_id
+        ? `session:${log.session_id}`
+        : `legacy:${index}:${log.created_at}`;
     const key = log.session_id
-      ? `${log.session_id}:${exerciseKey}:${Number(log.set_number) || 0}`
+      ? `${logicalSessionKey}:${exerciseKey}:${Number(log.set_number) || 0}`
       : `legacy:${index}:${log.created_at}:${exerciseKey}:${Number(log.set_number) || 0}`;
     if (!latestLogs.has(key)) latestLogs.set(key, log);
   }
@@ -142,7 +156,7 @@ export async function fetchWorkoutDayDetail(userId: string, dateKey: string): Pr
   const savedNote = !notesResult.error ? String(notesResult.data?.note ?? "").trim() : "";
   return {
     dateKey,
-    sessions: Math.max(daySessions.length, dayLogs.length ? 1 : 0),
+    sessions: Math.max(logicalSessionKeys.size, dayLogs.length ? 1 : 0),
     sessionIds: [...sessionIds],
     exercises,
     tonnageKg: exercises.reduce((total, exercise) => total + exercise.tonnageKg, 0),

@@ -3,10 +3,10 @@
 import { useCallback, type Dispatch, type MutableRefObject, type RefObject, type SetStateAction } from "react";
 import { haptic } from "../haptics";
 import type { Checklist } from "../trackTypes";
-import { TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
+import { TRACK_INTERACTION } from "../trackConstants";
+import { runViewTransition } from "../viewTransitions";
 
 type UseSplitActionsOptions = {
-  active?: Checklist;
   activeId: string;
   lists: Checklist[];
   splitName: string;
@@ -35,7 +35,6 @@ type UseSplitActionsOptions = {
 };
 
 export function useSplitActions({
-  active,
   activeId,
   lists,
   splitName,
@@ -72,23 +71,19 @@ export function useSplitActions({
   const newChecklist = useCallback(() => {
     const createSplit = () => {
       const list: Checklist = { id: crypto.randomUUID(), title: "Untitled split", tasks: [], updatedAt: Date.now() };
-      setLists((current) => [...current, list]);
-      showWorkout();
-      setActiveId(list.id);
-      setFilter("all");
-      setSearchQuery("");
-      setHomeTransition(false);
-      setMobileSidebarOpen(false);
+      runViewTransition(() => {
+        setLists((current) => [...current, list]);
+        showWorkout();
+        setActiveId(list.id);
+        setFilter("all");
+        setSearchQuery("");
+        setHomeTransition(false);
+        setMobileSidebarOpen(false);
+      });
       window.setTimeout(() => inputRef.current?.focus(), TRACK_INTERACTION.focusDelayMs);
     };
-    if (!active) {
-      setHomeTransition(true);
-      window.setTimeout(createSplit, TRACK_TIMING.splitCreateDelayMs);
-    } else {
-      createSplit();
-    }
+    createSplit();
   }, [
-    active,
     inputRef,
     setActiveId,
     setFilter,
@@ -101,11 +96,13 @@ export function useSplitActions({
 
   const selectChecklist = useCallback(
     (id: string) => {
-      showWorkout();
-      setActiveId(id);
-      setFilter("all");
-      setEditing(null);
-      setMobileSidebarOpen(false);
+      runViewTransition(() => {
+        showWorkout();
+        setActiveId(id);
+        setFilter("all");
+        setEditing(null);
+        setMobileSidebarOpen(false);
+      });
     },
     [setActiveId, setEditing, setFilter, setMobileSidebarOpen, showWorkout],
   );
@@ -237,15 +234,17 @@ export function useSplitActions({
           sets: (task.sets ?? []).map((set) => ({ ...set, id: crypto.randomUUID() })),
         })),
       };
-      setLists((current) => [...current, duplicate]);
-      setDirtySplits((current) => new Set(current).add(duplicate.id));
-      setActiveId(duplicate.id);
-      showWorkout();
-      setFilter("all");
-      setSearchQuery("");
-      setEditing(null);
-      setSplitMenu(null);
-      setMobileSidebarOpen(false);
+      runViewTransition(() => {
+        setLists((current) => [...current, duplicate]);
+        setDirtySplits((current) => new Set(current).add(duplicate.id));
+        setActiveId(duplicate.id);
+        showWorkout();
+        setFilter("all");
+        setSearchQuery("");
+        setEditing(null);
+        setSplitMenu(null);
+        setMobileSidebarOpen(false);
+      });
       window.setTimeout(() => inputRef.current?.focus(), TRACK_INTERACTION.focusDelayMs);
     },
     [

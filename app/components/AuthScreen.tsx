@@ -36,31 +36,49 @@ export async function invokeUsernameAuth(body: {
     if (!result.error && body.action === "reset" && result.data?.message)
       return { ok: true as const, available: true as const, message: result.data.message };
     const rawError = result.data?.error || result.error?.message || "";
-    const requestFailed = /failed to send a request/i.test(rawError);
+    const requestFailed = /failed to send a request|failed to fetch|network|fetch/i.test(rawError);
     return {
       ok: false as const,
       available: !result.error,
       error: requestFailed
-        ? "Username sign-in service needs to be redeployed. You can still sign in with email for now."
+        ? "Track II couldn’t reach the username sign-in service. Check your connection and try email sign-in if needed."
         : rawError,
     };
   } catch {
-    return { ok: false as const, available: false as const, error: "" };
+    return {
+      ok: false as const,
+      available: false as const,
+      error: "Track II couldn’t reach the username sign-in service. Check your connection and try again.",
+    };
   }
 }
 
-export function AuthScreen() {
+function authErrorMessage(error: { code?: string; message?: string } | null | undefined) {
+  const code = String(error?.code ?? "").toLowerCase();
+  const message = String(error?.message ?? "");
+  if (code === "email_not_confirmed" || /email.*confirm|confirm.*email/i.test(message))
+    return "Confirm your email before signing in. We can send the confirmation link again.";
+  if (/failed to fetch|network|fetch/i.test(message))
+    return "Track II couldn’t reach the sign-in service. Check your connection and try again.";
+  if (/invalid login credentials|invalid credentials/i.test(message)) return "The email or password is incorrect.";
+  if (/expired|invalid.*token/i.test(message)) return "This sign-in link has expired. Request a new one and try again.";
+  return message || "We couldn’t complete that request. Try again shortly.";
+}
+
+export function AuthScreen({ initialMessage = "" }: { initialMessage?: string }) {
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [mode, setMode] = useState<"signin" | "signup" | "forgot">("signin");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(initialMessage);
   const [busy, setBusy] = useState(false);
+  const [verificationPending, setVerificationPending] = useState(false);
 
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
     setMessage("");
+    setVerificationPending(false);
     if (mode === "forgot") {
       const resetIdentifier = email.trim();
       if (!resetIdentifier) {
@@ -91,7 +109,7 @@ export function AuthScreen() {
         redirectTo: window.location.origin,
       });
       setBusy(false);
-      setMessage(error ? error.message : "If an account exists for that email, a reset link is on its way.");
+      setMessage(error ? authErrorMessage(error) : "If an account exists for that email, a reset link is on its way.");
       return;
     }
     const normalizedUsername = username.trim().replace(/\s+/g, "");
@@ -110,7 +128,12 @@ export function AuthScreen() {
       }
       const result = await supabase.auth.signInWithPassword({ email: loginIdentifier, password });
       setBusy(false);
-      if (result.error) setMessage(result.error.message);
+      if (result.error) {
+        setMessage(authErrorMessage(result.error));
+        setVerificationPending(
+          result.error.code === "email_not_confirmed" || /email.*confirm/i.test(result.error.message),
+        );
+      }
       return;
     }
     if (!USERNAME_PATTERN.test(normalizedUsername)) {
@@ -124,8 +147,24 @@ export function AuthScreen() {
       options: { data: { username: normalizedUsername } },
     });
     setBusy(false);
-    if (result.error) setMessage(result.error.message);
-    else if (!result.data.session) setMessage("Check your email, then open the confirmation link.");
+    if (result.error) setMessage(authErrorMessage(result.error));
+    else if (!result.data.session) {
+      setMessage("Check your email, then open the confirmation link.");
+      setVerificationPending(true);
+    }
+  }
+
+  async function resendConfirmation() {
+    const address = email.trim();
+    if (!address.includes("@")) {
+      setMessage("Enter your account email to resend the confirmation link.");
+      return;
+    }
+    setBusy(true);
+    const { error } = await supabase.auth.resend({ type: "signup", email: address });
+    setBusy(false);
+    setMessage(error ? authErrorMessage(error) : "Confirmation email sent. Check your inbox and spam folder.");
+    if (!error) setVerificationPending(false);
   }
 
   return (
@@ -186,6 +225,11 @@ export function AuthScreen() {
             </label>
           )}
           {message && <div className="auth-message">{message}</div>}
+          {verificationPending && (mode === "signin" || mode === "signup") && (
+            <button type="button" className="auth-resend" onClick={() => void resendConfirmation()} disabled={busy}>
+              Resend confirmation email
+            </button>
+          )}
           <button disabled={busy}>
             {busy ? (
               <InlineLoadingSkeleton label="Submitting account request" />
@@ -206,6 +250,7 @@ export function AuthScreen() {
               setMode("forgot");
               setPassword("");
               setMessage("");
+              setVerificationPending(false);
             }}
           >
             Forgot password?
@@ -220,6 +265,7 @@ export function AuthScreen() {
             setEmail("");
             setPassword("");
             setMessage("");
+            setVerificationPending(false);
           }}
         >
           {mode === "signup" ? "Already have an account? Sign in" : "New to Track II? Create an account"}
@@ -232,6 +278,7 @@ export function AuthScreen() {
               setMode("signin");
               setPassword("");
               setMessage("");
+              setVerificationPending(false);
             }}
           >
             Back to sign in

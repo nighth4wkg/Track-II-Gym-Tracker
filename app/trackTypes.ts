@@ -86,6 +86,35 @@ export type TrackFunctionError = { code?: string; message?: string } | null | un
 export type ExportCell = string | number | null | undefined;
 export type TrackAnnouncement = { id: string; message: string };
 
+export type WorkoutLog = {
+  exerciseId: string;
+  exerciseName: string;
+  setNumber: number;
+  weight: number;
+  unit: WeightUnit;
+  reps: number;
+  rir: number;
+};
+
+export type WorkoutSessionPayload = {
+  splitId: string;
+  splitName: string;
+  logs: WorkoutLog[];
+  clientMutationId: string;
+  occurredAt: string;
+  dateKey: string;
+};
+
+export type WorkoutDraft = {
+  splitId: string;
+  splitTitle: string;
+  tasks: Task[];
+  baselineTasks: Task[];
+  startedAt: number;
+  updatedAt: number;
+  wasSaved: boolean;
+};
+
 export type ReleaseSignal = {
   source: string;
   remoteVersion: string;
@@ -109,6 +138,18 @@ export type ExportSession = {
   split_id: string | null;
   split_name: string;
   created_at: string;
+};
+
+export type ExerciseHistoryEntry = {
+  id: string;
+  sessionId: string | null;
+  splitId?: string | null;
+  createdAt: string;
+  setNumber: number;
+  weight: number;
+  unit: WeightUnit;
+  reps: number;
+  rir: number;
 };
 
 export type ExportLog = {

@@ -3020,10 +3020,6 @@ footer {
     align-items: center;
     gap: 12px;
   }
-  .mobile-actions .sync-status {
-    min-width: 0;
-    flex: 0 1 auto;
-  }
   .mobile-actions .theme-button {
     width: 32px;
     height: 32px;

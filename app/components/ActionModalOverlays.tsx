@@ -7,6 +7,11 @@ type ActionModalOverlaysProps = {
   signOutConfirm: boolean;
   onCloseSignOut: () => void;
   onSignOut: () => void | Promise<void>;
+  deleteAccountConfirm: boolean;
+  deleteAccountBusy: boolean;
+  deleteAccountMessage: string;
+  onCloseDeleteAccount: () => void;
+  onDeleteAccount: () => void | Promise<void>;
   notificationPrompt: boolean;
   notificationRequestBusy: boolean;
   onDismissNotification: () => void;
@@ -20,6 +25,11 @@ export function ActionModalOverlays({
   signOutConfirm,
   onCloseSignOut,
   onSignOut,
+  deleteAccountConfirm,
+  deleteAccountBusy,
+  deleteAccountMessage,
+  onCloseDeleteAccount,
+  onDeleteAccount,
   notificationPrompt,
   notificationRequestBusy,
   onDismissNotification,
@@ -82,6 +92,36 @@ export function ActionModalOverlays({
           </section>
         </div>
       )}
+      {deleteAccountConfirm && (
+        <div className="exercise-confirm-backdrop" onMouseDown={onCloseDeleteAccount}>
+          <section
+            className="exercise-confirm signout-confirm delete-account-confirm"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="delete-account-confirm-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="exercise-confirm-mark is-danger">
+              <span aria-hidden="true">!</span>
+            </div>
+            <span className="settings-kicker">PERMANENT ACTION</span>
+            <h2 id="delete-account-confirm-title">Delete your account?</h2>
+            <p>
+              This permanently deletes your Track II account, workout history, splits, profile, and synced data. This
+              cannot be undone.
+            </p>
+            {deleteAccountMessage && <p className="settings-inline-message is-error">{deleteAccountMessage}</p>}
+            <div className="exercise-confirm-actions signout-confirm-actions">
+              <button className="signout-stay" onClick={onCloseDeleteAccount} disabled={deleteAccountBusy}>
+                Keep account
+              </button>
+              <button className="signout-leave" onClick={() => void onDeleteAccount()} disabled={deleteAccountBusy}>
+                {deleteAccountBusy ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
       {notificationPrompt && (
         <div className="exercise-confirm-backdrop notification-permission-backdrop" onMouseDown={onDismissNotification}>
           <section
@@ -97,8 +137,8 @@ export function ActionModalOverlays({
             <span className="settings-kicker">TRACK II ANNOUNCEMENTS</span>
             <h2 id="notification-permission-title">Stay in the loop?</h2>
             <p>
-              Allow Track II to show administrator announcements in your device notifications. You can change this later
-              in Privacy &amp; Notifications.
+              Allow Track II to show rest timer alerts and administrator announcements in your device notifications. You
+              can change this later in Privacy &amp; Notifications.
             </p>
             <div className="exercise-confirm-actions notification-permission-actions">
               <button

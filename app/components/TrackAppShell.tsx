@@ -11,12 +11,14 @@ import { AnnouncementBanner } from "./AnnouncementBanner";
 import { BottomTabBar } from "./BottomTabBar";
 import { FinishWorkoutButton } from "./FinishWorkoutButton";
 import { ScrollShortcuts } from "./ScrollShortcuts";
+import { SyncConflictBanner } from "./SyncConflictBanner";
 import { SettingsModal } from "./SettingsModal";
 import { Sidebar } from "./Sidebar";
 import { SplitMenu } from "./SplitMenu";
 import { UndoToast } from "./UndoToast";
 import { UpdateNotification } from "./UpdateNotification";
 import { WorkspaceContent } from "./WorkspaceContent";
+import { WorkoutDraftRecoveryModal } from "./WorkoutDraftRecoveryModal";
 import type { ActivePage } from "../navigationPage";
 
 type MainHandlers = Pick<
@@ -47,6 +49,7 @@ export type TrackAppShellProps = {
   actionModalProps: ComponentProps<typeof ActionModalOverlays>;
   settingsModalProps: ComponentProps<typeof SettingsModal>;
   undoToastProps?: ComponentProps<typeof UndoToast>;
+  workoutDraftRecoveryProps?: ComponentProps<typeof WorkoutDraftRecoveryModal>;
 };
 
 export function TrackAppShell({
@@ -72,11 +75,14 @@ export function TrackAppShell({
   actionModalProps,
   settingsModalProps,
   undoToastProps,
+  workoutDraftRecoveryProps,
 }: TrackAppShellProps) {
+  const syncConflictVisible = /conflict|review changes/i.test(sidebarProps.headerStatus);
   return (
     <SettingsProvider value={settingsContextValue}>
       <main className={shellClassName} {...mainHandlers}>
         <AccountPromptModals {...accountPromptProps} />
+        {workoutDraftRecoveryProps && <WorkoutDraftRecoveryModal {...workoutDraftRecoveryProps} />}
         {announcementProps && <AnnouncementBanner {...announcementProps} />}
         {updateNotificationProps && <UpdateNotification {...updateNotificationProps} />}
         {activePage === "workout" && !settingsOpen && !mobileSidebarOpen && workspaceProps.workoutActionsAvailable && (
@@ -98,6 +104,9 @@ export function TrackAppShell({
         )}
         {adminUsersPanelProps?.open && <AdminUsersPanel {...adminUsersPanelProps} />}
         <Sidebar {...sidebarProps} />
+        {syncConflictVisible && (
+          <SyncConflictBanner onRetry={sidebarProps.onRetrySync} onUseCloudCopy={sidebarProps.onUseCloudCopy} />
+        )}
 
         <section className="workspace">
           <header className="mobile-header">
@@ -135,15 +144,6 @@ export function TrackAppShell({
                     onFinishWorkout={workspaceProps.onFinishWorkout}
                   />
                 )}
-              <span
-                className={`${sidebarProps.syncStatusClass} header-sync-status`}
-                role="status"
-                aria-live="polite"
-                aria-label={sidebarProps.headerStatus}
-                title={sidebarProps.headerStatus}
-              >
-                <i aria-hidden="true" />
-              </span>
               {isAdmin && <AdminUsersButton onClick={onOpenAdminUsers} />}
             </div>
           </header>

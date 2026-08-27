@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { ConnectedTaskCard } from "./TaskCard";
 import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
-import { FILTER_LABELS, FILTER_OPTIONS, TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
+import { FILTER_LABELS, FILTER_OPTIONS, POPULAR_QUICK_PICK_STARTERS, TRACK_INTERACTION } from "../trackConstants";
 import type { Checklist, Filter, Task } from "../trackTypes";
 
 type WorkoutPageProps = {
@@ -54,9 +54,8 @@ export function WorkoutPage({
   const suggestionListId = useId();
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
-  const [setupCompleteVisible, setSetupCompleteVisible] = useState(false);
-  const setupCompleteTimer = useRef<number | null>(null);
   const suggestionsVisible = showSuggestions && searchQueryActive && exerciseSuggestions.length > 0;
+  const starterCards = POPULAR_QUICK_PICK_STARTERS.filter(({ name }) => quickPickExercises.includes(name));
   const hasLoggedFirstSet = tasks.some((task) => {
     if (task.done || task.lastWeight !== undefined || task.lastReps !== undefined) return true;
     if (task.weight !== undefined && task.weight.trim() !== "0") return true;
@@ -70,27 +69,6 @@ export function WorkoutPage({
         set.rir.trim() !== "0",
     );
   });
-  const previousHasLoggedFirstSet = useRef(hasLoggedFirstSet);
-
-  useEffect(() => {
-    const wasLogged = previousHasLoggedFirstSet.current;
-    previousHasLoggedFirstSet.current = hasLoggedFirstSet;
-    if (!hasLoggedFirstSet || wasLogged) return;
-    setSetupCompleteVisible(true);
-    if (setupCompleteTimer.current !== null) window.clearTimeout(setupCompleteTimer.current);
-    setupCompleteTimer.current = window.setTimeout(() => {
-      setSetupCompleteVisible(false);
-      setupCompleteTimer.current = null;
-    }, TRACK_TIMING.setupCompleteNoticeMs);
-  }, [hasLoggedFirstSet]);
-
-  useEffect(
-    () => () => {
-      if (setupCompleteTimer.current !== null) window.clearTimeout(setupCompleteTimer.current);
-    },
-    [],
-  );
-
   const toggleMobileSearch = () => {
     const nextOpen = !mobileSearchOpen;
     setMobileSearchOpen(nextOpen);
@@ -250,48 +228,57 @@ export function WorkoutPage({
           ))}
         </div>
       )}
-      {tasks.length > 0 && (!hasLoggedFirstSet || setupCompleteVisible) && (
-        <div className={setupCompleteVisible ? "workout-setup-complete" : undefined}>
-          <WorkoutSetupSteps className="workout-start-steps" stage={setupCompleteVisible ? 4 : 3} />
-        </div>
-      )}
+      {tasks.length > 0 && !hasLoggedFirstSet && <WorkoutSetupSteps className="workout-start-steps" stage={3} />}
       <div className={progressFading ? "task-list progress-fading" : "task-list"} aria-live="polite">
         {visible.map((task) => (
           <ConnectedTaskCard key={task.id} task={task} />
         ))}
         {visible.length === 0 && (
-          <div className="empty ui-empty">
+          <div className={`empty ui-empty${tasks.length === 0 ? " empty-split" : " empty-filter"}`}>
             <div className="empty-mark">
               <span className="dumbbell-icon" />
             </div>
             <h2>
               {tasks.length === 0
-                ? "Your first exercise starts here"
+                ? "Your split is currently empty"
                 : filter === "done"
                   ? "No completed exercises yet"
                   : "All exercises are complete"}
             </h2>
             <p>
               {tasks.length === 0
-                ? "Search the exercise library above to build this split."
+                ? "Add a popular starter, browse the library, or import a split."
                 : filter === "done"
                   ? "Finish an exercise to see it appear in this view."
                   : "Switch to All exercises to review the full split."}
             </p>
             {tasks.length === 0 && <WorkoutSetupSteps className="workout-start-steps" stage={2} />}
-            {tasks.length === 0 && quickPickExercises.length > 0 && (
-              <div className="empty-quick-picks" aria-label="Quick add exercises">
-                <span className="empty-quick-picks-label">Quick add</span>
-                <div className="empty-quick-picks-list">
-                  {quickPickExercises.map((name) => (
-                    <button type="button" className="quick-pick-chip" key={name} onClick={() => onAddExercise(name)}>
-                      {name}
+            {tasks.length === 0 && starterCards.length > 0 && (
+              <section className="empty-starters" aria-labelledby="empty-starters-title">
+                <div className="empty-starters-heading">
+                  <span id="empty-starters-title">Popular starters</span>
+                  <small>Tap to add</small>
+                </div>
+                <div className="empty-starter-grid">
+                  {starterCards.map((starter) => (
+                    <button
+                      type="button"
+                      className="empty-starter-card"
+                      key={starter.name}
+                      onClick={() => onAddExercise(starter.name)}
+                      aria-label={`Add ${starter.name}`}
+                    >
+                      <span className="empty-starter-name">
+                        <i aria-hidden="true">+</i>
+                        {starter.name}
+                      </span>
+                      <small>{starter.detail}</small>
                     </button>
                   ))}
                 </div>
-              </div>
+              </section>
             )}
-            <div className="empty-actions">
+            <div className={`empty-actions${tasks.length === 0 ? "" : " is-single"}`}>
               <button
                 type="button"
                 className="empty-action ui-button ui-button-secondary"

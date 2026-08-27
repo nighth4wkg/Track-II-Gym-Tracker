@@ -1,8 +1,8 @@
-type WorkoutSetupStage = 1 | 2 | 3 | 4;
+type WorkoutSetupStage = 1 | 2 | 3;
 
 type WorkoutSetupStepsProps = {
   stage: WorkoutSetupStage;
-  className: "welcome-start-steps" | "workout-start-steps";
+  className: "welcome-start-steps" | "workout-start-steps" | "empty-split-setup-steps";
 };
 
 const setupSteps = [

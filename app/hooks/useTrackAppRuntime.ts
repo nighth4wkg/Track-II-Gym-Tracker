@@ -26,6 +26,7 @@ import { useSplitReorderGesture } from "./useSplitReorderGesture";
 import { useSplitActions } from "./useSplitActions";
 import { useTrackAppWorkoutActions } from "./useTrackAppWorkoutActions";
 import { useTrackAppLocalState } from "./useTrackAppLocalState";
+import { useWorkoutDraftRecovery } from "./useWorkoutDraftRecovery";
 
 const EMPTY_TASKS: Checklist["tasks"] = [];
 
@@ -65,6 +66,7 @@ export function useTrackAppRuntime({
     setCloudReady,
     exerciseNames,
     setSyncLabel,
+    setLastSuccessfulSyncAt,
     siteUpdateSeconds,
     setSiteUpdateSeconds,
     updateReady,
@@ -139,6 +141,7 @@ export function useTrackAppRuntime({
     defaultUnit,
     setDefaultUnit,
     setSavedSplits,
+    dirtySplits,
     setDirtySplits,
     setFinishedSignatures,
     setFinishedDates,
@@ -294,7 +297,6 @@ export function useTrackAppRuntime({
   const splitReorder = useSplitReorderGesture({ setLists, setDraggingSplit, setSplitMenu });
   const active = lists.find((list) => list.id === activeId);
   const splitActions = useSplitActions({
-    active,
     activeId,
     lists,
     splitName,
@@ -370,11 +372,15 @@ export function useTrackAppRuntime({
     setRankCategoryOverrides,
     setRankEquipmentOverrides,
     setSyncLabel,
+    setLastSuccessfulSyncAt,
     setPasswordResetBusy,
     setPasswordResetMessage,
     setPasswordResetValue,
     setPasswordResetConfirm,
     setPasswordResetOpen,
+    setDeleteAccountBusy: settingsState.setDeleteAccountBusy,
+    setDeleteAccountMessage: settingsState.setDeleteAccountMessage,
+    setDeleteAccountConfirm: settingsState.setDeleteAccountConfirm,
     setAiKey,
     timerStartedAtRef: timerStartedAt,
     restEndsAtRef: restEndsAt,
@@ -482,6 +488,7 @@ export function useTrackAppRuntime({
     setActiveId,
     setCloudReady,
     setSyncLabel,
+    setLastSuccessfulSyncAt,
     setDefaultUnit,
     setTimerMode,
     setRestSeconds,
@@ -509,6 +516,21 @@ export function useTrackAppRuntime({
     cloudSaveInFlightRef.current = cloudSync.isCloudSaveInFlight;
   }, [broadcastSyncEventRef, cloudSaveInFlightRef, cloudSync, invalidateCloudReadsRef, resetCloudSyncStateRef]);
 
+  const workoutDraftRecovery = useWorkoutDraftRecovery({
+    userId: user?.id ?? null,
+    accountReady: Boolean(user?.id && accountLocalReadyFor === user.id),
+    cloudReady,
+    active,
+    lists,
+    dirtySplits,
+    savedSplitsRef,
+    setLists,
+    setActiveId,
+    setDirtySplits,
+    setSavedSplits,
+    setWorkoutActionsExiting,
+  });
+
   const workoutActions = useTrackAppWorkoutActions({
     broadcastSyncEventRef,
     exportOptions: { lists, setExportBusy, setExportMessage },
@@ -530,6 +552,7 @@ export function useTrackAppRuntime({
       setWorkoutActionsExiting,
       updateTasks,
       markWorkoutDate,
+      queueWorkoutSession: cloudSync.queueWorkoutSession,
     },
     importOptions: {
       active,
@@ -630,7 +653,9 @@ export function useTrackAppRuntime({
       timerPersistence: { markTimerChanged },
       undo: undoState,
       workoutDate: workoutDateSync,
+      workoutDraftRecovery,
       workoutEditor,
+      cloudSync,
     },
     local: {
       aiBusy,

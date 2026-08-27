@@ -2,6 +2,7 @@ import type { MutableRefObject } from "react";
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { FILTER_LABELS, TRACK_LIMITS } from "../trackConstants";
 import type { Checklist, Filter } from "../trackTypes";
+import { SyncStatusIndicator } from "./SyncStatusIndicator";
 
 type SidebarProps = {
   mobileOpen: boolean;
@@ -26,8 +27,11 @@ type SidebarProps = {
   accountRoleInitial: string;
   accountUsername: string;
   accountPresenceLabel: string;
-  syncStatusClass: string;
   headerStatus: string;
+  lastSuccessfulSyncAt: number | null;
+  onRetrySync: () => void;
+  onUseCloudCopy: () => void;
+  offlineQueueCount: number;
   settingsOpen: boolean;
   onGoHome: () => void;
   onHideSidebar: () => void;
@@ -70,6 +74,10 @@ export function Sidebar({
   accountRoleInitial,
   accountUsername,
   accountPresenceLabel,
+  headerStatus,
+  lastSuccessfulSyncAt,
+  onRetrySync,
+  offlineQueueCount,
   settingsOpen,
   onGoHome,
   onHideSidebar,
@@ -197,6 +205,13 @@ export function Sidebar({
         <div className="account-panel">
           <div className="account-panel-heading">
             <span className="account-kicker">ACCOUNT</span>
+            <SyncStatusIndicator
+              label={headerStatus}
+              lastSuccessfulSyncAt={lastSuccessfulSyncAt}
+              onRetry={onRetrySync}
+              queuedCount={offlineQueueCount}
+              compact
+            />
           </div>
           <div className="account-row">
             <span

@@ -31,7 +31,7 @@ export default function TrackApp() {
   });
 
   if (runtime.authLoading) return <AppLoadingSkeleton />;
-  if (!identityState.user) return <AuthScreen />;
+  if (!identityState.user) return <AuthScreen initialMessage={identityState.authMessage} />;
 
   return (
     <TrackAppView

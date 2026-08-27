@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
   const trackWebOrigin = process.env.NEXT_PUBLIC_TRACK_WEB_ORIGIN ?? env.NEXT_PUBLIC_TRACK_WEB_ORIGIN ?? "";
   const trackReleasesUrl = process.env.NEXT_PUBLIC_TRACK_RELEASES_URL ?? env.NEXT_PUBLIC_TRACK_RELEASES_URL ?? "";
   const trackIssuesUrl = process.env.NEXT_PUBLIC_TRACK_ISSUES_URL ?? env.NEXT_PUBLIC_TRACK_ISSUES_URL ?? "";
+  const trackMetricsUrl = process.env.NEXT_PUBLIC_TRACK_METRICS_URL ?? env.NEXT_PUBLIC_TRACK_METRICS_URL ?? "";
 
   if (!supabaseUrl || !supabasePublishableKey) {
     throw new Error("Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY for the Pages build.");
@@ -59,10 +60,11 @@ export default defineConfig(({ mode }) => {
       "process.env.NEXT_PUBLIC_TRACK_WEB_ORIGIN": JSON.stringify(trackWebOrigin),
       "process.env.NEXT_PUBLIC_TRACK_RELEASES_URL": JSON.stringify(trackReleasesUrl),
       "process.env.NEXT_PUBLIC_TRACK_ISSUES_URL": JSON.stringify(trackIssuesUrl),
+      "process.env.NEXT_PUBLIC_TRACK_METRICS_URL": JSON.stringify(trackMetricsUrl),
     },
     build: {
       outDir: "../work/cloudflare-pages",
-      assetsDir: ".",
+      assetsDir: "assets",
       emptyOutDir: true,
       // Keep third-party runtime code in a browser-cacheable chunk. The
       // application entry remains smaller and avoids Vite's 500 KB warning

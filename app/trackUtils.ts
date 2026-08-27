@@ -8,7 +8,6 @@ import {
   MUSCLE_GROUPS,
   REST_PRESET_SECONDS,
   TRACK_LIMITS,
-  TRACK_TIMING,
   WEIGHT_CONVERSION_FACTOR,
 } from "./trackConstants.ts";
 import { TRACK_ASSET_QUERY } from "./trackConfig.ts";
@@ -28,8 +27,9 @@ import type {
 
 export function syncStatusTone(label: string) {
   const normalized = label.toLowerCase();
-  if (/(failed|couldn|not saved|offline|couldn't|can't load)/.test(normalized)) return "error" as const;
-  if (/(retrying|another device|updated online|saved locally)/.test(normalized)) return "warning" as const;
+  if (/(failed|couldn|not saved|offline|needs attention|couldn't|can't load)/.test(normalized)) return "error" as const;
+  if (/(retrying|another device|updated online|saved locally|conflict|review changes)/.test(normalized))
+    return "warning" as const;
   if (/(saving|syncing|loading|merging|updating|update in)/.test(normalized)) return "busy" as const;
   return "saved" as const;
 }
@@ -285,7 +285,9 @@ export function notificationIdFromKey(key: string) {
   return (hash >>> 0) % 2147483647 || 1;
 }
 
-export async function showSystemNotification(message: string, id: string) {
+const notificationDeliveries = new Map<string, Promise<boolean>>();
+
+async function deliverSystemNotification(message: string, id: string) {
   if (!globalThis.window) return false;
   try {
     if (nativeLocalNotificationsAvailable()) {
@@ -297,7 +299,6 @@ export async function showSystemNotification(message: string, id: string) {
             id: notificationIdFromKey(`track-${id}`),
             title: "Track II",
             body: message,
-            schedule: { at: new Date(Date.now() + TRACK_TIMING.notificationScheduleDelayMs) },
             foreground: true,
             extra: { id },
           },
@@ -307,20 +308,33 @@ export async function showSystemNotification(message: string, id: string) {
     }
     if (!("Notification" in window) || Notification.permission !== "granted") return false;
     if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.ready;
-      await registration.showNotification("Track II", {
-        body: message,
-        icon: `/icon-192.png${TRACK_ASSET_QUERY}`,
-        badge: `/notification-badge.png${TRACK_ASSET_QUERY}`,
-        tag: `track-${id}`,
-      });
-      return true;
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        await registration.showNotification("Track II", {
+          body: message,
+          icon: `/icon-192.png${TRACK_ASSET_QUERY}`,
+          badge: `/notification-badge.png${TRACK_ASSET_QUERY}`,
+          tag: `track-${id}`,
+        });
+        return true;
+      }
     }
     new Notification("Track II", { body: message, icon: `/icon-192.png${TRACK_ASSET_QUERY}`, tag: `track-${id}` });
     return true;
   } catch {
     /* keep the in-app announcement when system notifications are unavailable */ return false;
   }
+}
+
+export function showSystemNotification(message: string, id: string) {
+  const existing = notificationDeliveries.get(id);
+  if (existing) return existing;
+  const delivery = deliverSystemNotification(message, id).then((delivered) => {
+    if (!delivered) notificationDeliveries.delete(id);
+    return delivered;
+  });
+  notificationDeliveries.set(id, delivery);
+  return delivery;
 }
 
 export function restSecondsFromMinutes(input: string): number {

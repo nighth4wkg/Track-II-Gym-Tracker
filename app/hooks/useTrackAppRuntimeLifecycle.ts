@@ -64,6 +64,7 @@ export function useTrackAppRuntimeLifecycle({
     local,
     identity: {
       setAuthLoading: identityState.setAuthLoading,
+      setAuthMessage: identityState.setAuthMessage,
       setUser: identityState.setUser,
       setExerciseNames: identityState.setExerciseNames,
       setUsernamePromptOpen: identityState.setUsernamePromptOpen,

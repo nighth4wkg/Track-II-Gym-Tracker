@@ -31,6 +31,26 @@ For interaction changes, also check:
 - authenticated sync after editing the same split on two devices;
 - a clean reload after a Pages deployment.
 
+## Regenerating the Rank anatomy asset
+
+The interactive Rank map is generated, rather than hand-edited. The generator
+uses the pinned `react-muscle-highlighter@1.2.0` MIT source paths and writes the
+self-contained SVG to `app/assets/rank-muscle-map.svg`:
+
+```bash
+npm run generate:rank-map
+```
+
+The transformation and all Track-specific edits live in
+`scripts/generate-rank-muscle-map.mjs`: it maps upstream regions to Track's six
+muscle groups, fits the front and back views into the `900 x 600` viewBox,
+replaces head/neck and neutral limb pieces with featureless neutral shapes,
+removes facial/nipple details, and adds the semantic IDs, data attributes, and
+keyboard interaction metadata used by the app. Do not edit the generated SVG
+directly; change the generator so the asset remains reproducible. Review
+upstream path changes after changing the dependency version, then run
+`npm run generate:rank-map` and `npm run validate:release`.
+
 ## Pull requests
 
 Describe the user-facing behavior, the files changed, and the checks you ran.

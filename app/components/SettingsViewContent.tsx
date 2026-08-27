@@ -31,6 +31,8 @@ export type SettingsViewContentProps = {
   announcementText: string;
   completionEnabled: boolean;
   defaultUnit: WeightUnit;
+  deleteAccountBusy: boolean;
+  deleteAccountMessage: string;
   exportBusy: ExportFormat | null;
   exportMessage: string;
   isAdmin: boolean;
@@ -63,6 +65,7 @@ export type SettingsViewContentProps = {
   onApplyTheme: (mode: ThemeMode) => void;
   onCheckForUpdates: () => Promise<void>;
   onCompletionEnabledChange: (enabled: boolean) => void;
+  onSetDeleteAccountConfirm: () => void;
   onExportWorkoutData: (format: ExportFormat) => Promise<void>;
   onFakeUpdateNotification: () => void;
   onForceUpdateCheck: () => void;

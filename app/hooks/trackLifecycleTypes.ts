@@ -10,6 +10,7 @@ import type { TimerState } from "./useTimerState";
 export type LifecycleIdentityState = Pick<
   IdentityState,
   | "setAuthLoading"
+  | "setAuthMessage"
   | "setUser"
   | "setExerciseNames"
   | "setUsernamePromptOpen"

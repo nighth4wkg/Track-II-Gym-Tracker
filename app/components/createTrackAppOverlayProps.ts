@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import { acknowledgeTrackAnnouncement } from "../data/announcementApi";
 import { supabase } from "../supabase";
 import { haptic } from "../haptics";
 import { safeStorageSet } from "../trackUtils";
@@ -9,6 +10,7 @@ import type { AdminUsersPanel } from "./AdminUsersPanel";
 import type { AnnouncementBanner } from "./AnnouncementBanner";
 import type { UndoToast } from "./UndoToast";
 import type { UpdateNotification } from "./UpdateNotification";
+import type { WorkoutDraftRecoveryModal } from "./WorkoutDraftRecoveryModal";
 
 type OverlayOptions = {
   controllers: TrackAppViewProps["controllers"];
@@ -32,7 +34,7 @@ export function createTrackAppOverlayProps(options: OverlayOptions) {
     state,
     updateVersion,
   } = options;
-  const { accountActions, interactions, undo } = controllers;
+  const { accountActions, interactions, undo, workoutDraftRecovery } = controllers;
   const { identity, settings } = state;
   const isAdmin = identity.adminAuthorized;
 
@@ -75,6 +77,13 @@ export function createTrackAppOverlayProps(options: OverlayOptions) {
       settings.setSignOutConfirm(false);
       void supabase.auth.signOut({ scope: "local" });
     },
+    deleteAccountConfirm: settings.deleteAccountConfirm,
+    deleteAccountBusy: settings.deleteAccountBusy,
+    deleteAccountMessage: settings.deleteAccountMessage,
+    onCloseDeleteAccount: () => {
+      if (!settings.deleteAccountBusy) settings.setDeleteAccountConfirm(false);
+    },
+    onDeleteAccount: accountActions.deleteAccount,
     notificationPrompt: settings.notificationPrompt,
     notificationRequestBusy: settings.notificationRequestBusy,
     onDismissNotification: () => {
@@ -89,7 +98,10 @@ export function createTrackAppOverlayProps(options: OverlayOptions) {
         offset: identity.announcementOffset,
         dragStart: local.announcementDragStart,
         onOffsetChange: identity.setAnnouncementOffset,
-        onDismiss: () => identity.setAnnouncement(null),
+        onDismiss: () => {
+          if (identity.user?.id) void acknowledgeTrackAnnouncement(identity.user.id, identity.announcement?.id ?? "");
+          identity.setAnnouncement(null);
+        },
       }
     : undefined;
   const updateNotificationProps: ComponentProps<typeof UpdateNotification> | undefined =
@@ -127,6 +139,14 @@ export function createTrackAppOverlayProps(options: OverlayOptions) {
         onUndo: undo.performUndo,
       }
     : undefined;
+  const workoutDraftRecoveryProps: ComponentProps<typeof WorkoutDraftRecoveryModal> | undefined =
+    workoutDraftRecovery.notice
+      ? {
+          notice: workoutDraftRecovery.notice,
+          onContinue: workoutDraftRecovery.continueWorkout,
+          onDiscard: workoutDraftRecovery.discardDraft,
+        }
+      : undefined;
 
   return {
     accountPromptProps,
@@ -135,5 +155,6 @@ export function createTrackAppOverlayProps(options: OverlayOptions) {
     announcementProps,
     undoToastProps,
     updateNotificationProps,
+    workoutDraftRecoveryProps,
   };
 }

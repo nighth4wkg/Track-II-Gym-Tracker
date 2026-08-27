@@ -1,0 +1,48 @@
+name: Production monitoring
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-monitoring
+  cancel-in-progress: true
+
+jobs:
+  monitor:
+    name: Monitor production web and auth
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      PRODUCTION_BASE_URL: https://trackz.pages.dev
+      TRACK_MONITOR_ORIGIN: https://trackz.pages.dev
+      PRODUCTION_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      PRODUCTION_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      PRODUCTION_SMOKE_USERNAME: ${{ secrets.PRODUCTION_SMOKE_USERNAME }}
+      PRODUCTION_SMOKE_PASSWORD: ${{ secrets.PRODUCTION_SMOKE_PASSWORD }}
+      LOAD_TEST_REQUESTS: "24"
+      LOAD_TEST_CONCURRENCY: "4"
+      LOAD_TEST_MAX_ERROR_RATE: "0.05"
+      LOAD_TEST_MAX_P95_MS: "1500"
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run production smoke checks
+        run: npm run smoke:production
+
+      - name: Run controlled read-only load probe
+        run: npm run monitor:production

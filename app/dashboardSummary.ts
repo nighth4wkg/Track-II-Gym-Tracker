@@ -61,8 +61,10 @@ function parseSession(value: JsonValue): DashboardSessionMetric | null {
   const createdAt = stringValue(value.createdAt);
   const dateKey = stringValue(value.dateKey);
   if (!id || !createdAt || !dateKey || !Number.isFinite(new Date(createdAt).getTime())) return null;
+  const splitId = stringValue(value.splitId);
   return {
     id,
+    splitId: splitId || undefined,
     createdAt,
     dateKey,
     volumeKg: Math.max(0, finiteNumber(value.volumeKg)),

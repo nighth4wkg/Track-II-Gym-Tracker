@@ -7,6 +7,7 @@ export type ActivityPoint = { count: number; label: string; shortLabel: string }
 
 export type DashboardSessionMetric = {
   id: string;
+  splitId?: string;
   createdAt: string;
   dateKey: string;
   volumeKg: number;
@@ -92,21 +93,40 @@ export function averageVolumeForDates(tasks: RankTask[], dateKeys: string[]) {
 }
 
 /**
- * Build one metric row per saved workout session. The session id is the
- * identity; a calendar date is only a compatibility key for legacy rows and
- * is never used to merge two modern sessions on the same day.
+ * Build one metric row per logical workout session. Repeated finishes for the
+ * same split on the same local calendar day share one identity; a different
+ * split remains a separate session. Raw rows are never removed.
  */
 export function aggregateSessions(tasks: RankTask[], workoutDates: Set<string> = new Set()) {
-  const grouped = new Map<string, DashboardSessionMetric & { exercises: Set<string> }>();
+  const grouped = new Map<string, DashboardSessionMetric & { exercises: Set<string>; sets: Set<string> }>();
   for (const [index, task] of tasks.entries()) {
     const timestamp = performedTimestamp(task);
     const dateKey = timestamp > 0 ? calendarDateKey(new Date(timestamp)) : "";
-    const sessionKey = task.sessionId?.trim() || (dateKey ? `legacy:${dateKey}` : `legacy-row:${index}`);
+    const splitId = task.splitId?.trim();
+    const sessionKey =
+      splitId && dateKey
+        ? `split:${splitId}:date:${dateKey}`
+        : task.sessionId?.trim() || (dateKey ? `legacy:${dateKey}` : `legacy-row:${index}`);
     const exerciseKey = task.exerciseId?.trim() || task.text.trim().toLocaleLowerCase();
     const existing = grouped.get(sessionKey);
+    const taskSets = task.sets ?? [];
+    const seenTaskSetNumbers = new Set<number>();
+    const uniqueTaskSets = taskSets.filter((set) => {
+      const setNumber = Number(set.setNumber);
+      if (!Number.isFinite(setNumber)) return true;
+      if (seenTaskSetNumbers.has(setNumber)) return false;
+      seenTaskSetNumbers.add(setNumber);
+      return true;
+    });
     if (existing) {
-      existing.volumeKg += taskVolume(task);
-      existing.setCount += task.sets?.length ?? 0;
+      for (const [setIndex, set] of uniqueTaskSets.entries()) {
+        const setNumber = Number(set.setNumber);
+        const setKey = `${exerciseKey}:${Number.isFinite(setNumber) ? setNumber : `row:${setIndex}`}`;
+        if (existing.sets.has(setKey)) continue;
+        existing.sets.add(setKey);
+        existing.volumeKg += weightKg(set.weight, set.unit) * Math.max(0, Number(set.reps) || 0);
+        existing.setCount += 1;
+      }
       if (exerciseKey) existing.exercises.add(exerciseKey);
       if (timestamp > 0 && timestamp < new Date(existing.createdAt).getTime()) {
         existing.createdAt = new Date(timestamp).toISOString();
@@ -117,12 +137,22 @@ export function aggregateSessions(tasks: RankTask[], workoutDates: Set<string> =
     if (timestamp <= 0 || !dateKey) continue;
     grouped.set(sessionKey, {
       id: sessionKey,
+      splitId,
       createdAt: new Date(timestamp).toISOString(),
       dateKey,
-      volumeKg: taskVolume(task),
-      setCount: task.sets?.length ?? 0,
+      volumeKg: uniqueTaskSets.reduce(
+        (sum, set) => sum + weightKg(set.weight, set.unit) * Math.max(0, Number(set.reps) || 0),
+        0,
+      ),
+      setCount: uniqueTaskSets.length,
       exerciseCount: exerciseKey ? 1 : 0,
       exercises: new Set(exerciseKey ? [exerciseKey] : []),
+      sets: new Set(
+        uniqueTaskSets.map((set, setIndex) => {
+          const setNumber = Number(set.setNumber);
+          return `${exerciseKey}:${Number.isFinite(setNumber) ? setNumber : `row:${setIndex}`}`;
+        }),
+      ),
     });
   }
 
@@ -140,11 +170,20 @@ export function aggregateSessions(tasks: RankTask[], workoutDates: Set<string> =
       setCount: 0,
       exerciseCount: 0,
       exercises: new Set(),
+      sets: new Set(),
     });
   }
 
   return [...grouped.values()]
-    .map(({ exercises, ...session }) => ({ ...session, exerciseCount: exercises.size || session.exerciseCount }))
+    .map((session) => ({
+      id: session.id,
+      splitId: session.splitId,
+      createdAt: session.createdAt,
+      dateKey: session.dateKey,
+      volumeKg: session.volumeKg,
+      setCount: session.setCount,
+      exerciseCount: session.exercises.size || session.exerciseCount,
+    }))
     .sort((left, right) => new Date(left.createdAt).getTime() - new Date(right.createdAt).getTime());
 }
 

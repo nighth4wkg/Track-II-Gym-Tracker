@@ -211,17 +211,22 @@ test("calendar deletes converge quickly and loading states use skeletons", async
 });
 
 test("web release packaging uses unique names and preserves a rollback archive", async () => {
-  const [packageJson, packagingScript, readme, gitignore] = await Promise.all([
+  const [packageJson, packagingScript, readme, gitignore, notices] = await Promise.all([
     read("package.json"),
     read("scripts/package-pages-release.ps1"),
     read("README.md"),
     read(".gitignore"),
+    read("THIRD_PARTY_NOTICES.md"),
   ]);
 
   assert.match(packageJson, /"package:pages:release"/);
+  assert.match(packagingScript, /THIRD_PARTY_NOTICES\.md/);
   assert.match(packagingScript, /Track-II-web-v\$version-build-\$BuildStamp\.zip/);
   assert.match(packagingScript, /Track-II-web-v\$version-rollback-\$BuildStamp\.zip/);
   assert.match(packagingScript, /Refusing to overwrite an existing release artifact/);
+  assert.ok(packagingScript.includes("Copyright \\(c\\) 2024 My Muscle Contributors"));
+  assert.match(notices, /Copyright \(c\) 2024 My Muscle Contributors/);
+  assert.match(notices, /Permission is hereby granted, free of charge/);
   assert.match(readme, /previous\s+verified web build/);
   assert.match(gitignore, /\/release-artifacts\//);
 });
@@ -258,7 +263,7 @@ test("exercise search suggestions fill the composer and use an add affordance", 
 });
 
 test("beta UX surfaces expose concise summaries and useful empty states", async () => {
-  const [workout, calendar, rank, base, css] = await Promise.all([
+  const [workout, calendar, rank, base, css, sidebar] = await Promise.all([
     read("app/components/WorkoutPage.tsx"),
     Promise.all([read("app/components/CalendarScreen.tsx"), read("app/components/CalendarMonthOverview.tsx")]).then(
       (sources) => sources.join("\n"),
@@ -266,10 +271,15 @@ test("beta UX surfaces expose concise summaries and useful empty states", async 
     read("app/components/RankScreen.tsx"),
     read("app/styles/base.css"),
     readCssSource(),
+    read("app/components/Sidebar.tsx"),
   ]);
 
   assert.doesNotMatch(workout, /workout-session-summary|workout-progress-track|role="progressbar"/);
   assert.match(workout, /quickPickExercises/);
+  assert.match(workout, /Your split is currently empty/);
+  assert.match(workout, /WorkoutSetupSteps className="workout-start-steps" stage=\{2\}/);
+  assert.match(workout, /empty-starter-grid/);
+  assert.match(workout, /Popular starters/);
   assert.match(workout, /className="empty-action ui-button ui-button-secondary"/);
   assert.match(await read("app/trackConstants.ts"), /POPULAR_QUICK_PICK_EXERCISES/);
   assert.match(calendar, /className="calendar-insight-strip"/);
@@ -279,6 +289,9 @@ test("beta UX surfaces expose concise summaries and useful empty states", async 
   assert.match(base, /var\(--font-geist-sans\),[\s\S]*?-apple-system,[\s\S]*?BlinkMacSystemFont/);
   assert.match(base, /-webkit-font-smoothing: antialiased/);
   assert.match(css, /\.calendar-insight-card,[\s\S]*?\.rank-insight-card/);
+  assert.match(css, /\.empty-starter-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)/);
+  assert.match(css, /\.account-panel-heading \.sync-health-popover \{[\s\S]*?bottom: calc\(100% \+ 8px\)/);
+  assert.match(sidebar, /onRetry=\{onRetrySync\}[\s\S]*?compact/);
 });
 
 test("Dashboard exposes timeframe inspection, progression, volume guidance, and stable settings overlays", async () => {
@@ -318,7 +331,7 @@ test("Dashboard exposes timeframe inspection, progression, volume guidance, and 
   assert.match(dashboard, /all-time-volume/);
   assert.match(dashboard, /Volume load/);
   assert.match(dashboard, /average per workout/);
-  assert.match(dashboard, /total across all workouts/);
+  assert.match(dashboard, /total across/);
   assert.match(dashboard, /dashboard-volume-delta/);
   assert.match(dashboard, /formatVolumeDelta/);
   assert.match(dashboard, /activityWorkoutCount === 1 \? "workout" : "workouts"/);
@@ -371,14 +384,15 @@ test("release metadata keeps web and native package versions aligned", async () 
   assert.match(packageJson, /"package:pages:release"/);
 });
 
-test("Rank is wired to current task data and has responsive styles", async () => {
-  const [page, workspaceContent, navigationState, rank, rankScreen, rankBodyMap, css] = await Promise.all([
+test("Rank is wired to current task data and uses the semantic flat anatomy SVG", async () => {
+  const [page, workspaceContent, navigationState, rank, rankScreen, rankBodyMap, rankSvg, css] = await Promise.all([
     readPageSource(),
     read("app/components/WorkspaceContent.tsx"),
     read("app/hooks/useNavigationState.ts"),
     readRankSource(),
     read("app/components/RankScreen.tsx"),
     read("app/components/RankBodyMap.tsx"),
+    read("app/assets/rank-muscle-map.svg"),
     readCssSource(),
   ]);
 
@@ -407,27 +421,76 @@ test("Rank is wired to current task data and has responsive styles", async () =>
   assert.doesNotMatch(rank, /rows\.slice\(0, 3\)/);
   assert.match(rankScreen, /selectedSummary\.matchedExercises\.map/);
   assert.match(rankScreen, /rank-correction-controls/);
-  assert.match(
-    css,
-    /@media \(min-width:701px\)[\s\S]*?\.rank-selected-name \{ display:contents; \}[\s\S]*?white-space:normal/,
-  );
-  assert.match(
-    css,
-    /\.rank-selected-exercise \{ grid-template-columns:minmax\(0,1fr\) max-content; grid-template-rows:auto auto; grid-template-areas:"name set" "controls controls";/,
-  );
+  assert.match(rankScreen, /rank-selected-primary/);
+  assert.match(css, /\.rank-selected-primary \{ min-width:0; display:flex; flex-wrap:wrap; align-items:baseline;/);
+  assert.match(css, /\.rank-selected-list \{ display:grid; gap:8px; padding:8px; border-top:/);
+  assert.match(css, /\.rank-selected-set \{[^}]*text-align:left/);
+  assert.match(css, /\.rank-category-control \.motion-select-trigger \{[^}]*border-radius:999px/);
   assert.match(rankScreen, /match\.bestSet/);
   assert.match(rankScreen, /Equipment/);
   assert.match(rankScreen, /EQUIPMENT_TYPES\.map/);
   assert.match(rankScreen, /summary\.progress/);
   assert.match(rankScreen, /aria-label="Front and back strength maps"/);
-  assert.match(rankScreen, /<RankBodyMap\s+side="front"/);
-  assert.match(rankScreen, /<RankBodyMap\s+side="back"/);
-  assert.match(rankBodyMap, /Biceps and brachialis/);
-  assert.match(rankBodyMap, /Triceps/);
-  assert.match(rankBodyMap, /Obliques and serratus/);
-  assert.match(rankBodyMap, /Calves/);
-  assert.match(rankBodyMap, /rank-anatomy-separators/);
-  assert.doesNotMatch(rankBodyMap, /rank-anatomy-midline|rank-anatomy-detail/);
+  assert.match(rankScreen, /<RankBodyMap\s+summaries=\{summaries\}/);
+  assert.match(rankScreen, /activeSide=\{selectedSide\}/);
+  assert.match(rankBodyMap, /rank-muscle-map\.svg\?raw/);
+  assert.match(rankBodyMap, /dangerouslySetInnerHTML/);
+  assert.match(rankBodyMap, /data-muscle-group/);
+  assert.match(rankBodyMap, /RANK_MUSCLE_PATH_IDS/);
+  assert.match(rankBodyMap, /FOCUSED_VIEWBOX/);
+  assert.match(rankBodyMap, /root\.dataset\.activeSide/);
+  assert.match(rankBodyMap, /root\.setAttribute\(\s*"aria-label"/);
+  assert.match(rankBodyMap, /path\.style\.setProperty\("fill", fill\)/);
+  assert.match(rankBodyMap, /path\.style\.setProperty\("--rank-muscle-color", fill\)/);
+  assert.match(rankBodyMap, /const RANK_MAP_MARKUP = \{ __html: rankMuscleMapSvg \}/);
+  assert.match(rankBodyMap, /useLayoutEffect\(\(\) => \{[\s\S]*?\n  \}\);/);
+  assert.match(rankSvg, /viewBox="0 0 900 600"/);
+  assert.match(rankSvg, /id="front-view"/);
+  assert.match(rankSvg, /id="back-view"/);
+  assert.match(rankSvg, /fill="#e8e8e8"/);
+  assert.match(rankSvg, /stroke="#444"/);
+  assert.match(rankSvg, /stroke-width="1"/);
+  const svgIds = [...rankSvg.matchAll(/\sid="([^"]+)"/g)].map((match) => match[1]);
+  assert.equal(new Set(svgIds).size, svgIds.length, "the standalone SVG must not contain duplicate ids");
+  for (const id of [
+    "chest_l",
+    "chest_r",
+    "deltoid_front_l",
+    "deltoid_front_r",
+    "deltoid_rear_l",
+    "deltoid_rear_r",
+    "biceps_l",
+    "biceps_r",
+    "triceps_l",
+    "triceps_r",
+    "forearm_l",
+    "forearm_r",
+    "abs_upper",
+    "abs_lower",
+    "obliques_l",
+    "obliques_r",
+    "lats_l",
+    "lats_r",
+    "traps_upper",
+    "traps_mid",
+    "traps_lower",
+    "rhomboids",
+    "quad_l",
+    "quad_r",
+    "hamstring_l",
+    "hamstring_r",
+    "calf_l",
+    "calf_r",
+    "glute_l",
+    "glute_r",
+    "erector_spinae",
+  ]) {
+    assert.match(rankSvg, new RegExp(`id="${id}"`));
+  }
+  assert.doesNotMatch(rankSvg, /<text|<image|<linearGradient|<radialGradient|<filter|nipple/i);
+  assert.doesNotMatch(rankSvg, /rank-map-details|<circle|<ellipse/i);
+  assert.match(rankSvg, /react-muscle-highlighter 1\.2\.0 \(MIT\)/);
+  assert.doesNotMatch(rankBodyMap, /rank-anatomy-|rank-body-shadow|<clipPath|<linearGradient/);
   assert.doesNotMatch(rankScreen, /rank-map-toggle/);
   assert.doesNotMatch(rankScreen, /YOUR CURRENT PROFILE/);
   assert.doesNotMatch(rankScreen, /% of exercise standard/);
@@ -437,9 +500,16 @@ test("Rank is wired to current task data and has responsive styles", async () =>
   assert.doesNotMatch(rankScreen, /benchmarkLabel/);
   assert.match(css, /\.rank-screen/);
   assert.match(css, /\.rank-body-map/);
-  assert.match(css, /\.rank-neutral-parts/);
   assert.match(css, /\.rank-selected-exercise/);
   assert.match(css, /@media \(max-width:700px\)/);
+  assert.match(css, /\.rank-body-map-shell/);
+  assert.match(css, /\.rank-muscle-path/);
+  assert.match(css, /\.rank-map-base \{\s*fill: #27272a;/);
+  assert.match(css, /data-active-side="front"/);
+  assert.match(css, /data-active-side="back"/);
+  assert.match(css, /drop-shadow\(0 0 4px var\(--rank-muscle-color, #e8e8e8\)\)/);
+  assert.doesNotMatch(css, /\.rank-map-details path/);
+  assert.doesNotMatch(css, /\.rank-body-shadow|\.rank-neutral-parts|\.rank-anatomy-/);
 });
 
 test("Track uses one identical logo tile in navigation and About", async () => {
@@ -610,13 +680,15 @@ test("mobile page tabs stay fixed and hold-slide to a target page", async () => 
 });
 
 test("private sync and announcements are server-scoped", async () => {
-  const [page, syncMigration, announcementsMigration, announcementFunction, config] = await Promise.all([
-    readAppSource(),
-    read("supabase/migrations/20260827_private_sync_channels.sql"),
-    read("supabase/migrations/20260826_track_announcements.sql"),
-    read("supabase/functions/admin-announcement/index.ts"),
-    read("supabase/config.toml"),
-  ]);
+  const [page, syncMigration, announcementsMigration, announcementApi, announcementFunction, config] =
+    await Promise.all([
+      readAppSource(),
+      read("supabase/migrations/20260827_private_sync_channels.sql"),
+      read("supabase/migrations/20260826_track_announcements.sql"),
+      read("app/data/announcementApi.ts"),
+      read("supabase/functions/admin-announcement/index.ts"),
+      read("supabase/config.toml"),
+    ]);
 
   assert.match(page, /supabase\.channel\(`track-sync-\$\{user\.id\}`, \{ config: \{ private: true \} \}\)/);
   assert.match(page, /broadcastSyncEvent\("workout-updated"/);
@@ -632,14 +704,77 @@ test("private sync and announcements are server-scoped", async () => {
   assert.match(page, /!syncRealtimeConnected\.current/);
   assert.doesNotMatch(page, /queueRefresh\(\); \}, 1100\)/);
   assert.doesNotMatch(page, /supabase\.channel\("track-global"/);
-  assert.match(page, /from\("track_announcements"\)/);
+  assert.match(announcementApi, /from\("track_announcements"\)/);
+  assert.match(announcementApi, /get_latest_track_announcement/);
+  assert.match(announcementApi, /acknowledge_track_announcement/);
   assert.match(syncMigration, /realtime\.topic\(\) = 'track-sync-' \|\| \(select auth\.uid\(\)::text\)/);
   assert.match(announcementsMigration, /grant select on table public\.track_announcements to authenticated/);
   assert.match(announcementFunction, /auth\.getUser\(\)/);
   assert.match(announcementFunction, /Administrator access required/);
   assert.match(config, /\[functions\.admin-announcement\]\s+verify_jwt = true/);
-  assert.match(config, /\[functions\.username-auth\]\s+verify_jwt = false\s+import_map = "\.\/functions\/import_map\.json"/);
-  assert.match(config, /\[functions\.extract-workout\]\s+verify_jwt = true\s+import_map = "\.\/functions\/import_map\.json"/);
+  assert.match(
+    config,
+    /\[functions\.username-auth\]\s+verify_jwt = false\s+import_map = "\.\/functions\/import_map\.json"/,
+  );
+  assert.match(
+    config,
+    /\[functions\.extract-workout\]\s+verify_jwt = true\s+import_map = "\.\/functions\/import_map\.json"/,
+  );
+});
+
+test("announcements acknowledge once, offline workouts queue safely, and metrics/cache improvements stay additive", async () => {
+  const [
+    announcementApi,
+    receiptMigration,
+    offlineQueue,
+    offlineStore,
+    syncHook,
+    syncIndicator,
+    conflictBanner,
+    vitals,
+    trackConfig,
+    pagesConfig,
+    headers,
+    pagesEntry,
+  ] = await Promise.all([
+    read("app/data/announcementApi.ts"),
+    read("supabase/migrations/20260834_offline_queue_and_announcement_receipts.sql"),
+    read("app/offlineQueue.ts"),
+    read("app/offlineStore.ts"),
+    read("app/hooks/useTrackCloudSync.ts"),
+    read("app/components/SyncStatusIndicator.tsx"),
+    read("app/components/SyncConflictBanner.tsx"),
+    read("app/webVitals.ts"),
+    read("app/trackConfig.ts"),
+    read("vite.pages.config.ts"),
+    read("public/_headers"),
+    read("cloudflare/main.tsx"),
+  ]);
+
+  assert.match(announcementApi, /dismissed-announcements/);
+  assert.match(announcementApi, /markTrackAnnouncementDismissed/);
+  assert.match(receiptMigration, /track_announcement_receipts/);
+  assert.match(receiptMigration, /get_latest_track_announcement/);
+  assert.match(receiptMigration, /acknowledge_track_announcement/);
+  assert.match(receiptMigration, /on conflict \(announcement_id, user_id\) do nothing/);
+  assert.match(offlineQueue, /coalesceOfflineWorkoutQueue/);
+  assert.match(offlineQueue, /NON_RETRYABLE_WORKOUT_ERRORS/);
+  assert.match(offlineStore, /DATABASE_VERSION = 4/);
+  assert.match(offlineStore, /sync-queue/);
+  assert.match(offlineStore, /workout-drafts/);
+  assert.match(offlineStore, /AES-GCM/);
+  assert.match(syncHook, /queueWorkoutSession/);
+  assert.match(syncHook, /offlineQueueCount/);
+  assert.match(syncIndicator, /Waiting to upload/);
+  assert.match(conflictBanner, /Use cloud copy/);
+  assert.match(conflictBanner, /Keep merged copy/);
+  assert.match(vitals, /PerformanceObserver/);
+  assert.match(vitals, /track-web-vital/);
+  assert.match(trackConfig, /TRACK_METRICS_URL/);
+  assert.match(pagesConfig, /assetsDir: "assets"/);
+  assert.match(headers, /\/assets\/\*/);
+  assert.match(headers, /immutable/);
+  assert.match(pagesEntry, /startWebVitals/);
 });
 
 test("dashboard summaries are session-based, cached, and protected", async () => {
@@ -664,9 +799,10 @@ test("dashboard summaries are session-based, cached, and protected", async () =>
 });
 
 test("finish workout is a pinned header action", async () => {
-  const [page, shell, finishButton, css] = await Promise.all([
+  const [page, shell, sidebar, finishButton, css] = await Promise.all([
     readPageSource(),
     read("app/components/TrackAppShell.tsx"),
+    read("app/components/Sidebar.tsx"),
     read("app/components/FinishWorkoutButton.tsx"),
     readCssSource(),
   ]);
@@ -678,9 +814,10 @@ test("finish workout is a pinned header action", async () => {
   assert.match(shell, /desktop-finish-action/);
   assert.match(shell, /mobile-actions/);
   assert.match(shell, /<FinishWorkoutButton/);
-  assert.match(shell, /header-sync-status/);
-  assert.match(shell, /aria-label=\{sidebarProps\.headerStatus\}/);
-  assert.match(shell, /title=\{sidebarProps\.headerStatus\}/);
+  assert.doesNotMatch(shell, /SyncStatusIndicator/);
+  assert.equal((sidebar.match(/<SyncStatusIndicator/g) ?? []).length, 1);
+  assert.match(sidebar, /lastSuccessfulSyncAt=\{lastSuccessfulSyncAt\}/);
+  assert.match(sidebar, /onRetry=\{onRetrySync\}/);
   assert.doesNotMatch(shell, />\s*\{sidebarProps\.headerStatus\}\s*</);
   assert.match(finishButton, /TRACK_UI_COPY\.status\.saving/);
   assert.match(finishButton, /completionEnabled && openCount === 0/);
@@ -688,16 +825,14 @@ test("finish workout is a pinned header action", async () => {
   assert.doesNotMatch(finishButton, /Finish workout/);
   assert.match(css, /\.finish-button\.is-saved \{[\s\S]*?animation:finish-button-complete/);
   assert.match(css, /@keyframes finish-button-complete/);
-  assert.match(
-    css,
-    /\.mobile-actions \.header-sync-status\.sync-status-busy \{[\s\S]*?var\(--track-accent-online-ink\)/,
-  );
-  assert.match(css, /@keyframes header-sync-change-drop/);
+  assert.match(css, /\.sync-health-trigger/);
+  assert.match(css, /\.sync-health-popover/);
+  assert.match(css, /\.sync-health-trigger > i \{[\s\S]*?width:8px;[\s\S]*?background:var\(--sync-status-color\)/);
+  assert.match(css, /\.sync-health-saved \{[\s\S]*?--sync-status-color:var\(--track-accent-online\)/);
   assert.match(css, /\.desktop-finish-action \{ position:fixed; z-index:140; top:20px; right:22px; \}/);
   assert.match(css, /\.desktop-finish-action\.has-admin \{ right:72px; \}/);
   assert.match(css, /\.mobile-actions \.header-finish-button \{ min-height:32px; flex:0 0 auto;/);
-  assert.match(css, /\.mobile-actions \.header-sync-status \{ width:10px; height:10px;/);
-  assert.match(css, /\.mobile-header \.home-brand \{ flex:0 1 auto; min-width:0;/);
+  assert.match(css, /\.mobile-header \.home-brand \{[^}]*flex:0 1 auto; min-width:0;/);
   assert.doesNotMatch(`${page}\n${shell}\n${finishButton}\n${css}`, /workout-actions|has-workout-actions/);
 });
 
@@ -756,6 +891,14 @@ test("responsive workout controls keep one aligned grid and remove native number
   assert.match(taskCard, /className="set-row set-heading"/);
   assert.match(
     css,
+    /@media \(min-width:701px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;[\s\S]*?min-height:20px;/,
+  );
+  assert.match(
+    css,
+    /@media \(min-width:701px\) and \(max-width:1200px\)[\s\S]*?\.workout-page \.set-row \{[\s\S]*?--workout-set-grid:34px repeat\(3,minmax\(0,1fr\)\) 30px;[\s\S]*?grid-template-columns:var\(--workout-set-grid\);[\s\S]*?column-gap:10px;[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;/,
+  );
+  assert.match(
+    css,
     /@media \(max-width:700px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;[\s\S]*?grid-template-columns:34px repeat\(3,minmax\(0,1fr\)\) 30px;/,
   );
   assert.match(
@@ -779,14 +922,17 @@ test("responsive workout controls keep one aligned grid and remove native number
 });
 
 test("beta workout flow keeps logging keyboard-friendly and mobile actions reachable", async () => {
-  const [taskCard, workoutPage, workspace, finishButton, splitGesture, css] = await Promise.all([
-    read("app/components/TaskCard.tsx"),
-    read("app/components/WorkoutPage.tsx"),
-    read("app/components/WorkspaceContent.tsx"),
-    read("app/components/FinishWorkoutButton.tsx"),
-    read("app/hooks/useSplitReorderGesture.ts"),
-    readCssSource(),
-  ]);
+  const [taskCard, workoutPage, workspace, finishButton, splitGesture, splitActions, css, transitions] =
+    await Promise.all([
+      read("app/components/TaskCard.tsx"),
+      read("app/components/WorkoutPage.tsx"),
+      read("app/components/WorkspaceContent.tsx"),
+      read("app/components/FinishWorkoutButton.tsx"),
+      read("app/hooks/useSplitReorderGesture.ts"),
+      read("app/hooks/useSplitActions.ts"),
+      readCssSource(),
+      read("app/viewTransitions.ts"),
+    ]);
 
   assert.match(taskCard, /data-set-field="weight"/);
   assert.match(taskCard, /data-set-field="reps"/);
@@ -802,6 +948,10 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(finishButton, /Keep logging/);
   assert.match(workoutPage, /className="mobile-search-toggle"/);
   assert.match(workoutPage, /is-mobile-search-open/);
+  assert.doesNotMatch(workoutPage, /setupCompleteVisible|setupCompleteTimer|workout-setup-complete/);
+  assert.match(splitActions, /runViewTransition/);
+  assert.match(transitions, /startViewTransition/);
+  assert.match(css, /view-transition-name: track-workspace;/);
   assert.match(css, /\.welcome-start-steps \{[\s\S]*?gap:10px;/);
   assert.match(css, /\.welcome-start-steps \+ \.welcome-button \{[\s\S]*?margin-top:clamp\(14px,2\.5vh,20px\);/);
   assert.match(taskCard, /className=\{togglingUnitId === set\.id/);
@@ -952,7 +1102,6 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
   );
   assert.match(css, /\.undo-toast-positioner \{[\s\S]*?left 0\.42s var\(--track-ease-spring\)/);
   assert.match(css, /\.rank-body-map \{[\s\S]*?shape-rendering:geometricPrecision;/);
-  assert.match(css, /\.rank-anatomy-separators \{/);
   assert.match(taskCard, /className="sets-table"/);
 });
 
@@ -1440,6 +1589,24 @@ test("native updates and notification permissions use native-safe paths", async 
   assert.match(updateNotification, /!nativeApp \|\| !globalThis\.document/);
 });
 
+test("rest completion and announcements deliver immediate client notifications", async () => {
+  const [timerLifecycle, trackUtils, overlays, components] = await Promise.all([
+    read("app/hooks/useTrackTimerLifecycle.ts"),
+    read("app/trackUtils.ts"),
+    read("app/components/ActionModalOverlays.tsx"),
+    read("app/styles/components.css"),
+  ]);
+
+  assert.match(timerLifecycle, /Rest complete\. Time for your next set\./);
+  assert.match(timerLifecycle, /restEndsAtRef\.current = 0/);
+  assert.match(trackUtils, /notificationDeliveries/);
+  assert.match(trackUtils, /serviceWorker\.getRegistration\(\)/);
+  assert.doesNotMatch(trackUtils, /serviceWorker\.ready/);
+  assert.doesNotMatch(trackUtils, /schedule:\s*\{\s*at:/);
+  assert.match(overlays, /rest timer alerts and administrator announcements/);
+  assert.match(components, /\.workout-draft-actions \.exercise-confirm-no \{[^}]*background: var\(--soft\)/);
+});
+
 test("update and announcement notifications keep their centered entrance transform", async () => {
   const [components, polish] = await Promise.all([read("app/styles/components.css"), read("app/styles/polish.css")]);
 
@@ -1583,4 +1750,115 @@ test("native Capacitor configuration packages the shared app with haptics, notif
   assert.match(headers, /Access-Control-Allow-Origin: \*/);
   assert.match(page, /promiseWithTimeout/);
   assert.match(page, /notificationRequestBusy/);
+});
+
+test("must-have reliability features keep their safe server and UI paths", async () => {
+  const [
+    syncHook,
+    syncIndicator,
+    accountActions,
+    deleteFunction,
+    deleteMigration,
+    historyApi,
+    historyButton,
+    historyTrend,
+    historyMetrics,
+    muscleVolume,
+    auth,
+    smoke,
+    workflow,
+    settings,
+    overlays,
+    dashboardScreen,
+    dashboardGraph,
+  ] = await Promise.all([
+    read("app/hooks/useTrackCloudSync.ts"),
+    read("app/components/SyncStatusIndicator.tsx"),
+    read("app/hooks/useTrackAccountActions.ts"),
+    read("supabase/functions/delete-account/index.ts"),
+    read("supabase/migrations/20260832_account_deletion.sql"),
+    read("app/data/exerciseHistoryApi.ts"),
+    read("app/components/ExerciseHistoryButton.tsx"),
+    read("app/components/ExerciseHistoryTrend.tsx"),
+    read("app/exerciseHistoryMetrics.ts"),
+    read("app/dashboardMuscleVolume.ts"),
+    read("app/components/AuthScreen.tsx"),
+    read("scripts/smoke-production.mjs"),
+    read(".github/workflows/production-smoke.yml"),
+    read("app/components/SettingsStandardViews.tsx"),
+    read("app/components/ActionModalOverlays.tsx"),
+    read("app/components/DashboardScreen.tsx"),
+    read("app/components/DashboardActivityGraph.tsx"),
+  ]);
+
+  assert.match(syncHook, /retrySync/);
+  assert.match(syncHook, /offlineQueued/);
+  assert.match(syncIndicator, /Last successful sync/);
+  assert.match(syncIndicator, /Retry sync/);
+  assert.match(accountActions, /functions\.invoke\("delete-account"/);
+  assert.match(deleteFunction, /delete_account_data/);
+  assert.match(deleteFunction, /auth\.admin\.deleteUser/);
+  assert.doesNotMatch(deleteFunction, /SUPABASE_SERVICE_ROLE_KEY[\s\S]{0,300}app\//);
+  assert.match(deleteMigration, /security definer/);
+  assert.match(deleteMigration, /revoke all on function public\.delete_account_data/);
+  assert.match(historyApi, /fetchExerciseHistory/);
+  assert.match(historyButton, /fetchExerciseHistory/);
+  assert.match(historyButton, /Best volume/);
+  assert.match(historyButton, /ExerciseHistoryTrend/);
+  assert.match(historyButton, /exercise-history-group/);
+  assert.match(historyButton, /valueInUnit\(volumeLoadInKg\(entry\)/);
+  assert.match(historyTrend, /Estimated 1RM/);
+  assert.match(historyTrend, /<circle/);
+  assert.match(historyMetrics, /groupHistoryEntries/);
+  assert.match(muscleVolume, /primaryMuscleGroup/);
+  assert.match(dashboardScreen, /aggregateWeeklyMuscleSets/);
+  assert.doesNotMatch(dashboardScreen, /detectExerciseTargets/);
+  assert.match(auth, /resend\({ type: "signup"/);
+  assert.match(auth, /email_not_confirmed/);
+  assert.match(smoke, /track-release\.json/);
+  assert.match(smoke, /username-auth/);
+  assert.match(workflow, /release:/);
+  assert.match(settings, /Delete account and data/);
+  assert.match(overlays, /Delete permanently/);
+  assert.match(dashboardGraph, /No workouts in this period/);
+});
+
+test("logical sessions, conflict recovery, and operations safeguards are wired", async () => {
+  const [
+    migration,
+    historyApi,
+    historyMetrics,
+    calendarData,
+    conflictBanner,
+    monitor,
+    monitorWorkflow,
+    backupWorkflow,
+    restoreCheck,
+  ] = await Promise.all([
+    read("supabase/migrations/20260833_logical_session_aggregation.sql"),
+    read("app/data/exerciseHistoryApi.ts"),
+    read("app/exerciseHistoryMetrics.ts"),
+    read("app/data/calendarWorkoutData.ts"),
+    read("app/components/SyncConflictBanner.tsx"),
+    read("scripts/load-test-production.mjs"),
+    read(".github/workflows/production-monitoring.yml"),
+    read(".github/workflows/database-backup-restore.yml"),
+    read("scripts/verify-db-restore.mjs"),
+  ]);
+
+  assert.match(migration, /get_dashboard_summary_legacy/);
+  assert.match(migration, /split:'\, sessions\.split_id/);
+  assert.match(migration, /partition by raw_logs\.session_key, raw_logs\.exercise_key, raw_logs\.set_number/);
+  assert.match(historyApi, /workout_sessions/);
+  assert.match(historyApi, /split_id/);
+  assert.match(historyMetrics, /collapseHistoryEntries/);
+  assert.match(calendarData, /logicalSessionKeys/);
+  assert.match(calendarData, /split_id/);
+  assert.match(conflictBanner, /Keep merged copy/);
+  assert.match(monitor, /LOAD_TEST_MAX_ERROR_RATE/);
+  assert.match(monitorWorkflow, /schedule:/);
+  assert.match(monitorWorkflow, /monitor:production/);
+  assert.match(backupWorkflow, /SUPABASE_DB_URL/);
+  assert.match(backupWorkflow, /pg_restore/);
+  assert.match(restoreCheck, /relrowsecurity/);
 });

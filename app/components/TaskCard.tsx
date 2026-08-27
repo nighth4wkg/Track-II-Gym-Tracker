@@ -13,6 +13,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { useConnectedTaskCard } from "../contexts/WorkoutEditorContext";
+import { ExerciseHistoryButton } from "./ExerciseHistoryButton";
 import { applyAnimatedStyles } from "../domMotion";
 import { weightProgressionDelta } from "../trackUtils";
 import { focusNextSetInput, sameTask, summarizeSetValues, type TaskCardSet, type TaskCardTask } from "../taskCardUtils";
@@ -209,7 +210,10 @@ function TaskCardView({
                 aria-label="Edit exercise name"
               />
             ) : (
-              <span className={task.done ? "mobile-exercise-title done" : "mobile-exercise-title"}>{task.text}</span>
+              <>
+                <span className={task.done ? "mobile-exercise-title done" : "mobile-exercise-title"}>{task.text}</span>
+                <ExerciseHistoryButton exerciseId={task.id} exerciseName={task.text} />
+              </>
             )}
           </div>
           {task.collapsed && (

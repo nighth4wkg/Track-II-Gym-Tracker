@@ -16,6 +16,7 @@ import {
 import { TRACK_LIMITS } from "../trackConstants";
 import { RankBodyMap } from "./RankBodyMap";
 import { MotionSelect } from "./MotionSelect";
+import { runViewTransition } from "../viewTransitions";
 
 type RankScreenProps = {
   tasks: RankTask[];
@@ -105,27 +106,18 @@ export function RankScreen({
     : null;
   const selectedSummary = summaries.find((summary) => summary.group === selected) ?? null;
   const selectedTone = selectedSummary ? rankToneClass(selectedSummary.label) : "";
-  const selectBodyGroup = (group: MuscleGroup, side: "front" | "back") => {
-    if (selected === group && selectedSide === side) {
-      setSelected(null);
-      return;
-    }
-    setSwitchDirection(
-      selected === null || MUSCLE_GROUPS.indexOf(group) >= MUSCLE_GROUPS.indexOf(selected) ? "forward" : "backward",
-    );
-    setSelected(group);
-    setSelectedSide(side);
-  };
-  const selectCardGroup = (group: MuscleGroup) => {
-    if (selected === group) {
-      setSelected(null);
-      return;
-    }
-    setSwitchDirection(
-      selected === null || MUSCLE_GROUPS.indexOf(group) >= MUSCLE_GROUPS.indexOf(selected) ? "forward" : "backward",
-    );
-    setSelected(group);
-    setSelectedSide(group === "back" ? "back" : "front");
+  const selectGroup = (group: MuscleGroup, side: "front" | "back", canToggle = true) => {
+    runViewTransition(() => {
+      if (canToggle && selected === group && selectedSide === side) {
+        setSelected(null);
+        return;
+      }
+      setSwitchDirection(
+        selected === null || MUSCLE_GROUPS.indexOf(group) >= MUSCLE_GROUPS.indexOf(selected) ? "forward" : "backward",
+      );
+      setSelected(group);
+      setSelectedSide(side);
+    });
   };
 
   return (
@@ -156,23 +148,8 @@ export function RankScreen({
       </section>
       {!selectedSummary ? (
         <section className="rank-hero-card is-overview" aria-label="Front and back strength maps">
-          <div className="rank-map-pair">
-            <div className="rank-map-wrap">
-              <RankBodyMap
-                side="front"
-                summaries={summaries}
-                selected={null}
-                onSelect={(group) => selectBodyGroup(group, "front")}
-              />
-            </div>
-            <div className="rank-map-wrap">
-              <RankBodyMap
-                side="back"
-                summaries={summaries}
-                selected={null}
-                onSelect={(group) => selectBodyGroup(group, "back")}
-              />
-            </div>
+          <div className="rank-map-wrap">
+            <RankBodyMap summaries={summaries} selected={null} onSelect={(group, side) => selectGroup(group, side)} />
           </div>
           {!trackedSummaries.length && (
             <div className="rank-empty-note" role="status">
@@ -185,10 +162,10 @@ export function RankScreen({
         <section className={`rank-hero-card is-focused rank-switch-${switchDirection}`} key={selectedSummary.group}>
           <div className="rank-map-wrap">
             <RankBodyMap
-              side={selectedSide}
               summaries={summaries}
               selected={selected}
-              onSelect={(group) => selectBodyGroup(group, selectedSide)}
+              activeSide={selectedSide}
+              onSelect={(group, side) => selectGroup(group, side)}
             />
           </div>
           <div className="rank-hero-copy">
@@ -205,48 +182,46 @@ export function RankScreen({
                 {selectedSummary.matchedExercises.length ? (
                   selectedSummary.matchedExercises.map((match, index) => (
                     <div className="rank-selected-exercise" key={`${match.exercise}-${index}`}>
-                      <div className="rank-selected-name">
+                      <div className="rank-selected-primary">
                         <strong>{match.exercise}</strong>
-                        {match.exerciseId && (
-                          <div className="rank-correction-controls">
-                            {onCategoryOverride && (
-                              <label className="rank-category-control">
-                                <span>Muscle</span>
-                                <MotionSelect
-                                  ariaLabel={`Muscle category for ${match.exercise}`}
-                                  value={categoryOverrides[match.exerciseId] ?? "auto"}
-                                  options={MUSCLE_SELECT_OPTIONS}
-                                  onChange={(value) =>
-                                    onCategoryOverride(
-                                      match.exerciseId!,
-                                      value === "auto" ? null : muscleGroupFromSelect(value),
-                                    )
-                                  }
-                                />
-                              </label>
-                            )}
-                            {onEquipmentOverride && (
-                              <label className="rank-category-control">
-                                <span>Equipment</span>
-                                <MotionSelect
-                                  ariaLabel={`Equipment for ${match.exercise}`}
-                                  value={equipmentOverrides[match.exerciseId] ?? "auto"}
-                                  options={EQUIPMENT_SELECT_OPTIONS}
-                                  onChange={(value) =>
-                                    onEquipmentOverride(
-                                      match.exerciseId!,
-                                      value === "auto" ? null : equipmentFromSelect(value),
-                                    )
-                                  }
-                                />
-                              </label>
-                            )}
-                          </div>
-                        )}
+                        <span className="rank-selected-set">{match.bestSet}</span>
                       </div>
-                      <div className="rank-selected-set">
-                        <small>{match.bestSet}</small>
-                      </div>
+                      {match.exerciseId && (
+                        <div className="rank-correction-controls">
+                          {onCategoryOverride && (
+                            <label className="rank-category-control">
+                              <span>Muscle</span>
+                              <MotionSelect
+                                ariaLabel={`Muscle category for ${match.exercise}`}
+                                value={categoryOverrides[match.exerciseId] ?? "auto"}
+                                options={MUSCLE_SELECT_OPTIONS}
+                                onChange={(value) =>
+                                  onCategoryOverride(
+                                    match.exerciseId!,
+                                    value === "auto" ? null : muscleGroupFromSelect(value),
+                                  )
+                                }
+                              />
+                            </label>
+                          )}
+                          {onEquipmentOverride && (
+                            <label className="rank-category-control">
+                              <span>Equipment</span>
+                              <MotionSelect
+                                ariaLabel={`Equipment for ${match.exercise}`}
+                                value={equipmentOverrides[match.exerciseId] ?? "auto"}
+                                options={EQUIPMENT_SELECT_OPTIONS}
+                                onChange={(value) =>
+                                  onEquipmentOverride(
+                                    match.exerciseId!,
+                                    value === "auto" ? null : equipmentFromSelect(value),
+                                  )
+                                }
+                              />
+                            </label>
+                          )}
+                        </div>
+                      )}
                     </div>
                   ))
                 ) : (
@@ -271,7 +246,7 @@ export function RankScreen({
             <button
               key={summary.group}
               className={selected === summary.group ? "rank-card selected" : "rank-card"}
-              onClick={() => selectCardGroup(summary.group)}
+              onClick={() => selectGroup(summary.group, summary.group === "back" ? "back" : "front")}
             >
               <span className="rank-card-top">
                 <span className="rank-card-name">{MUSCLE_LABELS[summary.group]}</span>

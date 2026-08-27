@@ -15,6 +15,9 @@ export function useSettingsState() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [showScrollBottom, setShowScrollBottom] = useState(false);
   const [signOutConfirm, setSignOutConfirm] = useState(false);
+  const [deleteAccountConfirm, setDeleteAccountConfirm] = useState(false);
+  const [deleteAccountBusy, setDeleteAccountBusy] = useState(false);
+  const [deleteAccountMessage, setDeleteAccountMessage] = useState("");
   const [passwordResetOpen, setPasswordResetOpen] = useState(false);
   const [passwordResetValue, setPasswordResetValue] = useState("");
   const [passwordResetConfirm, setPasswordResetConfirm] = useState("");
@@ -63,6 +66,12 @@ export function useSettingsState() {
     setShowScrollBottom,
     signOutConfirm,
     setSignOutConfirm,
+    deleteAccountConfirm,
+    setDeleteAccountConfirm,
+    deleteAccountBusy,
+    setDeleteAccountBusy,
+    deleteAccountMessage,
+    setDeleteAccountMessage,
     passwordResetOpen,
     setPasswordResetOpen,
     passwordResetValue,

@@ -320,11 +320,6 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
-.account-panel-heading .account-status {
-  min-height: 24px;
-  flex: 0 0 auto;
-  justify-content: flex-end;
-}
 .account-row {
   min-width: 0;
   display: grid;
@@ -374,23 +369,6 @@
   color: var(--muted);
   font-size: 9px;
   line-height: 1.2;
-}
-.account-status {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.account-status > span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.account-panel .account-status .sign-out {
-  flex: 0 0 auto;
-  color: var(--muted);
-  font-weight: 600;
 }
 .account-panel .settings-button {
   width: 30px;
@@ -1180,6 +1158,14 @@
   min-width: 76px;
   background: #ff453a;
   color: #fff;
+}
+.workout-draft-card {
+  text-align: left;
+}
+.workout-draft-actions .exercise-confirm-no {
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--ink);
 }
 .signout-confirm-actions {
   grid-template-columns: minmax(0, 1fr) auto;

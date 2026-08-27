@@ -359,7 +359,13 @@ export function useWorkoutEditorController({
 
   function saveEdit(id: string, editValue: string) {
     const text = editValue.trim();
-    if (text) updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text } : task)));
+    const previous = tasks.find((task) => task.id === id);
+    if (text && previous && previous.text !== text) {
+      updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text } : task)));
+      offerUndo("Exercise renamed", () =>
+        updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text: previous.text } : task))),
+      );
+    }
     setEditing(null);
   }
 

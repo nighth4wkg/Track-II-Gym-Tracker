@@ -1,0 +1,59 @@
+name: Database backup and restore verification
+
+on:
+  schedule:
+    - cron: "23 3 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup-restore:
+    name: Export production and verify isolated restore
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: restore-password
+          POSTGRES_DB: track_restore
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d track_restore"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      RESTORE_DATABASE_URL: postgresql://postgres:restore-password@127.0.0.1:5432/track_restore
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install --yes postgresql-client
+
+      - name: Require server-only database URL
+        run: test -n "$SUPABASE_DB_URL"
+
+      - name: Create production backup export
+        run: |
+          mkdir -p backup
+          pg_dump "$SUPABASE_DB_URL" --format=custom --no-owner --no-acl --file=backup/track-ii.dump
+
+      - name: Restore into isolated PostgreSQL service
+        run: pg_restore "$RESTORE_DATABASE_URL" --exit-on-error --no-owner --no-acl backup/track-ii.dump
+
+      - name: Verify restored schema and security flags
+        run: node scripts/verify-db-restore.mjs
+
+      - name: Upload encrypted-by-GitHub backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: track-ii-database-backup-${{ github.run_id }}
+          path: backup/track-ii.dump
+          retention-days: 14
+          if-no-files-found: error

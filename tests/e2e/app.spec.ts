@@ -23,7 +23,7 @@ async function removeExerciseIfPresent(page: Page, exerciseName: string) {
   await options.click();
   await page.getByRole("button", { name: "Delete exercise", exact: true }).click();
   await expect(page.getByText(exerciseName, { exact: true })).toHaveCount(0);
-  await expect(page.locator('.header-sync-status[aria-label="Saved"]')).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByRole("button", { name: /Synced/ })).toBeVisible({ timeout: 15_000 });
 }
 
 test.describe("public boot and authentication surface", () => {

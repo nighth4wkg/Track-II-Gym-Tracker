@@ -24,6 +24,7 @@ export function useTrackIdentityLifecycle({
 }: UseTrackAppLifecycleOptions) {
   const {
     setAuthLoading,
+    setAuthMessage,
     setUser,
     setUsernamePromptOpen,
     setUsernameInput,
@@ -40,7 +41,7 @@ export function useTrackIdentityLifecycle({
   const loadedDataUserIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    const adoptSessionUser = (nextUser: User | null) => {
+    const adoptSessionUser = (nextUser: User | null, event = "INITIAL_SESSION") => {
       const previousUserId = activeUserIdRef.current;
       const nextUserId = nextUser?.id ?? null;
 
@@ -51,6 +52,9 @@ export function useTrackIdentityLifecycle({
       if (previousUserId && previousUserId !== nextUserId) clearAccountClientStateRef.current(previousUserId);
       activeUserIdRef.current = nextUserId;
       setUser(nextUser);
+      if (nextUser) setAuthMessage("");
+      else if (previousUserId && event === "SIGNED_OUT")
+        setAuthMessage("Your session ended. Sign in again—your saved workout data is still safe.");
       setAdminAuthorized(verifiedAdminRole(nextUser));
       setAuthLoading(false);
     };
@@ -62,11 +66,19 @@ export function useTrackIdentityLifecycle({
       })
       .catch(() => adoptSessionUser(null));
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
-      adoptSessionUser(session?.user ?? null);
+      adoptSessionUser(session?.user ?? null, event);
       if (event === "PASSWORD_RECOVERY") openPasswordResetRef.current();
     });
     return () => data.subscription.unsubscribe();
-  }, [activeUserIdRef, clearAccountClientStateRef, openPasswordResetRef, setAdminAuthorized, setAuthLoading, setUser]);
+  }, [
+    activeUserIdRef,
+    clearAccountClientStateRef,
+    openPasswordResetRef,
+    setAdminAuthorized,
+    setAuthLoading,
+    setAuthMessage,
+    setUser,
+  ]);
 
   useEffect(() => {
     if (!user) return;

@@ -8,7 +8,7 @@ import type { TimerMode } from "../components/TimerScreen";
 import { readTrackSnapshot, type TrackLocalSnapshot } from "../offlineStore";
 import type { Checklist, TimerRuntimeState, TrackPreferences } from "../trackTypes";
 import type { EquipmentType } from "../rankTypes";
-import { SYNC_SAVE_DEBOUNCE_MS, TRACK_TIMING } from "../trackConstants";
+import { SYNC_SAVE_DEBOUNCE_MS, TRACK_TIMING, TRACK_UI_COPY } from "../trackConstants";
 import { useTrackSyncStatus } from "./useTrackSyncStatus";
 import { useTrackLocalSnapshot } from "./useTrackLocalSnapshot";
 import { useTrackPreferenceSync } from "./useTrackPreferenceSync";
@@ -22,6 +22,7 @@ import {
   restoreLocalCollapseState,
   safeStorageGet,
 } from "../trackUtils";
+import { useTrackOfflineQueue } from "./useTrackOfflineQueue";
 
 type RankEquipmentOverrides = Record<string, EquipmentType>;
 export type TrackSyncEventName =
@@ -45,6 +46,11 @@ type DateMarker = (dateKey: string) => void;
 type DateRemover = (dateKey: string, clearCompletion?: boolean) => void;
 type DateRestorer = (dateKey: string) => void;
 type SavedMarkerApplier = (savedToday: Set<string>, sourceLists: Checklist[], clearStaleDirty: boolean) => void;
+type SyncConflictState = { userId: string; remoteLists: Checklist[]; revision: number };
+
+function isOffline() {
+  return globalThis.navigator?.onLine === false;
+}
 
 type UseTrackCloudSyncOptions = {
   user: User | null;
@@ -66,6 +72,7 @@ type UseTrackCloudSyncOptions = {
   setActiveId: Dispatch<SetStateAction<string>>;
   setCloudReady: Dispatch<SetStateAction<boolean>>;
   setSyncLabel: Dispatch<SetStateAction<string>>;
+  setLastSuccessfulSyncAt: Dispatch<SetStateAction<number | null>>;
   setDefaultUnit: Dispatch<SetStateAction<TrackPreferences["defaultUnit"]>>;
   setTimerMode: Dispatch<SetStateAction<TimerMode>>;
   setRestSeconds: Dispatch<SetStateAction<number>>;
@@ -107,6 +114,7 @@ export function useTrackCloudSync({
   setActiveId,
   setCloudReady,
   setSyncLabel,
+  setLastSuccessfulSyncAt,
   setDefaultUnit,
   setTimerMode,
   setRestSeconds,
@@ -147,6 +155,9 @@ export function useTrackCloudSync({
   const initialSyncReconciliation = useRef(false);
   const lastOnlineListsLoad = useRef<{ userId: string; rememberExercisesAcrossSplits: boolean } | null>(null);
   const preferenceSaveInFlightRef = useRef<() => boolean>(() => false);
+  const retrySyncRef = useRef<() => void>(() => undefined);
+  const workoutQueuePending = useRef(false);
+  const conflictState = useRef<SyncConflictState | null>(null);
 
   const ensureSyncClientId = useCallback(() => {
     if (!syncClientId.current)
@@ -163,6 +174,10 @@ export function useTrackCloudSync({
     },
     [ensureSyncClientId],
   );
+  const broadcastWorkoutFinished = useCallback(
+    (payload: { dateKey: string; splitId: string }) => broadcastSyncEvent("workout-finished", payload),
+    [broadcastSyncEvent],
+  );
 
   const invalidateCloudReads = useCallback(() => {
     syncReadRevision.current += 1;
@@ -170,18 +185,38 @@ export function useTrackCloudSync({
   }, []);
 
   const isCloudSaveInFlight = useCallback(
-    () => localChangesPending.current || cloudWriteInProgress.current || preferenceSaveInFlightRef.current(),
+    () =>
+      localChangesPending.current ||
+      cloudWriteInProgress.current ||
+      preferenceSaveInFlightRef.current() ||
+      workoutQueuePending.current,
     [],
   );
-  const { clearSyncStatusTimer, showSyncStatus } = useTrackSyncStatus({ setSyncLabel, isBusy: isCloudSaveInFlight });
+  const { clearSyncStatusTimer, showSyncStatus } = useTrackSyncStatus({
+    setSyncLabel,
+    setLastSuccessfulSyncAt,
+    isBusy: isCloudSaveInFlight,
+  });
   const reportSyncStatus = useCallback(
     (label: string, settleToSaved = false) => {
       if (initialSyncReconciliation.current && (label === "Loading…" || label === "Syncing…" || label === "Saving…"))
         return;
-      showSyncStatus(label, settleToSaved);
+      const queueKeepsSyncing = workoutQueuePending.current && /^(saved|updated)$/i.test(label.trim());
+      showSyncStatus(
+        queueKeepsSyncing ? (isOffline() ? TRACK_UI_COPY.status.offlineQueued : TRACK_UI_COPY.status.syncing) : label,
+        settleToSaved && !queueKeepsSyncing,
+      );
     },
     [showSyncStatus],
   );
+  const { flushOfflineWorkoutQueue, offlineQueueCount, queueWorkoutSession, resetOfflineQueueState } =
+    useTrackOfflineQueue({
+      user,
+      cloudReady,
+      queuePendingRef: workoutQueuePending,
+      reportSyncStatus,
+      broadcastWorkoutFinished,
+    });
 
   const { preferencesRef, resetPreferenceSync, applyIncomingPreferences, isPreferenceSaveInFlight } =
     useTrackPreferenceSync({
@@ -234,6 +269,8 @@ export function useTrackCloudSync({
     workoutFinishEpoch.current += 1;
     localChangesPending.current = false;
     cloudWriteInProgress.current = false;
+    resetOfflineQueueState();
+    conflictState.current = null;
     initialSyncReconciliation.current = false;
     lastOnlineListsLoad.current = null;
     pendingLocalSnapshot.current = null;
@@ -246,7 +283,7 @@ export function useTrackCloudSync({
     const channel = syncChannel.current;
     syncChannel.current = null;
     if (channel) void supabase.removeChannel(channel);
-  }, [clearSyncStatusTimer, invalidateSnapshotWrites, resetPreferenceSync]);
+  }, [clearSyncStatusTimer, invalidateSnapshotWrites, resetOfflineQueueState, resetPreferenceSync]);
 
   useEffect(() => {
     listsRef.current = lists;
@@ -281,10 +318,13 @@ export function useTrackCloudSync({
       reportSyncStatus("Loading…");
       const savedActiveId = safeStorageGet(accountStorageKey(userId, "active-split"));
       const [result, savedToday, localSnapshot, revision] = await Promise.all([
-        promiseWithTimeout(fetchOnlineLists(rememberExercises), TRACK_TIMING.cloudRequestTimeoutMs),
-        promiseWithTimeout(fetchSavedSplitIdsForToday(userId), TRACK_TIMING.cloudRequestTimeoutMs),
-        readTrackSnapshot<Checklist[]>(userId),
-        promiseWithTimeout(fetchTrackRevision(userId), TRACK_TIMING.cloudRequestTimeoutMs),
+        promiseWithTimeout(fetchOnlineLists(rememberExercises), TRACK_TIMING.cloudRequestTimeoutMs).catch(() => ({
+          lists: [],
+          error: true,
+        })),
+        promiseWithTimeout(fetchSavedSplitIdsForToday(userId), TRACK_TIMING.cloudRequestTimeoutMs).catch(() => null),
+        readTrackSnapshot<Checklist[]>(userId).catch(() => null),
+        promiseWithTimeout(fetchTrackRevision(userId), TRACK_TIMING.cloudRequestTimeoutMs).catch(() => null),
       ]);
       if (cancelled) return;
       const chooseActiveId = (candidateLists: Checklist[]) =>
@@ -312,11 +352,11 @@ export function useTrackCloudSync({
           );
           setCloudReady(true);
           initialSyncReconciliation.current = false;
-          reportSyncStatus("Offline");
+          reportSyncStatus(TRACK_UI_COPY.status.offline);
           return;
         }
         initialSyncReconciliation.current = false;
-        reportSyncStatus("Retrying…");
+        reportSyncStatus(isOffline() ? TRACK_UI_COPY.status.offline : TRACK_UI_COPY.status.needsAttention);
         scheduleRetry();
         return;
       }
@@ -359,18 +399,42 @@ export function useTrackCloudSync({
         reportSyncStatus("Saved");
       }
     };
+    const retryNow = () => {
+      if (cancelled) return;
+      retryAttempt = 0;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
+      retryTimer = null;
+      void loadOnlineData().catch(() => {
+        if (cancelled) return;
+        reportSyncStatus(TRACK_UI_COPY.status.needsAttention);
+        scheduleRetry();
+      });
+    };
+    retrySyncRef.current = retryNow;
     void loadOnlineData().catch(() => {
       if (cancelled) return;
       initialSyncReconciliation.current = false;
-      reportSyncStatus("Retrying…");
+      reportSyncStatus(TRACK_UI_COPY.status.needsAttention);
       scheduleRetry();
     });
     return () => {
       cancelled = true;
       if (retryTimer !== null) window.clearTimeout(retryTimer);
+      if (retrySyncRef.current === retryNow) retrySyncRef.current = () => undefined;
       initialSyncReconciliation.current = false;
     };
   }, [applySavedTodayMarkersRef, preferencesRef, ready, reportSyncStatus, setActiveId, setCloudReady, setLists, user]);
+
+  const retrySync = useCallback(() => {
+    retrySyncRef.current();
+    void flushOfflineWorkoutQueue();
+  }, [flushOfflineWorkoutQueue]);
+
+  useEffect(() => {
+    const handleOnline = () => retrySync();
+    window.addEventListener("online", handleOnline);
+    return () => window.removeEventListener("online", handleOnline);
+  }, [retrySync]);
 
   useEffect(() => {
     if (!user || !cloudReady) return;
@@ -398,7 +462,7 @@ export function useTrackCloudSync({
         if (revision === localRevision.current) {
           localChangesPending.current = true;
           initialSyncReconciliation.current = false;
-          reportSyncStatus("Retrying…");
+          reportSyncStatus(isOffline() ? TRACK_UI_COPY.status.offlineQueued : TRACK_UI_COPY.status.needsAttention);
           saveRetryAttempt.current = Math.min(saveRetryAttempt.current + 1, TRACK_TIMING.cloudSaveRetryMaxAttempts);
           saveTimer.current = window.setTimeout(
             saveLatest,
@@ -446,6 +510,11 @@ export function useTrackCloudSync({
           }
           const merged = mergeTrackLists(remote.lists, snapshot, lastSyncedLists.current);
           remoteRevision.current = result.revision ?? remoteRevision.current;
+          conflictState.current = {
+            userId: user.id,
+            remoteLists: remote.lists,
+            revision: remoteRevision.current,
+          };
           lastSyncedLists.current = remote.lists;
           lastSyncedSignature.current = cloudListSignature(remote.lists);
           listsRef.current = merged;
@@ -458,7 +527,7 @@ export function useTrackCloudSync({
             remoteRevision: remoteRevision.current,
           });
           localChangesPending.current = true;
-          reportSyncStatus("Syncing…");
+          reportSyncStatus("Conflict resolved — review changes");
           saveRetryAttempt.current = 0;
           return;
         }
@@ -468,6 +537,7 @@ export function useTrackCloudSync({
       remoteRevision.current = result.revision;
       cloudWriteInProgress.current = false;
       if (revision === localRevision.current) {
+        conflictState.current = null;
         lastSyncedLists.current = snapshot;
         lastSyncedSignature.current = signature;
         localChangesPending.current = false;
@@ -490,6 +560,35 @@ export function useTrackCloudSync({
       if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
     };
   }, [broadcastSyncEvent, cloudReady, lists, preferencesRef, reportSyncStatus, setLists, user, writeSnapshot]);
+
+  const resolveSyncConflict = useCallback(() => {
+    const conflict = conflictState.current;
+    if (!conflict || conflict.userId !== user?.id) return;
+    if (saveTimer.current !== null) window.clearTimeout(saveTimer.current);
+    saveTimer.current = null;
+    localRevision.current += 1;
+    conflictState.current = null;
+    applyingCloudUpdate.current = true;
+    cloudWriteInProgress.current = false;
+    localChangesPending.current = false;
+    remoteRevision.current = conflict.revision;
+    listsRef.current = conflict.remoteLists;
+    lastSyncedLists.current = conflict.remoteLists;
+    lastSyncedSignature.current = cloudListSignature(conflict.remoteLists);
+    setLists(conflict.remoteLists);
+    setActiveId((current) =>
+      conflict.remoteLists.some((list) => list.id === current) ? current : (conflict.remoteLists[0]?.id ?? ""),
+    );
+    writeSnapshot({
+      userId: conflict.userId,
+      lists: conflict.remoteLists,
+      pending: false,
+      updatedAt: Date.now(),
+      remoteRevision: conflict.revision,
+    });
+    initialSyncReconciliation.current = false;
+    reportSyncStatus("Saved", true);
+  }, [reportSyncStatus, setActiveId, setLists, user?.id, writeSnapshot]);
 
   useTrackRealtimeSync({
     user,
@@ -560,5 +659,14 @@ export function useTrackCloudSync({
     };
   }, [cloudReady, rememberExercisesAcrossSplits, reportSyncStatus, setLists, user]);
 
-  return { broadcastSyncEvent, invalidateCloudReads, resetCloudSyncState, isCloudSaveInFlight };
+  return {
+    broadcastSyncEvent,
+    invalidateCloudReads,
+    resetCloudSyncState,
+    isCloudSaveInFlight,
+    retrySync,
+    queueWorkoutSession,
+    offlineQueueCount,
+    resolveSyncConflict,
+  };
 }

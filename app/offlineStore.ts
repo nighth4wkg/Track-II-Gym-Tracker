@@ -1,3 +1,8 @@
+import { TRACK_LIMITS } from "./trackConstants";
+import { coalesceOfflineWorkoutQueue } from "./offlineQueue";
+import type { JsonValue, WorkoutDraft, WorkoutSessionPayload } from "./trackTypes";
+import { isJsonObject, isStringValue } from "./trackUtils";
+
 export type TrackLocalSnapshot<T> = {
   userId: string;
   lists: T;
@@ -6,7 +11,7 @@ export type TrackLocalSnapshot<T> = {
   remoteRevision: number;
 };
 
-type EncryptedTrackSnapshot = {
+type EncryptedLocalRecord = {
   format: "encrypted-v1";
   userId: string;
   iv: ArrayBuffer;
@@ -17,15 +22,32 @@ type SnapshotKeyRow = {
   id: "snapshot-key";
   key: CryptoKey;
 };
-type StoredSnapshot = TrackLocalSnapshot<unknown> | EncryptedTrackSnapshot;
+type WorkoutQueueEnvelope = {
+  userId: string;
+  entries: WorkoutSessionPayload[];
+  updatedAt: number;
+};
+
+type WorkoutDraftEnvelope = {
+  userId: string;
+  drafts: WorkoutDraft[];
+  updatedAt: number;
+};
+
+type StoredWorkoutQueue = EncryptedLocalRecord | WorkoutQueueEnvelope;
+type LocalStoreRecord = EncryptedLocalRecord | TrackLocalSnapshot<unknown> | WorkoutQueueEnvelope;
 
 const DATABASE_NAME = "track-local-cache";
-const DATABASE_VERSION = 2;
+const DATABASE_VERSION = 4;
 const SNAPSHOT_STORE = "snapshots";
+const WORKOUT_QUEUE_STORE = "sync-queue";
+const WORKOUT_DRAFT_STORE = "workout-drafts";
 const KEY_STORE = "keys";
 
 let databasePromise: Promise<IDBDatabase | null> | null = null;
 let encryptionKeyPromise: Promise<CryptoKey | null> | null = null;
+const queueOperations = new Map<string, Promise<unknown>>();
+const draftOperations = new Map<string, Promise<unknown>>();
 
 function browserCrypto() {
   const browserWindow = globalThis.window;
@@ -46,6 +68,12 @@ function openDatabase() {
         const database = request.result;
         if (!database.objectStoreNames.contains(SNAPSHOT_STORE)) {
           database.createObjectStore(SNAPSHOT_STORE, { keyPath: "userId" });
+        }
+        if (!database.objectStoreNames.contains(WORKOUT_QUEUE_STORE)) {
+          database.createObjectStore(WORKOUT_QUEUE_STORE, { keyPath: "userId" });
+        }
+        if (!database.objectStoreNames.contains(WORKOUT_DRAFT_STORE)) {
+          database.createObjectStore(WORKOUT_DRAFT_STORE, { keyPath: "userId" });
         }
         if (!database.objectStoreNames.contains(KEY_STORE)) {
           database.createObjectStore(KEY_STORE, { keyPath: "id" });
@@ -99,35 +127,36 @@ async function getEncryptionKey(database: IDBDatabase) {
   return encryptionKeyPromise;
 }
 
-async function encryptSnapshot<T>(
+async function encryptLocalRecord(
   database: IDBDatabase,
-  snapshot: TrackLocalSnapshot<T>,
-): Promise<EncryptedTrackSnapshot | null> {
+  record: { userId: string },
+): Promise<EncryptedLocalRecord | null> {
   const cryptoApi = browserCrypto();
   const key = await getEncryptionKey(database);
   if (!cryptoApi || !key) return null;
   try {
     const iv = cryptoApi.getRandomValues(new Uint8Array(12));
-    const encoded = new TextEncoder().encode(JSON.stringify(snapshot));
+    const encoded = new TextEncoder().encode(JSON.stringify(record));
     const payload = await cryptoApi.subtle.encrypt({ name: "AES-GCM", iv }, key, encoded);
-    return { format: "encrypted-v1", userId: snapshot.userId, iv: iv.buffer.slice(0), payload };
+    return { format: "encrypted-v1", userId: record.userId, iv: iv.buffer.slice(0), payload };
   } catch {
     return null;
   }
 }
 
-async function decryptSnapshot<T>(
+async function decryptLocalRecord<T extends { userId: string; updatedAt: number }>(
   database: IDBDatabase,
-  stored: EncryptedTrackSnapshot,
-): Promise<TrackLocalSnapshot<T> | null> {
+  stored: EncryptedLocalRecord,
+): Promise<T | null> {
   const cryptoApi = browserCrypto();
   const key = await getEncryptionKey(database);
   if (!cryptoApi || !key) return null;
   try {
     const encoded = await cryptoApi.subtle.decrypt({ name: "AES-GCM", iv: stored.iv }, key, stored.payload);
-    // SAFETY: this assertion is immediately validated below and the payload
-    // was authenticated by AES-GCM with the key stored in the same database.
-    const parsed = JSON.parse(new TextDecoder().decode(encoded)) as TrackLocalSnapshot<T>;
+    // SAFETY: the payload was authenticated by AES-GCM with the non-extractable
+    // key stored in this database; owner and timestamp are validated below and
+    // each caller validates its domain-specific collection before using it.
+    const parsed = JSON.parse(new TextDecoder().decode(encoded)) as T;
     if (!parsed || parsed.userId !== stored.userId || !Number.isFinite(parsed.updatedAt)) return null;
     return parsed;
   } catch {
@@ -135,17 +164,58 @@ async function decryptSnapshot<T>(
   }
 }
 
-function isEncryptedSnapshot(value: StoredSnapshot | null | undefined): value is EncryptedTrackSnapshot {
-  if (!value || typeof value !== "object") return false;
-  // SAFETY: after the object check, only fields from the IndexedDB record are
-  // inspected and the predicate below verifies every encrypted field.
-  const candidate = value as Partial<EncryptedTrackSnapshot>;
+function isEncryptedLocalRecord(value: LocalStoreRecord | null | undefined): value is EncryptedLocalRecord {
+  if (!value) return false;
+  // SAFETY: callers pass an IndexedDB record object and the predicate verifies
+  // every encrypted-record field before treating it as ciphertext.
+  const candidate = value as Partial<EncryptedLocalRecord>;
   return (
     candidate.format === "encrypted-v1" &&
     typeof candidate.userId === "string" &&
     candidate.iv instanceof ArrayBuffer &&
     candidate.payload instanceof ArrayBuffer
   );
+}
+
+function isWorkoutSessionPayload(value: JsonValue): value is WorkoutSessionPayload {
+  if (!isJsonObject(value)) return false;
+  const candidate = value;
+  if (
+    !isStringValue(candidate.splitId) ||
+    !isStringValue(candidate.splitName) ||
+    !isStringValue(candidate.clientMutationId) ||
+    !isStringValue(candidate.occurredAt) ||
+    !isStringValue(candidate.dateKey) ||
+    !Array.isArray(candidate.logs) ||
+    candidate.logs.length > 500 ||
+    !Number.isFinite(Date.parse(candidate.occurredAt))
+  )
+    return false;
+  return candidate.logs.every((log) => {
+    if (!isJsonObject(log)) return false;
+    const entry = log;
+    return (
+      isStringValue(entry.exerciseId) &&
+      isStringValue(entry.exerciseName) &&
+      Number.isFinite(entry.setNumber) &&
+      Number.isFinite(entry.weight) &&
+      (entry.unit === "kg" || entry.unit === "lb") &&
+      Number.isFinite(entry.reps) &&
+      Number.isFinite(entry.rir)
+    );
+  });
+}
+
+function normalizeWorkoutQueue(entries: JsonValue | WorkoutSessionPayload[]): WorkoutSessionPayload[] {
+  if (!Array.isArray(entries)) return [];
+  const seen = new Set<string>();
+  const normalized: WorkoutSessionPayload[] = [];
+  for (const entry of entries) {
+    if (!isWorkoutSessionPayload(entry) || seen.has(entry.clientMutationId)) continue;
+    seen.add(entry.clientMutationId);
+    normalized.push(entry);
+  }
+  return normalized;
 }
 
 export async function readTrackSnapshot<T>(userId: string): Promise<TrackLocalSnapshot<T> | null> {
@@ -157,18 +227,18 @@ export async function readTrackSnapshot<T>(userId: string): Promise<TrackLocalSn
       request.onsuccess = async () => {
         // SAFETY: this store is keyed by userId and contains either a legacy
         // TrackLocalSnapshot or the encrypted record written by this module.
-        const stored = request.result as TrackLocalSnapshot<T> | EncryptedTrackSnapshot | undefined;
+        const stored = request.result as TrackLocalSnapshot<T> | EncryptedLocalRecord | undefined;
         if (!stored) {
           resolve(null);
           return;
         }
-        if (isEncryptedSnapshot(stored)) {
-          resolve(await decryptSnapshot<T>(database, stored));
+        if (isEncryptedLocalRecord(stored)) {
+          resolve(await decryptLocalRecord<TrackLocalSnapshot<T>>(database, stored));
           return;
         }
         // Legacy plaintext snapshots remain readable so existing offline data
         // is not lost. The next successful write replaces them with ciphertext.
-        // SAFETY: isEncryptedSnapshot has ruled out the encrypted record; the
+        // SAFETY: isEncryptedLocalRecord has ruled out the encrypted record; the
         // remaining legacy shape is the historical TrackLocalSnapshot format.
         resolve(stored as TrackLocalSnapshot<T>);
       };
@@ -182,7 +252,7 @@ export async function readTrackSnapshot<T>(userId: string): Promise<TrackLocalSn
 export async function writeTrackSnapshot<T>(snapshot: TrackLocalSnapshot<T>): Promise<boolean> {
   const database = await openDatabase();
   if (!database) return false;
-  const encrypted = await encryptSnapshot(database, snapshot);
+  const encrypted = await encryptLocalRecord(database, snapshot);
   // Never write private workout data as new plaintext. If Web Crypto is not
   // available, the cloud sync path remains authoritative and this cache is
   // simply skipped.
@@ -196,6 +266,233 @@ export async function writeTrackSnapshot<T>(snapshot: TrackLocalSnapshot<T>): Pr
       resolve(false);
     }
   });
+}
+
+async function readWorkoutQueueRecord(userId: string): Promise<WorkoutSessionPayload[]> {
+  const database = await openDatabase();
+  if (!database) return [];
+  return new Promise((resolve) => {
+    try {
+      const request = database
+        .transaction(WORKOUT_QUEUE_STORE, "readonly")
+        .objectStore(WORKOUT_QUEUE_STORE)
+        .get(userId);
+      request.onsuccess = async () => {
+        // SAFETY: the sync-queue store contains only the legacy envelope or
+        // encrypted queue record written by this module.
+        const stored = request.result as StoredWorkoutQueue | undefined;
+        if (!stored) {
+          resolve([]);
+          return;
+        }
+        // SAFETY: the encrypted predicate rules out the cipher record; the
+        // remaining StoredWorkoutQueue member is the legacy envelope.
+        const envelope = isEncryptedLocalRecord(stored)
+          ? await decryptLocalRecord<WorkoutQueueEnvelope>(database, stored)
+          : (stored as WorkoutQueueEnvelope);
+        resolve(envelope?.userId === userId ? normalizeWorkoutQueue(envelope.entries) : []);
+      };
+      request.onerror = () => resolve([]);
+    } catch {
+      resolve([]);
+    }
+  });
+}
+
+async function writeWorkoutQueueRecord(userId: string, entries: WorkoutSessionPayload[]) {
+  const database = await openDatabase();
+  if (!database) return false;
+  if (!entries.length) {
+    return new Promise<boolean>((resolve) => {
+      try {
+        const request = database
+          .transaction(WORKOUT_QUEUE_STORE, "readwrite")
+          .objectStore(WORKOUT_QUEUE_STORE)
+          .delete(userId);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => resolve(false);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+  const envelope: WorkoutQueueEnvelope = { userId, entries, updatedAt: Date.now() };
+  const encrypted = await encryptLocalRecord(database, envelope);
+  // Queue entries contain the same private workout data as the snapshot. Do
+  // not fall back to a new plaintext record when encryption is unavailable.
+  if (!encrypted) return false;
+  return new Promise<boolean>((resolve) => {
+    try {
+      const request = database
+        .transaction(WORKOUT_QUEUE_STORE, "readwrite")
+        .objectStore(WORKOUT_QUEUE_STORE)
+        .put(encrypted);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+function queueOperation<T>(userId: string, operation: () => Promise<T>) {
+  const previous = queueOperations.get(userId) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(operation);
+  queueOperations.set(
+    userId,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return next;
+}
+
+export function readOfflineWorkoutQueue(userId: string) {
+  return queueOperation(userId, () => readWorkoutQueueRecord(userId));
+}
+
+export function enqueueOfflineWorkoutSession(userId: string, entry: WorkoutSessionPayload) {
+  return queueOperation(userId, async () => {
+    if (!isWorkoutSessionPayload(entry)) return false;
+    const current = await readWorkoutQueueRecord(userId);
+    const next = coalesceOfflineWorkoutQueue(current, entry, TRACK_LIMITS.maxOfflineQueueEntries);
+    if (!next) return false;
+    return writeWorkoutQueueRecord(userId, next);
+  });
+}
+
+export function removeOfflineWorkoutSession(userId: string, clientMutationId: string) {
+  return queueOperation(userId, async () => {
+    const current = await readWorkoutQueueRecord(userId);
+    if (!current.some((entry) => entry.clientMutationId === clientMutationId)) return true;
+    return writeWorkoutQueueRecord(
+      userId,
+      current.filter((entry) => entry.clientMutationId !== clientMutationId),
+    );
+  });
+}
+
+export function deleteOfflineWorkoutQueue(userId: string) {
+  return queueOperation(userId, async () => writeWorkoutQueueRecord(userId, []));
+}
+
+function validWorkoutDraft(draft: WorkoutDraft) {
+  return (
+    Boolean(draft.splitId && draft.splitTitle) &&
+    Array.isArray(draft.tasks) &&
+    Array.isArray(draft.baselineTasks) &&
+    Number.isFinite(draft.startedAt) &&
+    Number.isFinite(draft.updatedAt)
+  );
+}
+
+async function readWorkoutDraftRecord(userId: string): Promise<WorkoutDraft[]> {
+  const database = await openDatabase();
+  if (!database) return [];
+  return new Promise((resolve) => {
+    try {
+      const request = database
+        .transaction(WORKOUT_DRAFT_STORE, "readonly")
+        .objectStore(WORKOUT_DRAFT_STORE)
+        .get(userId);
+      request.onsuccess = async () => {
+        // SAFETY: workout-drafts accepts only encrypted records written by this
+        // module; the encrypted predicate and owner checks run before use.
+        const stored = request.result as EncryptedLocalRecord | undefined;
+        if (!stored || !isEncryptedLocalRecord(stored)) {
+          resolve([]);
+          return;
+        }
+        const envelope = await decryptLocalRecord<WorkoutDraftEnvelope>(database, stored);
+        resolve(
+          envelope?.userId === userId && Array.isArray(envelope.drafts)
+            ? envelope.drafts.filter(validWorkoutDraft)
+            : [],
+        );
+      };
+      request.onerror = () => resolve([]);
+    } catch {
+      resolve([]);
+    }
+  });
+}
+
+async function writeWorkoutDraftRecord(userId: string, drafts: WorkoutDraft[]) {
+  const database = await openDatabase();
+  if (!database) return false;
+  if (!drafts.length) {
+    return new Promise<boolean>((resolve) => {
+      try {
+        const request = database
+          .transaction(WORKOUT_DRAFT_STORE, "readwrite")
+          .objectStore(WORKOUT_DRAFT_STORE)
+          .delete(userId);
+        request.onsuccess = () => resolve(true);
+        request.onerror = () => resolve(false);
+      } catch {
+        resolve(false);
+      }
+    });
+  }
+  const envelope: WorkoutDraftEnvelope = { userId, drafts, updatedAt: Date.now() };
+  const encrypted = await encryptLocalRecord(database, envelope);
+  if (!encrypted) return false;
+  return new Promise<boolean>((resolve) => {
+    try {
+      const request = database
+        .transaction(WORKOUT_DRAFT_STORE, "readwrite")
+        .objectStore(WORKOUT_DRAFT_STORE)
+        .put(encrypted);
+      request.onsuccess = () => resolve(true);
+      request.onerror = () => resolve(false);
+    } catch {
+      resolve(false);
+    }
+  });
+}
+
+function draftOperation<T>(userId: string, operation: () => Promise<T>) {
+  const previous = draftOperations.get(userId) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(operation);
+  draftOperations.set(
+    userId,
+    next.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return next;
+}
+
+export function readWorkoutDrafts(userId: string) {
+  return draftOperation(userId, () => readWorkoutDraftRecord(userId));
+}
+
+export function upsertWorkoutDraft(userId: string, draft: WorkoutDraft) {
+  return draftOperation(userId, async () => {
+    if (!validWorkoutDraft(draft)) return false;
+    const current = await readWorkoutDraftRecord(userId);
+    const next = [draft, ...current.filter((entry) => entry.splitId !== draft.splitId)]
+      .sort((left, right) => right.updatedAt - left.updatedAt)
+      .slice(0, 8);
+    return writeWorkoutDraftRecord(userId, next);
+  });
+}
+
+export function removeWorkoutDraft(userId: string, splitId: string) {
+  return draftOperation(userId, async () => {
+    const current = await readWorkoutDraftRecord(userId);
+    if (!current.some((draft) => draft.splitId === splitId)) return true;
+    return writeWorkoutDraftRecord(
+      userId,
+      current.filter((draft) => draft.splitId !== splitId),
+    );
+  });
+}
+
+export function deleteWorkoutDrafts(userId: string) {
+  return draftOperation(userId, async () => writeWorkoutDraftRecord(userId, []));
 }
 
 export async function deleteTrackSnapshot(userId: string): Promise<boolean> {

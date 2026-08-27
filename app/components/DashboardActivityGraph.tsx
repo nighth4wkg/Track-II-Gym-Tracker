@@ -15,6 +15,7 @@ const REFERENCE_COUNT = 4;
 export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) {
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const graphRef = useRef<SVGSVGElement>(null);
+  const isEmpty = points.length === 0 || points.every((point) => point.count === 0);
   const geometry = useMemo(() => {
     const max = Math.max(REFERENCE_COUNT, ...points.map((point) => point.count));
     const graphWidth = VIEWBOX_WIDTH - HORIZONTAL_INSET * 2;
@@ -56,7 +57,7 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
   return (
     <div className={activePoint ? "dashboard-graph-wrap is-inspecting" : "dashboard-graph-wrap"}>
       <div
-        className="dashboard-graph-stage"
+        className={`dashboard-graph-stage${isEmpty ? " is-empty" : ""}`}
         onPointerDown={selectFromPointer}
         onPointerMove={(event) => (event.pointerType === "mouse" || activePoint) && selectFromPointer(event)}
         onPointerUp={(event) => event.pointerType !== "mouse" && setActiveIndex(null)}
@@ -75,6 +76,12 @@ export function DashboardActivityGraph({ points }: { points: ActivityPoint[] }) 
             <strong>{activePoint.count}</strong>
             <span>{activePoint.label}</span>
           </output>
+        )}
+        {isEmpty && (
+          <div className="dashboard-graph-empty" role="status">
+            <strong>No workouts in this period</strong>
+            <span>Log a workout to see your activity here.</span>
+          </div>
         )}
         <svg
           ref={graphRef}

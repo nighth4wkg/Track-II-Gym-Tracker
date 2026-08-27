@@ -10,10 +10,12 @@ import type { useSplitReorderGesture } from "./hooks/useSplitReorderGesture";
 import type { useTimerActions } from "./hooks/useTimerActions";
 import type { useTimerState } from "./hooks/useTimerState";
 import type { useTrackAccountActions } from "./hooks/useTrackAccountActions";
+import type { useTrackCloudSync } from "./hooks/useTrackCloudSync";
 import type { useTrackAppInteractions } from "./hooks/useTrackAppInteractions";
 import type { useTrackExportActions } from "./hooks/useTrackExportActions";
 import type { useUndoNotice } from "./hooks/useUndoNotice";
 import type { useWorkoutDateSync } from "./hooks/useWorkoutDateSync";
+import type { useWorkoutDraftRecovery } from "./hooks/useWorkoutDraftRecovery";
 import type { useWorkoutEditorController } from "./hooks/useWorkoutEditorController";
 import type { useWorkoutImportActions } from "./hooks/useWorkoutImportActions";
 import type { useWorkoutState } from "./hooks/useWorkoutState";
@@ -46,6 +48,7 @@ export type AppLocalState = {
 
 type AppControllers = {
   accountActions: ReturnType<typeof useTrackAccountActions>;
+  cloudSync: ReturnType<typeof useTrackCloudSync>;
   bottomTabs: ReturnType<typeof useBottomTabNavigation>;
   exportActions: ReturnType<typeof useTrackExportActions>;
   finishWorkout: () => Promise<void>;
@@ -58,6 +61,7 @@ type AppControllers = {
   timerPersistence: { markTimerChanged: () => void };
   undo: ReturnType<typeof useUndoNotice>;
   workoutDate: ReturnType<typeof useWorkoutDateSync>;
+  workoutDraftRecovery: ReturnType<typeof useWorkoutDraftRecovery>;
   workoutEditor: ReturnType<typeof useWorkoutEditorController>;
 };
 

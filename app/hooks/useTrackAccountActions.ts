@@ -3,7 +3,7 @@
 import { useCallback, type Dispatch, type MutableRefObject, type SetStateAction } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
-import { deleteTrackSnapshot } from "../offlineStore";
+import { deleteOfflineWorkoutQueue, deleteTrackSnapshot, deleteWorkoutDrafts } from "../offlineStore";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
 import type { RankTask } from "../rankData";
 import type { TimerMode } from "../components/TimerScreen";
@@ -37,11 +37,15 @@ type UseTrackAccountActionsOptions = {
   setRankCategoryOverrides: Setter<RankCategoryOverrides>;
   setRankEquipmentOverrides: Setter<RankEquipmentOverrides>;
   setSyncLabel: Setter<string>;
+  setLastSuccessfulSyncAt: Setter<number | null>;
   setPasswordResetBusy: Setter<boolean>;
   setPasswordResetMessage: Setter<string>;
   setPasswordResetValue: Setter<string>;
   setPasswordResetConfirm: Setter<string>;
   setPasswordResetOpen: Setter<boolean>;
+  setDeleteAccountBusy: Setter<boolean>;
+  setDeleteAccountMessage: Setter<string>;
+  setDeleteAccountConfirm: Setter<boolean>;
   setAiKey: Setter<string>;
   timerStartedAtRef: MutableRefObject<number>;
   restEndsAtRef: MutableRefObject<number>;
@@ -96,11 +100,15 @@ export function useTrackAccountActions({
   setRankCategoryOverrides,
   setRankEquipmentOverrides,
   setSyncLabel,
+  setLastSuccessfulSyncAt,
   setPasswordResetBusy,
   setPasswordResetMessage,
   setPasswordResetValue,
   setPasswordResetConfirm,
   setPasswordResetOpen,
+  setDeleteAccountBusy,
+  setDeleteAccountMessage,
+  setDeleteAccountConfirm,
   setAiKey,
   timerStartedAtRef,
   restEndsAtRef,
@@ -277,6 +285,7 @@ export function useTrackAccountActions({
       setLists([]);
       setActiveId("");
       setCloudReady(false);
+      setLastSuccessfulSyncAt(null);
       setAccountLocalReadyFor(null);
       setSavedSplits(new Set());
       setDirtySplits(new Set());
@@ -306,6 +315,7 @@ export function useTrackAccountActions({
       setAnnouncement,
       setAvailableUpdateVersion,
       setCloudReady,
+      setLastSuccessfulSyncAt,
       setDirtySplits,
       setFinishedDates,
       setFinishedSignatures,
@@ -329,6 +339,33 @@ export function useTrackAccountActions({
     ],
   );
 
+  async function deleteAccount() {
+    if (!user) return;
+    setDeleteAccountBusy(true);
+    setDeleteAccountMessage("");
+    try {
+      const result = await supabase.functions.invoke("delete-account", { body: {} });
+      if (result.error || result.data?.ok !== true) {
+        const rawMessage = String(result.data?.error ?? result.error?.message ?? "");
+        setDeleteAccountMessage(
+          /failed to send|fetch|network/i.test(rawMessage)
+            ? "Track II could not reach the account service. Try again when you are online."
+            : rawMessage || "Your account could not be deleted. Nothing was removed.",
+        );
+        return;
+      }
+      setDeleteAccountConfirm(false);
+      await deleteOfflineWorkoutQueue(user.id);
+      await deleteWorkoutDrafts(user.id);
+      clearAccountClientState(user.id);
+      await supabase.auth.signOut({ scope: "local" });
+    } catch {
+      setDeleteAccountMessage("Track II could not reach the account service. Try again when you are online.");
+    } finally {
+      setDeleteAccountBusy(false);
+    }
+  }
+
   return {
     savePersonalInfo,
     saveUsername,
@@ -336,6 +373,7 @@ export function useTrackAccountActions({
     updateRankEquipmentOverride,
     savePasswordReset,
     openPasswordReset,
+    deleteAccount,
     clearAccountClientState,
   };
 }

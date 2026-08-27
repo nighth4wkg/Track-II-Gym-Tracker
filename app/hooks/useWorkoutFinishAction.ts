@@ -3,8 +3,9 @@ import type { User } from "@supabase/supabase-js";
 import { saveWorkoutSession } from "../data/trackApi";
 import { calendarDateKey } from "../calendarTypes";
 import { haptic } from "../haptics";
+import { isQueueableWorkoutSaveFailure } from "../offlineQueue";
 import { TRACK_TIMING, TRACK_UI_COPY } from "../trackConstants";
-import type { Checklist, Filter, Task, WorkoutSaveResult } from "../trackTypes";
+import type { Checklist, Filter, Task, WorkoutSaveResult, WorkoutSessionPayload } from "../trackTypes";
 import { accountStorageKey, safeStorageSet, workoutValueSignature } from "../trackUtils";
 import type { WorkoutTaskUpdater } from "./useWorkoutState";
 
@@ -30,6 +31,7 @@ type UseWorkoutFinishActionOptions = {
   invalidateCloudReads: () => void;
   markWorkoutDate: (dateKey: string) => void;
   broadcastWorkoutFinished: (payload: WorkoutFinishedPayload) => void;
+  queueWorkoutSession?: (payload: WorkoutSessionPayload) => Promise<boolean>;
 };
 
 export function useWorkoutFinishAction({
@@ -52,6 +54,7 @@ export function useWorkoutFinishAction({
   invalidateCloudReads,
   markWorkoutDate,
   broadcastWorkoutFinished,
+  queueWorkoutSession,
 }: UseWorkoutFinishActionOptions) {
   const transitionTimerRef = useRef<number | null>(null);
   const savedTimerRef = useRef<number | null>(null);
@@ -79,6 +82,7 @@ export function useWorkoutFinishAction({
     setProgressFading(true);
     haptic([24, 45, 36]);
     const workoutDate = calendarDateKey(new Date());
+    const occurredAt = new Date().toISOString();
     let workoutSavedOnline = false;
     const finishedSplitId = active.id;
     const finishedValueSignature = workoutValueSignature(active);
@@ -94,20 +98,40 @@ export function useWorkoutFinishAction({
           rir: Number(set.rir) || 0,
         })),
       );
+      const sessionPayload: WorkoutSessionPayload = {
+        splitId: active.id,
+        splitName: active.title,
+        logs,
+        clientMutationId: crypto.randomUUID(),
+        occurredAt,
+        dateKey: workoutDate,
+      };
       let result: WorkoutSaveResult;
-      try {
-        result = await saveWorkoutSession(active.id, active.title, logs, crypto.randomUUID());
-      } catch (error) {
-        result = { ok: false, message: error instanceof Error ? error.message : "The workout could not be saved." };
+      let queued = false;
+      if (globalThis.navigator?.onLine === false && queueWorkoutSession) {
+        queued = await queueWorkoutSession(sessionPayload);
+        result = queued
+          ? { ok: true, sessionId: sessionPayload.clientMutationId, method: "transaction" }
+          : { ok: false };
+      } else {
+        try {
+          result = await saveWorkoutSession(active.id, active.title, logs, sessionPayload.clientMutationId, occurredAt);
+        } catch (error) {
+          result = { ok: false, message: error instanceof Error ? error.message : "The workout could not be saved." };
+        }
+        if (!result.ok && queueWorkoutSession && isQueueableWorkoutSaveFailure(result.message ?? "")) {
+          queued = await queueWorkoutSession(sessionPayload);
+        }
       }
       if (finishGeneration !== finishGenerationRef.current) return;
-      if (!result.ok) {
+      if (!result.ok && !queued) {
         setProgressFading(false);
         setSyncLabel(TRACK_UI_COPY.status.retry);
         workoutFinishInFlightRef.current = false;
         return;
       }
-      workoutSavedOnline = true;
+      if (queued) setSyncLabel(TRACK_UI_COPY.status.offlineQueued);
+      else workoutSavedOnline = true;
     }
     // A successful save wins over any stale cloud read that is still in
     // flight. Keep both the state and ref in sync synchronously.
@@ -198,5 +222,6 @@ export function useWorkoutFinishAction({
     updateTasks,
     user,
     workoutFinishInFlightRef,
+    queueWorkoutSession,
   ]);
 }

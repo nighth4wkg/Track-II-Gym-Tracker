@@ -4,7 +4,15 @@ import { rankHistoryGroupKey, type RankHistoryRow } from "../historyKeys";
 import { supabase } from "../supabase";
 import type { RankTask } from "../rankData";
 import { MILLISECONDS_PER_DAY, TRACK_LIMITS } from "../trackConstants";
-import type { Checklist, JsonValue, TrackSaveResult, WeightUnit, WorkoutSaveResult } from "../trackTypes";
+import type { Checklist, JsonValue, TrackSaveResult, WeightUnit, WorkoutLog, WorkoutSaveResult } from "../trackTypes";
+
+type WorkoutSessionRpcPayload = {
+  splitId: string;
+  splitName: string;
+  clientMutationId: string;
+  logs: WorkoutLog[];
+  occurredAt?: string;
+};
 import {
   convertWeight,
   isCompleteTrackState,
@@ -238,28 +246,48 @@ export async function fetchRecentRankTasks(
       .range(from, to),
   );
   if (error) return [];
+  const sessionIds = [...new Set(rows.flatMap((row) => (row.session_id ? [String(row.session_id)] : [])))];
+  const sessionSplits = new Map<string, string>();
+  if (sessionIds.length) {
+    const sessions = await fetchAllPages<{ id: string; split_id: string | null }>((from, to) =>
+      supabase.from("workout_sessions").select("id,split_id").in("id", sessionIds).range(from, to),
+    );
+    if (!sessions.error) {
+      for (const session of sessions.rows) {
+        if (session.split_id) sessionSplits.set(String(session.id), String(session.split_id));
+      }
+    }
+  }
   const grouped = new Map<string, RankTask>();
   for (const [index, row] of rows.entries()) {
     const exerciseName = String(row.exercise_name ?? "").trim();
     if (!exerciseName) continue;
     const exerciseId = row.exercise_id ? String(row.exercise_id) : undefined;
     const sessionId = row.session_id ? String(row.session_id) : undefined;
-    const key = rankHistoryGroupKey(row, index);
+    const splitId = sessionId ? sessionSplits.get(sessionId) : undefined;
+    const exerciseKey = exerciseId ?? exerciseName.toLocaleLowerCase();
+    const key = splitId
+      ? `split:${splitId}:date:${calendarDateKey(new Date(String(row.created_at)))}:${exerciseKey}`
+      : rankHistoryGroupKey(row, index);
     const task = grouped.get(key) ?? {
       exerciseId,
       sessionId,
+      splitId,
       text: exerciseName,
       sets: [],
       performedAt: String(row.created_at),
       source: "history" as const,
     };
-    task.sets!.push({
-      setNumber: Number(row.set_number) || undefined,
-      weight: Number(row.weight) || 0,
-      unit: row.unit === "lb" ? "lb" : "kg",
-      reps: Number(row.reps) || 0,
-      rir: Number(row.rir) || 0,
-    });
+    const setNumber = Number(row.set_number) || undefined;
+    if (!task.sets?.some((set) => set.setNumber === setNumber)) {
+      task.sets!.push({
+        setNumber,
+        weight: Number(row.weight) || 0,
+        unit: row.unit === "lb" ? "lb" : "kg",
+        reps: Number(row.reps) || 0,
+        rir: Number(row.rir) || 0,
+      });
+    }
     grouped.set(key, task);
   }
   return [...grouped.values()];
@@ -432,19 +460,14 @@ export async function saveTrackState(lists: Checklist[], expectedRevision: numbe
 export async function saveWorkoutSession(
   splitId: string,
   splitName: string,
-  logs: Array<{
-    exerciseId: string;
-    exerciseName: string;
-    setNumber: number;
-    weight: number;
-    unit: WeightUnit;
-    reps: number;
-    rir: number;
-  }>,
+  logs: WorkoutLog[],
   clientMutationId: string,
+  occurredAt?: string,
 ): Promise<WorkoutSaveResult> {
+  const payload: WorkoutSessionRpcPayload = { splitId, splitName, clientMutationId, logs };
+  if (occurredAt) payload.occurredAt = occurredAt;
   const { data, error } = await supabase.rpc("save_workout_session", {
-    payload: { splitId, splitName, clientMutationId, logs },
+    payload,
   });
   if (!error) {
     // SAFETY: save_workout_session returns one row with this documented result

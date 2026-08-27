@@ -15,6 +15,7 @@ export type RankTask = {
   id?: string;
   exerciseId?: string;
   sessionId?: string;
+  splitId?: string;
   rankGroupOverride?: MuscleGroup;
   rankEquipmentOverride?: EquipmentType;
   text: string;

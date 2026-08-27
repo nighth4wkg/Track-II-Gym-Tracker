@@ -327,6 +327,21 @@ function AccountSettings(props: SettingsViewContentProps) {
             Sign out
           </button>
         </div>
+        <div className="setting-row account-delete-row">
+          <div>
+            <strong>Delete account and data</strong>
+            <small>This permanently removes your workouts, profile, and cloud account.</small>
+          </div>
+          <button
+            type="button"
+            className="settings-sign-out ui-button ui-button-danger"
+            onClick={props.onSetDeleteAccountConfirm}
+            disabled={props.deleteAccountBusy}
+          >
+            Delete account
+          </button>
+        </div>
+        {props.deleteAccountMessage && <p className="settings-inline-message is-error">{props.deleteAccountMessage}</p>}
       </div>
     </>
   );

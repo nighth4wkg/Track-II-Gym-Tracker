@@ -1,5 +1,6 @@
 export type RankHistoryRow = {
   session_id: string | null;
+  split_id?: string | null;
   exercise_id: string | null;
   exercise_name: string | null;
   set_number: number | null;

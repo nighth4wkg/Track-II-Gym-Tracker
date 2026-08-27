@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { haptic } from "../haptics";
 import { TRACK_TIMING } from "../trackConstants";
+import { showSystemNotification } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
 export function useTrackTimerLifecycle({ timer, markTimerChanged, refs }: UseTrackAppLifecycleOptions) {
@@ -30,9 +31,11 @@ export function useTrackTimerLifecycle({ timer, markTimerChanged, refs }: UseTra
       const remaining = Math.max(0, restEndsAtRef.current - Date.now());
       setRestRemaining(remaining);
       if (remaining === 0) {
+        restEndsAtRef.current = 0;
         setTimerRunning(false);
         markTimerChanged();
         haptic([120, 80, 120]);
+        void showSystemNotification("Rest complete. Time for your next set.", `rest-complete-${Date.now()}`);
       }
     };
     tick();

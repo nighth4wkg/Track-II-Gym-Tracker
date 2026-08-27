@@ -8,6 +8,7 @@ import { TRACK_UI_COPY } from "../trackConstants";
 export function useIdentityState() {
   const [user, setUser] = useState<User | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [authMessage, setAuthMessage] = useState("");
   const [usernamePromptOpen, setUsernamePromptOpen] = useState(false);
   const [usernameInput, setUsernameInput] = useState("");
   const [usernameMessage, setUsernameMessage] = useState("");
@@ -21,6 +22,7 @@ export function useIdentityState() {
   const [cloudReady, setCloudReady] = useState(false);
   const [exerciseNames, setExerciseNames] = useState<readonly string[]>([]);
   const [syncLabel, setSyncLabel] = useState<string>(TRACK_UI_COPY.status.saved);
+  const [lastSuccessfulSyncAt, setLastSuccessfulSyncAt] = useState<number | null>(null);
   const [siteUpdateSeconds, setSiteUpdateSeconds] = useState<number | null>(null);
   const [updateReady, setUpdateReady] = useState<ReleaseSignal | null>(null);
   const [debugUpdateNotification, setDebugUpdateNotification] = useState(false);
@@ -39,6 +41,8 @@ export function useIdentityState() {
     setUser,
     authLoading,
     setAuthLoading,
+    authMessage,
+    setAuthMessage,
     usernamePromptOpen,
     setUsernamePromptOpen,
     usernameInput,
@@ -65,6 +69,8 @@ export function useIdentityState() {
     setExerciseNames,
     syncLabel,
     setSyncLabel,
+    lastSuccessfulSyncAt,
+    setLastSuccessfulSyncAt,
     siteUpdateSeconds,
     setSiteUpdateSeconds,
     updateReady,

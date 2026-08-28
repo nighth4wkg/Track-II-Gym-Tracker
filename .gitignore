@@ -17,6 +17,7 @@
 .env*
 !.env.example
 /.github-cli/
+/.github-cli-cache/
 /.openai/
 /QA-TEST/
 

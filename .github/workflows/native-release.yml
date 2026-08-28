@@ -20,6 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ inputs.tag }}
+      NEXT_PUBLIC_TRACK_VERSION: ${{ inputs.tag }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      NEXT_PUBLIC_TRACK_WEB_ORIGIN: ${{ vars.TRACK_WEB_ORIGIN }}
+      NEXT_PUBLIC_TRACK_RELEASES_URL: ${{ github.server_url }}/${{ github.repository }}/releases/latest
+      NEXT_PUBLIC_TRACK_ISSUES_URL: ${{ github.server_url }}/${{ github.repository }}/issues
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1

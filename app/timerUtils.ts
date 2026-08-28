@@ -19,6 +19,10 @@ export function formatCountdown(milliseconds: number) {
 }
 
 export function formatRestMinutes(seconds: number) {
-  const minutes = Number((Math.max(1, seconds) / 60).toFixed(2));
-  return String(minutes) + " min";
+  const totalSeconds = Math.max(1, Math.round(seconds));
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainder = totalSeconds % 60;
+  if (minutes === 0) return `${remainder} sec`;
+  if (remainder === 0) return `${minutes} min`;
+  return `${minutes} min ${remainder} sec`;
 }

@@ -14,7 +14,6 @@ import {
 import { createPortal } from "react-dom";
 import { useConnectedTaskCard } from "../contexts/WorkoutEditorContext";
 import { ExerciseHistoryButton } from "./ExerciseHistoryButton";
-import { applyAnimatedStyles } from "../domMotion";
 import { weightProgressionDelta } from "../trackUtils";
 import { focusNextSetInput, sameTask, summarizeSetValues, type TaskCardSet, type TaskCardTask } from "../taskCardUtils";
 export type { TaskCardSet, TaskCardTask } from "../taskCardUtils";
@@ -87,7 +86,7 @@ function TaskCardView({
   const menuRef = useRef<HTMLDivElement>(null);
   const skipNextEditBlur = useRef(false);
   const unitToggleTimer = useRef<number | null>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [togglingUnitId, setTogglingUnitId] = useState<string | null>(null);
   const positionMenu = useCallback(() => {
     const trigger = menuButtonRef.current;
@@ -103,22 +102,15 @@ function TaskCardView({
 
   useLayoutEffect(() => {
     if (!mobileExerciseMenu) return undefined;
-    positionMenu();
+    const frame = window.requestAnimationFrame(positionMenu);
     window.addEventListener("resize", positionMenu);
     window.addEventListener("scroll", positionMenu, true);
     return () => {
+      window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", positionMenu);
       window.removeEventListener("scroll", positionMenu, true);
     };
   }, [mobileExerciseMenu, positionMenu]);
-
-  useLayoutEffect(() => {
-    if (!mobileExerciseMenu) return;
-    applyAnimatedStyles(menuRef.current, {
-      "--menu-left": `${menuPosition.left}px`,
-      "--menu-top": `${menuPosition.top}px`,
-    });
-  }, [mobileExerciseMenu, menuPosition]);
 
   useEffect(() => {
     if (editing) skipNextEditBlur.current = false;
@@ -158,6 +150,12 @@ function TaskCardView({
       setTogglingUnitId(null);
       unitToggleTimer.current = null;
     }, 280);
+  };
+
+  const toggleExerciseMenu = () => {
+    if (mobileExerciseMenu) setMenuPosition(null);
+    else positionMenu();
+    onToggleMenu();
   };
 
   return (
@@ -248,17 +246,19 @@ function TaskCardView({
         <button
           ref={menuButtonRef}
           className="mobile-overflow"
-          onClick={onToggleMenu}
+          onClick={toggleExerciseMenu}
           aria-label={`${task.text} options`}
         >
           •••
         </button>
         {mobileExerciseMenu &&
+          menuPosition &&
           globalThis.document &&
           createPortal(
             <div
               ref={menuRef}
               className="mobile-exercise-menu exercise-menu-portal"
+              style={{ top: menuPosition.top, left: menuPosition.left }}
               onPointerDown={(event) => event.stopPropagation()}
             >
               <button onClick={onStartEdit}>Edit name</button>

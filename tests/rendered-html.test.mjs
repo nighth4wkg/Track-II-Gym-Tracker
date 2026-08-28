@@ -363,10 +363,12 @@ test("release notes stay external and the web app has no Changelog tab", async (
 });
 
 test("release metadata keeps web and native package versions aligned", async () => {
-  const [trackConfig, packageJson, packageLock] = await Promise.all([
+  const [trackConfig, packageJson, packageLock, readme, nativeRelease] = await Promise.all([
     read("app/trackConfig.ts"),
     read("package.json"),
     read("package-lock.json"),
+    read("README.md"),
+    read(".github/workflows/native-release.yml"),
   ]);
   const packageData = JSON.parse(packageJson);
   const lockData = JSON.parse(packageLock);
@@ -382,6 +384,8 @@ test("release metadata keeps web and native package versions aligned", async () 
   assert.match(packageJson, /"@capacitor\/haptics": "\^8/);
   assert.match(packageJson, /"@capacitor\/local-notifications": "\^8/);
   assert.match(packageJson, /"package:pages:release"/);
+  assert.match(readme, new RegExp(`Track II v${version.replaceAll(".", "\\.")}`));
+  assert.match(nativeRelease, /name: Run the complete release validation[\s\S]*?run: npm run validate:release/);
 });
 
 test("Rank is wired to current task data and uses the semantic flat anatomy SVG", async () => {
@@ -1561,24 +1565,25 @@ test("Settings exposes a user-facing GitHub release check", async () => {
 });
 
 test("native updates and notification permissions use native-safe paths", async () => {
-  const [releaseManager, interactions, settings, settingsSpecial, trackUtils, updateNotification] = await Promise.all([
-    read("app/hooks/useReleaseManager.ts"),
-    read("app/hooks/useTrackAppInteractions.ts"),
-    read("app/components/SettingsStandardViews.tsx"),
-    read("app/components/SettingsSpecialViews.tsx"),
-    read("app/trackUtils.ts"),
-    read("app/components/UpdateNotification.tsx"),
-  ]);
+  const [releaseManager, interactions, settings, settingsSpecial, notifications, updateNotification] =
+    await Promise.all([
+      read("app/hooks/useReleaseManager.ts"),
+      read("app/hooks/useTrackAppInteractions.ts"),
+      read("app/components/SettingsStandardViews.tsx"),
+      read("app/components/SettingsSpecialViews.tsx"),
+      read("app/notifications.ts"),
+      read("app/components/UpdateNotification.tsx"),
+    ]);
 
   assert.match(releaseManager, /nativeApp\s*&&\s*remoteRelease\.buildId/);
   assert.match(releaseManager, /if \(!nativeApp\)/);
   assert.match(releaseManager, /githubLatestReleaseAssetUrl/);
   assert.match(releaseManager, /altstore-source\.json/);
   assert.match(releaseManager, /firstApp\.versions/);
-  assert.match(trackUtils, /openNativeNotificationSettings/);
-  assert.match(trackUtils, /AppLauncher\.openUrl\(\{\s*url\s*\}\)/);
-  assert.match(trackUtils, /"app-settings:"/);
-  assert.match(trackUtils, /foreground:\s*true/);
+  assert.match(notifications, /openNativeNotificationSettings/);
+  assert.match(notifications, /AppLauncher\.openUrl\(\{\s*url\s*\}\)/);
+  assert.match(notifications, /"app-settings:"/);
+  assert.match(notifications, /foreground:\s*true/);
   assert.match(interactions, /showFakeUpdateNotification/);
   assert.match(settings, /notificationSettingsAvailable/);
   assert.match(settings, /Open Settings/);
@@ -1590,21 +1595,54 @@ test("native updates and notification permissions use native-safe paths", async 
 });
 
 test("rest completion and announcements deliver immediate client notifications", async () => {
-  const [timerLifecycle, trackUtils, overlays, components] = await Promise.all([
+  const [timerLifecycle, notifications, overlays, components] = await Promise.all([
     read("app/hooks/useTrackTimerLifecycle.ts"),
-    read("app/trackUtils.ts"),
+    read("app/notifications.ts"),
     read("app/components/ActionModalOverlays.tsx"),
     read("app/styles/components.css"),
   ]);
 
   assert.match(timerLifecycle, /Rest complete\. Time for your next set\./);
   assert.match(timerLifecycle, /restEndsAtRef\.current = 0/);
-  assert.match(trackUtils, /notificationDeliveries/);
-  assert.match(trackUtils, /serviceWorker\.getRegistration\(\)/);
-  assert.doesNotMatch(trackUtils, /serviceWorker\.ready/);
-  assert.doesNotMatch(trackUtils, /schedule:\s*\{\s*at:/);
+  assert.match(notifications, /notificationDeliveries/);
+  assert.match(notifications, /serviceWorker\.getRegistration\(\)/);
+  assert.doesNotMatch(notifications, /serviceWorker\.ready/);
+  assert.match(notifications, /LocalNotifications\.cancel\(\{\s*notifications:/);
+  assert.match(notifications, /schedule:\s*\{\s*at:\s*new Date\(endAtMs\)/);
+  assert.match(notifications, /isExactNotification:\s*false/);
   assert.match(overlays, /rest timer alerts and administrator announcements/);
   assert.match(components, /\.workout-draft-actions \.exercise-confirm-no \{[^}]*background: var\(--soft\)/);
+});
+
+test("notification center state and anchored menus stay connected to the right account context", async () => {
+  const [center, centerHook, centerStore, shell, sidebar, taskCard, splitMenu, identity, polish] = await Promise.all([
+    read("app/components/NotificationCenter.tsx"),
+    read("app/hooks/useNotificationCenter.ts"),
+    read("app/notificationCenter.ts"),
+    read("app/components/TrackAppShell.tsx"),
+    read("app/components/Sidebar.tsx"),
+    read("app/components/TaskCard.tsx"),
+    read("app/components/SplitMenu.tsx"),
+    read("app/hooks/useTrackIdentityLifecycle.ts"),
+    read("app/styles/polish.css"),
+  ]);
+
+  assert.match(center, /Notification center/);
+  assert.match(center, /Mark all read/);
+  assert.match(centerHook, /TRACK_NOTIFICATION_EVENT/);
+  assert.match(centerHook, /Rest complete/);
+  assert.match(centerStore, /readNotificationCenter/);
+  assert.match(centerStore, /saveNotificationCenter/);
+  assert.match(shell, /NotificationCenterPanel/);
+  assert.match(shell, /NotificationCenterTrigger/);
+  assert.match(sidebar, /NotificationCenterTrigger/);
+  assert.match(taskCard, /mobileExerciseMenu\s*&&\s*menuPosition/);
+  assert.match(taskCard, /style=\{\{\s*top: menuPosition\.top,\s*left: menuPosition\.left\s*\}\}/);
+  assert.match(splitMenu, /style=\{\{\s*top: menu\.y,\s*left: menu\.x\s*\}\}/);
+  assert.match(identity, /action: "heartbeat"/);
+  assert.match(identity, /setAdminAuthorized\(data\.isAdmin === true\)/);
+  assert.match(polish, /\.notification-center-panel/);
+  assert.match(polish, /\.account-online\.is-offline/);
 });
 
 test("update and announcement notifications keep their centered entrance transform", async () => {
@@ -1725,13 +1763,28 @@ test("new persistence and privacy paths avoid scans, plaintext snapshots, and in
 });
 
 test("native Capacitor configuration packages the shared app with haptics, notifications, and icons", async () => {
-  const [page, trackConfig, capacitor, packageJson, pagesConfig, headers] = await Promise.all([
+  const [
+    page,
+    trackConfig,
+    capacitor,
+    packageJson,
+    pagesConfig,
+    headers,
+    iconGenerator,
+    notificationIcon,
+    launchIntro,
+    notifications,
+  ] = await Promise.all([
     readAppSource(),
     read("app/trackConfig.ts"),
     read("capacitor.config.ts"),
     read("package.json"),
     read("vite.pages.config.ts"),
     read("public/_headers"),
+    read("scripts/generate-native-icons.mjs"),
+    read("public/track-notification-icon.svg"),
+    read("app/components/NativeLaunchIntro.tsx"),
+    read("app/notifications.ts"),
   ]);
 
   assert.match(capacitor, /webDir: "work\/cloudflare-pages"/);
@@ -1741,7 +1794,14 @@ test("native Capacitor configuration packages the shared app with haptics, notif
   assert.doesNotMatch(packageJson, /"@capacitor\/assets"/);
   assert.match(packageJson, /"@capacitor\/local-notifications": "\^8/);
   assert.match(packageJson, /"generate:native-icons"/);
-  assert.match(page, /LocalNotifications\.schedule/);
+  assert.match(notifications, /LocalNotifications\.schedule/);
+  assert.match(capacitor, /smallIcon: "ic_stat_track"/);
+  assert.match(capacitor, /presentationOptions: \["badge", "sound", "banner", "list"\]/);
+  assert.match(iconGenerator, /idiom, pointSize, scale/);
+  assert.match(iconGenerator, /ios-marketing/);
+  assert.match(iconGenerator, /notificationSource/);
+  assert.match(notificationIcon, /fill="#FFFFFF"/);
+  assert.match(launchIntro, /track-icon\.svg/);
   assert.match(trackConfig, /NEXT_PUBLIC_TRACK_WEB_ORIGIN/);
   assert.doesNotMatch(trackConfig, /trackz\.pages\.dev/i);
   assert.match(pagesConfig, /track-release\.json/);

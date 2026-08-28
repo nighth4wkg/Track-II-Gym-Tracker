@@ -2,7 +2,10 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#20201e" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -18,11 +21,8 @@
   </head>
   <body>
     <div id="root">
-      <main class="track-loading" aria-live="polite">
-        <div>
-          <strong>Track II is loading</strong>
-          <span>Refresh this page once to finish loading the latest version.</span>
-        </div>
+      <main class="track-loading" aria-live="polite" aria-label="Loading Track II">
+        <img class="track-loading-mark" src="/track-icon.svg" alt="" />
       </main>
     </div>
     <script type="module" src="/main.tsx"></script>

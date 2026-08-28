@@ -1,7 +1,11 @@
 import type { MutableRefObject } from "react";
 import type { MouseEvent as ReactMouseEvent, PointerEvent as ReactPointerEvent } from "react";
 import { FILTER_LABELS, TRACK_LIMITS } from "../trackConstants";
+import { ACCOUNT_PRESENCE_LABELS } from "../syncHealth";
+import type { AccountPresenceStatus } from "../trackTypes";
 import type { Checklist, Filter } from "../trackTypes";
+import type { NotificationCenterTriggerProps } from "./NotificationCenter";
+import { NotificationCenterTrigger } from "./NotificationCenter";
 import { SyncStatusIndicator } from "./SyncStatusIndicator";
 
 type SidebarProps = {
@@ -26,7 +30,7 @@ type SidebarProps = {
   accountRoleLabel: string;
   accountRoleInitial: string;
   accountUsername: string;
-  accountPresenceLabel: string;
+  accountPresenceStatus: AccountPresenceStatus;
   headerStatus: string;
   lastSuccessfulSyncAt: number | null;
   onRetrySync: () => void;
@@ -49,6 +53,7 @@ type SidebarProps = {
   onOpenSplitMenu: (event: ReactMouseEvent<HTMLButtonElement>, id: string) => void;
   onCloseMobileSidebar: () => void;
   onOpenSettings: () => void;
+  notificationCenterProps: NotificationCenterTriggerProps;
 };
 
 export function Sidebar({
@@ -73,7 +78,7 @@ export function Sidebar({
   accountRoleLabel,
   accountRoleInitial,
   accountUsername,
-  accountPresenceLabel,
+  accountPresenceStatus,
   headerStatus,
   lastSuccessfulSyncAt,
   onRetrySync,
@@ -95,6 +100,7 @@ export function Sidebar({
   onOpenSplitMenu,
   onCloseMobileSidebar,
   onOpenSettings,
+  notificationCenterProps,
 }: SidebarProps) {
   return (
     <>
@@ -205,13 +211,16 @@ export function Sidebar({
         <div className="account-panel">
           <div className="account-panel-heading">
             <span className="account-kicker">ACCOUNT</span>
-            <SyncStatusIndicator
-              label={headerStatus}
-              lastSuccessfulSyncAt={lastSuccessfulSyncAt}
-              onRetry={onRetrySync}
-              queuedCount={offlineQueueCount}
-              compact
-            />
+            <div className="account-panel-tools">
+              <NotificationCenterTrigger {...notificationCenterProps} />
+              <SyncStatusIndicator
+                label={headerStatus}
+                lastSuccessfulSyncAt={lastSuccessfulSyncAt}
+                onRetry={onRetrySync}
+                queuedCount={offlineQueueCount}
+                compact
+              />
+            </div>
           </div>
           <div className="account-row">
             <span
@@ -225,9 +234,9 @@ export function Sidebar({
               <small>
                 <span>{accountRoleLabel}</span>
                 <span aria-hidden="true"> · </span>
-                <span className="account-online">
+                <span className={`account-online is-${accountPresenceStatus}`}>
                   <i aria-hidden="true" />
-                  {accountPresenceLabel}
+                  {ACCOUNT_PRESENCE_LABELS[accountPresenceStatus]}
                 </span>
               </small>
             </div>

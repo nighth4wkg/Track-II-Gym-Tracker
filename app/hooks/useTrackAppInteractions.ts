@@ -17,10 +17,9 @@ import type {
 import {
   nativeLocalNotificationsAvailable,
   openNativeNotificationSettings,
-  promiseWithTimeout,
-  safeStorageSet,
   showSystemNotification,
-} from "../trackUtils";
+} from "../notifications";
+import { promiseWithTimeout, safeStorageSet } from "../trackUtils";
 
 type StateSetter<Value> = Dispatch<SetStateAction<Value>>;
 type TaskList = Checklist["tasks"];

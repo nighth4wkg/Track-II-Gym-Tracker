@@ -16,13 +16,25 @@ concurrency:
 
 jobs:
   validate:
-    name: Validate release metadata
+    name: Validate source and release metadata
     runs-on: ubuntu-latest
     env:
       RELEASE_TAG: ${{ inputs.tag }}
     steps:
       - name: Check out source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium for release browser checks
+        run: npx playwright install --with-deps chromium
 
       - name: Require package version and release notes to match
         run: |
@@ -42,6 +54,9 @@ jobs:
             exit 1
           fi
           grep -Eq "^# Track II ${RELEASE_TAG}([[:space:]]|$)" "$NOTES_FILE"
+
+      - name: Run the complete release validation
+        run: npm run validate:release
 
   android:
     name: Android test APK

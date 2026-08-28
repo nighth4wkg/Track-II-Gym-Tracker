@@ -5,7 +5,7 @@ import { SettingsNavigation } from "./SettingsNavigation";
 import { ConnectedSettingsViewContent } from "./SettingsViewContent";
 import { haptic } from "../haptics";
 import { normalizeSettingsView, SETTINGS_LABELS } from "../trackConstants";
-import { TRACK_VERSION } from "../trackConfig";
+import { TRACK_DISPLAY_VERSION } from "../trackConfig";
 import type { SettingsView } from "../trackTypes";
 import { useModalFocus } from "../hooks/useModalFocus";
 
@@ -120,7 +120,7 @@ export function SettingsModal({
               </div>
             </div>
             <div className="settings-title-actions">
-              <span className="settings-version-badge">v{TRACK_VERSION}</span>
+              <span className="settings-version-badge">{TRACK_DISPLAY_VERSION}</span>
               <button
                 type="button"
                 className="settings-close ui-button ui-button-quiet"

@@ -5,9 +5,24 @@ export const TRACK_VERSION = "__TRACK_VERSION__";
 // without pretending that the public app version changed.
 export const TRACK_ASSET_VERSION = "3.0.2";
 export const TRACK_ASSET_QUERY = `?v=${TRACK_ASSET_VERSION}`;
-// Keep the installed-app label aligned with the release identifier used by
-// the update checker and native release workflow.
-export const TRACK_DISPLAY_VERSION = TRACK_VERSION;
+
+// The release identifier keeps full semver so update comparisons remain
+// lossless. The compact label is only for the small in-app/native-facing
+// badge: patch groups roll into the second digit (1.0.10 -> 1.1, 1.9.10 -> 2.0).
+export function formatTrackDisplayVersion(version: string) {
+  const match = version
+    .trim()
+    .replace(/^v/i, "")
+    .match(/^(\d+)\.(\d+)(?:\.(\d+))?/);
+  if (!match) return version.trim().replace(/^v/i, "") || "0.0";
+  let major = Number(match[1]);
+  let minor = Number(match[2]) + Math.floor(Number(match[3] ?? 0) / 10);
+  major += Math.floor(minor / 10);
+  minor %= 10;
+  return `${major}.${minor}`;
+}
+
+export const TRACK_DISPLAY_VERSION = formatTrackDisplayVersion(TRACK_VERSION);
 // The Pages build replaces this token with an ISO timestamp. It lets the
 // updater detect a fresh deployment even when the public version stays the same.
 export const TRACK_BUILD_ID = "__TRACK_BUILD_ID__";

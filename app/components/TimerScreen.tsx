@@ -263,7 +263,7 @@ export function TimerScreen({
             </div>
             {renderedRestDraft.custom && (
               <label className="timer-custom-rest">
-                <span>Custom minutes</span>
+                <span>Custom rest</span>
                 <div>
                   <input
                     value={renderedRestDraft.input}
@@ -272,9 +272,10 @@ export function TimerScreen({
                     min="0.1"
                     max="60"
                     step="0.1"
-                    aria-label="Custom rest time in minutes"
+                    placeholder="0.3"
+                    aria-label="Custom rest time in minutes and seconds"
                   />
-                  <small>min</small>
+                  <small>0.3 = 30 sec</small>
                 </div>
               </label>
             )}

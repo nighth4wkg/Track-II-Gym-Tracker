@@ -16,6 +16,7 @@
 # Local environment and credentials (never publish these)
 .env*
 !.env.example
+/.github-cli/
 /.openai/
 /QA-TEST/
 
@@ -27,6 +28,7 @@
 /app/dist/
 /app/_sites-preview/
 /.wrangler/
+/.npm-review-cache/
 /work/
 /outputs/
 /release-artifacts/
@@ -52,6 +54,7 @@ Thumbs.db
 *.pem
 .vercel/
 npm-debug.log*
+/debug.log
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*

@@ -78,6 +78,7 @@ export function useTrackAppRuntimeLifecycle({
       setAnnouncement: identityState.setAnnouncement,
       setAnnouncementOffset: identityState.setAnnouncementOffset,
       setAdminAuthorized: identityState.setAdminAuthorized,
+      setAccountPresenceStatus: identityState.setAccountPresenceStatus,
     },
     workout: {
       setSidebarCollapsed: workoutState.setSidebarCollapsed,

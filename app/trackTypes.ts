@@ -37,6 +37,7 @@ export type Checklist = {
 export type Filter = "all" | "open" | "done";
 export type WeightUnit = "kg" | "lb";
 export type ThemeMode = "light" | "dark";
+export type AccountPresenceStatus = "connecting" | "online" | "offline";
 
 // Runtime-only timer state is intentionally separate from workout snapshots.
 // It contains no exercise, profile, or authentication data and is optional so

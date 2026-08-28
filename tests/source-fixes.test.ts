@@ -22,10 +22,14 @@ import {
 } from "../app/exerciseHistoryMetrics.ts";
 import { normalizeSettingsView } from "../app/trackConstants.ts";
 import { cloneWorkoutTasks, workoutDraftSignature } from "../app/workoutDraft.ts";
+import { formatTrackDisplayVersion } from "../app/trackConfig.ts";
+import { ACCOUNT_PRESENCE_LABELS, SYNC_PHASE_LABELS, syncPhaseForLabel } from "../app/syncHealth.ts";
 import {
   convertSetUnit,
   mergeTrackLists,
   normalizeWeightInputOnBlur,
+  restMinutesInputFromSeconds,
+  restSecondsFromMinutes,
   sanitizeDecimalInput,
   weightProgressionDelta,
 } from "../app/trackUtils.ts";
@@ -61,6 +65,16 @@ test("settings always resolves to a visible safe page", () => {
   assert.equal(normalizeSettingsView("admin", false), "appearance");
 });
 
+test("shared health labels distinguish sync and account connectivity states", () => {
+  assert.equal(syncPhaseForLabel("Couldn’t sync"), "attention");
+  assert.equal(syncPhaseForLabel("Offline"), "offline");
+  assert.equal(syncPhaseForLabel("Saving…"), "syncing");
+  assert.equal(syncPhaseForLabel("Saved"), "synced");
+  assert.equal(SYNC_PHASE_LABELS.synced, "Synced");
+  assert.equal(ACCOUNT_PRESENCE_LABELS.online, "Online");
+  assert.equal(ACCOUNT_PRESENCE_LABELS.offline, "Offline");
+});
+
 test("three-way list merging keeps local deletions and remote additions", () => {
   const base = list([
     task("kept"),
@@ -91,6 +105,22 @@ test("weight editing accepts temporary decimal syntax but never persists an inva
   assert.equal(normalizeWeightInputOnBlur("1."), "1");
   assert.equal(normalizeWeightInputOnBlur("."), null);
   assert.equal(normalizeWeightInputOnBlur(""), null);
+});
+
+test("custom rest input treats the fractional part as seconds notation", () => {
+  assert.equal(restSecondsFromMinutes("0.3"), 30);
+  assert.equal(restSecondsFromMinutes("1.5"), 110);
+  assert.equal(restSecondsFromMinutes("1.30"), 90);
+  assert.equal(restSecondsFromMinutes("0.03"), 6);
+  assert.equal(restMinutesInputFromSeconds(30), "0.3");
+  assert.equal(restMinutesInputFromSeconds(90), "1.3");
+  assert.equal(restMinutesInputFromSeconds(105), "1.45");
+});
+
+test("user-facing version labels stay compact while release versions stay lossless", () => {
+  assert.equal(formatTrackDisplayVersion("v1.0.12"), "1.1");
+  assert.equal(formatTrackDisplayVersion("1.9.10"), "2.0");
+  assert.equal(formatTrackDisplayVersion("2.4"), "2.4");
 });
 
 test("weight progression compares the latest baseline in the current unit", () => {

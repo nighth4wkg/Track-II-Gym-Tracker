@@ -2,8 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { syncStatusTone } from "../trackUtils";
-
-type SyncPhase = "synced" | "syncing" | "offline" | "attention";
+import { SYNC_PHASE_LABELS, syncPhaseForLabel } from "../syncHealth";
 
 type SyncStatusIndicatorProps = {
   label: string;
@@ -12,21 +11,6 @@ type SyncStatusIndicatorProps = {
   queuedCount?: number;
   compact?: boolean;
 };
-
-function phaseFor(label: string): SyncPhase {
-  const normalized = label.toLowerCase();
-  if (normalized.includes("offline")) return "offline";
-  if (/(retry|failed|couldn|needs attention|not saved|conflict|review changes)/.test(normalized)) return "attention";
-  if (/(saving|syncing|loading|updating|merging|update in)/.test(normalized)) return "syncing";
-  return "synced";
-}
-
-const PHASE_LABELS = {
-  synced: "Synced",
-  syncing: "Syncing",
-  offline: "Offline",
-  attention: "Needs attention",
-} satisfies Record<SyncPhase, string>;
 
 function formatSyncTime(timestamp: number | null) {
   if (!timestamp) return "Not synced yet";
@@ -42,9 +26,9 @@ export function SyncStatusIndicator({
 }: SyncStatusIndicatorProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
-  const phase = phaseFor(label);
+  const phase = syncPhaseForLabel(label);
   const tone = syncStatusTone(label);
-  const phaseLabel = PHASE_LABELS[phase];
+  const phaseLabel = SYNC_PHASE_LABELS[phase];
   const conflictVisible = /conflict|review changes/i.test(label);
 
   useEffect(() => {

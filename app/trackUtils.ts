@@ -1,6 +1,3 @@
-import { AppLauncher } from "@capacitor/app-launcher";
-import { Capacitor } from "@capacitor/core";
-import { LocalNotifications } from "@capacitor/local-notifications";
 import { EQUIPMENT_TYPES, type EquipmentType, type MuscleGroup } from "./rankTypes.ts";
 import {
   ACCOUNT_LOCAL_KEYS,
@@ -10,7 +7,6 @@ import {
   TRACK_LIMITS,
   WEIGHT_CONVERSION_FACTOR,
 } from "./trackConstants.ts";
-import { TRACK_ASSET_QUERY } from "./trackConfig.ts";
 import type {
   Checklist,
   JsonObject,
@@ -242,110 +238,28 @@ export function promiseWithTimeout<T>(promise: Promise<T>, timeoutMs: number) {
   });
 }
 
-export function nativeLocalNotificationsAvailable() {
-  return (
-    Boolean(globalThis.window) && Capacitor.isNativePlatform() && Capacitor.isPluginAvailable("LocalNotifications")
-  );
-}
-
-const NATIVE_NOTIFICATION_SETTINGS_URLS = ["app-settings:", "app-settings://"] as const;
-
-export async function openNativeNotificationSettings() {
-  if (!globalThis.window || !Capacitor.isNativePlatform() || !Capacitor.isPluginAvailable("AppLauncher")) return false;
-  for (const url of NATIVE_NOTIFICATION_SETTINGS_URLS) {
-    try {
-      const result = await promiseWithTimeout(AppLauncher.openUrl({ url }), 8000);
-      if (result.completed) return true;
-    } catch {
-      // Some iOS builds accept only one of the equivalent Settings URL forms.
-    }
-  }
-  return false;
-}
-
-export async function readNotificationPermission(): Promise<NotificationPermission | "unsupported"> {
-  if (!globalThis.window) return "unsupported";
-  if (nativeLocalNotificationsAvailable()) {
-    try {
-      const permission = await promiseWithTimeout(LocalNotifications.checkPermissions(), 4000);
-      if (permission.display === "granted") return "granted";
-      if (permission.display === "denied") return "denied";
-      return "default";
-    } catch {
-      return "unsupported";
-    }
-  }
-  if (!("Notification" in window)) return "unsupported";
-  return Notification.permission;
-}
-
-export function notificationIdFromKey(key: string) {
-  let hash = 2166136261;
-  for (let index = 0; index < key.length; index += 1) hash = Math.imul(hash ^ key.charCodeAt(index), 16777619);
-  return (hash >>> 0) % 2147483647 || 1;
-}
-
-const notificationDeliveries = new Map<string, Promise<boolean>>();
-
-async function deliverSystemNotification(message: string, id: string) {
-  if (!globalThis.window) return false;
-  try {
-    if (nativeLocalNotificationsAvailable()) {
-      const permission = await LocalNotifications.checkPermissions();
-      if (permission.display !== "granted") return false;
-      await LocalNotifications.schedule({
-        notifications: [
-          {
-            id: notificationIdFromKey(`track-${id}`),
-            title: "Track II",
-            body: message,
-            foreground: true,
-            extra: { id },
-          },
-        ],
-      });
-      return true;
-    }
-    if (!("Notification" in window) || Notification.permission !== "granted") return false;
-    if ("serviceWorker" in navigator) {
-      const registration = await navigator.serviceWorker.getRegistration();
-      if (registration) {
-        await registration.showNotification("Track II", {
-          body: message,
-          icon: `/icon-192.png${TRACK_ASSET_QUERY}`,
-          badge: `/notification-badge.png${TRACK_ASSET_QUERY}`,
-          tag: `track-${id}`,
-        });
-        return true;
-      }
-    }
-    new Notification("Track II", { body: message, icon: `/icon-192.png${TRACK_ASSET_QUERY}`, tag: `track-${id}` });
-    return true;
-  } catch {
-    /* keep the in-app announcement when system notifications are unavailable */ return false;
-  }
-}
-
-export function showSystemNotification(message: string, id: string) {
-  const existing = notificationDeliveries.get(id);
-  if (existing) return existing;
-  const delivery = deliverSystemNotification(message, id).then((delivered) => {
-    if (!delivered) notificationDeliveries.delete(id);
-    return delivered;
-  });
-  notificationDeliveries.set(id, delivery);
-  return delivery;
-}
-
 export function restSecondsFromMinutes(input: string): number {
-  const minutes = Number(input);
-  if (!Number.isFinite(minutes)) return 60;
-  return Math.min(TRACK_LIMITS.maxRestSeconds, Math.max(TRACK_LIMITS.minRestSeconds, Math.round(minutes * 60)));
+  const normalized = input.trim().replace(",", ".");
+  const match = normalized.match(/^(\d*)(?:\.(\d{1,2}))?$/);
+  if (!match || (!match[1] && !match[2])) return TRACK_LIMITS.defaultRestSeconds;
+
+  const minutes = Number(match[1] || 0);
+  if (!Number.isFinite(minutes)) return TRACK_LIMITS.defaultRestSeconds;
+  const secondsPart = match[2] ? (match[2].length === 1 ? Number(match[2]) * 10 : Number(match[2])) : 0;
+  const seconds = minutes * 60 + secondsPart;
+  return Math.min(TRACK_LIMITS.maxRestSeconds, Math.max(TRACK_LIMITS.minRestSeconds, Math.round(seconds)));
 }
 
 export function restMinutesInputFromSeconds(seconds: number): string {
-  const minutes = Number((Math.max(1, seconds) / 60).toFixed(2));
-  return String(minutes);
+  const totalSeconds = Math.min(
+    TRACK_LIMITS.maxRestSeconds,
+    Math.max(TRACK_LIMITS.minRestSeconds, Math.round(Number(seconds) || TRACK_LIMITS.defaultRestSeconds)),
+  );
+  const minutes = Math.floor(totalSeconds / 60);
+  const remainder = totalSeconds % 60;
+  if (remainder === 0) return String(minutes);
+  if (remainder % 10 === 0) return `${minutes}.${remainder / 10}`;
+  return `${minutes}.${String(remainder).padStart(2, "0")}`;
 }
 
 export function parseStringArray(value: string | null) {

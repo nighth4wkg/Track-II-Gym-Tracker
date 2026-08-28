@@ -3,7 +3,7 @@ import type { User } from "@supabase/supabase-js";
 import { supabase } from "../supabase";
 import { fetchDashboardSummary, fetchRecentRankTasks, fetchTrackRevision } from "../data/trackApi";
 import type { DashboardSummary } from "../dashboardSummary";
-import { TRACK_LIMITS, USERNAME_PATTERN } from "../trackConstants";
+import { TRACK_LIMITS, TRACK_TIMING, USERNAME_PATTERN } from "../trackConstants";
 import { parsedPersonalInfo } from "../trackUtils";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
@@ -35,6 +35,7 @@ export function useTrackIdentityLifecycle({
     setPersonalInfoPromptOpen,
     setPersonalInfoMessage,
     setAdminAuthorized,
+    setAccountPresenceStatus,
   } = identity;
   const { rankHistoryVersion, setDashboardSummary, setRankHistoryTasks } = rank;
   const { activeUserIdRef, openPasswordResetRef, clearAccountClientStateRef } = refs;
@@ -56,6 +57,7 @@ export function useTrackIdentityLifecycle({
       else if (previousUserId && event === "SIGNED_OUT")
         setAuthMessage("Your session ended. Sign in again—your saved workout data is still safe.");
       setAdminAuthorized(verifiedAdminRole(nextUser));
+      setAccountPresenceStatus(nextUser ? (navigator.onLine ? "connecting" : "offline") : "offline");
       setAuthLoading(false);
     };
     supabase.auth
@@ -77,8 +79,65 @@ export function useTrackIdentityLifecycle({
     setAdminAuthorized,
     setAuthLoading,
     setAuthMessage,
+    setAccountPresenceStatus,
     setUser,
   ]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      setAccountPresenceStatus("offline");
+      return;
+    }
+    let cancelled = false;
+    let requestInFlight = false;
+    const reportPresence = async () => {
+      if (cancelled || document.hidden || requestInFlight) return;
+      if (!navigator.onLine) {
+        setAccountPresenceStatus("offline");
+        return;
+      }
+      requestInFlight = true;
+      try {
+        const { data, error } = await supabase.functions.invoke("admin-member-data", {
+          body: { action: "heartbeat" },
+        });
+        if (cancelled) return;
+        if (!error && data?.ok === true) setAdminAuthorized(data.isAdmin === true);
+        // A directory heartbeat is helpful for the admin member list, but a
+        // temporary function failure must not make a connected user appear
+        // offline or revoke a cached UI role. Protected operations still
+        // verify the roster server-side.
+        setAccountPresenceStatus("online");
+      } catch {
+        if (!cancelled) setAccountPresenceStatus(navigator.onLine ? "online" : "offline");
+      } finally {
+        requestInFlight = false;
+      }
+    };
+    const markOffline = () => setAccountPresenceStatus("offline");
+    const resume = () => {
+      if (!document.hidden) void reportPresence();
+    };
+
+    void reportPresence();
+    const interval = window.setInterval(() => {
+      if (!document.hidden) void reportPresence();
+    }, TRACK_TIMING.adminHeartbeatPollMs);
+    window.addEventListener("online", resume);
+    window.addEventListener("offline", markOffline);
+    window.addEventListener("focus", resume);
+    window.addEventListener("pageshow", resume);
+    document.addEventListener("visibilitychange", resume);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener("online", resume);
+      window.removeEventListener("offline", markOffline);
+      window.removeEventListener("focus", resume);
+      window.removeEventListener("pageshow", resume);
+      document.removeEventListener("visibilitychange", resume);
+    };
+  }, [setAccountPresenceStatus, setAdminAuthorized, user?.id]);
 
   useEffect(() => {
     if (!user) return;

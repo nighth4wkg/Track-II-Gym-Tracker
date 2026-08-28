@@ -51,6 +51,7 @@ export const TRACK_LIMITS = {
   maxAiImageBytes: 8 * 1024 * 1024,
   maxAnnouncementChars: 240,
   maxOfflineQueueEntries: 50,
+  maxNotificationCenterItems: 40,
   maxSplitNameChars: 40,
   weeklyMuscleSetTarget: 16,
   usernameCheckDebounceMs: 250,
@@ -124,7 +125,7 @@ export const TRACK_TIMING = {
 
 export const REST_PRESETS = [
   { seconds: 60, label: "1 min" },
-  { seconds: TRACK_LIMITS.defaultRestSeconds, label: "1.5 min" },
+  { seconds: TRACK_LIMITS.defaultRestSeconds, label: "1 min 30 sec" },
   { seconds: 120, label: "2 min" },
 ] as const;
 export const REST_PRESET_SECONDS: readonly number[] = REST_PRESETS.map(({ seconds }) => seconds);
@@ -232,5 +233,6 @@ export const ACCOUNT_LOCAL_KEYS = [
   "finished-signatures",
   "finished-dates",
   "dismissed-announcements",
+  "notifications",
   "active-split",
 ] as const;

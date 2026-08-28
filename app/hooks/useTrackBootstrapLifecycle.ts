@@ -1,12 +1,12 @@
 import { useEffect } from "react";
 import { applyAnimatedStyles, clearAnimatedStyles } from "../domMotion";
+import { readNotificationPermission } from "../notifications";
 import {
   accountStorageKey,
   parsedRankCategoryOverrides,
   parsedRankEquipmentOverrides,
   parseStringArray,
   parseStringRecord,
-  readNotificationPermission,
   safeStorageGet,
   safeStorageRemove,
 } from "../trackUtils";

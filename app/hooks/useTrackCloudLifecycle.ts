@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { loadLatestTrackAnnouncement } from "../data/announcementApi";
 import { supabase } from "../supabase";
 import { CALENDAR_SYNC_POLL_MS, TRACK_LIMITS } from "../trackConstants";
-import { showSystemNotification } from "../trackUtils";
+import { showSystemNotification } from "../notifications";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
 const ANNOUNCEMENT_FALLBACK_POLL_MS = 5 * 60 * 1000;

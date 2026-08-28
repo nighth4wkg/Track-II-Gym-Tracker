@@ -3,7 +3,3 @@ try {
 } catch {
   document.documentElement.dataset.theme = "dark";
 }
-
-window.setTimeout(() => {
-  document.querySelector(".track-loading")?.classList.add("track-loading-stalled");
-}, 8000);

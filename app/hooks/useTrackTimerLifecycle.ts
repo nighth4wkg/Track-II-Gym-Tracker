@@ -1,12 +1,28 @@
 import { useEffect } from "react";
 import { haptic } from "../haptics";
 import { TRACK_TIMING } from "../trackConstants";
-import { showSystemNotification } from "../trackUtils";
+import {
+  cancelRestCompletionNotification,
+  nativeLocalNotificationsAvailable,
+  scheduleRestCompletionNotification,
+  showSystemNotification,
+} from "../notifications";
+import { publishTrackNotification as publishCenterNotification } from "../notificationCenter";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
-export function useTrackTimerLifecycle({ timer, markTimerChanged, refs }: UseTrackAppLifecycleOptions) {
+export function useTrackTimerLifecycle({ timer, markTimerChanged, refs, user }: UseTrackAppLifecycleOptions) {
   const { timerMode, timerRunning, setRestRemaining, setTimerElapsed, setTimerRunning } = timer;
   const { timerStartedAt: timerStartedAtRef, restEndsAt: restEndsAtRef } = refs;
+
+  useEffect(() => {
+    if (timerRunning && timerMode === "rest" && restEndsAtRef.current > Date.now()) {
+      // The operating system owns this deadline, so it still fires while the
+      // web view is suspended or the app is not on screen.
+      void scheduleRestCompletionNotification(restEndsAtRef.current);
+      return;
+    }
+    void cancelRestCompletionNotification();
+  }, [restEndsAtRef, timerMode, timerRunning]);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -31,11 +47,24 @@ export function useTrackTimerLifecycle({ timer, markTimerChanged, refs }: UseTra
       const remaining = Math.max(0, restEndsAtRef.current - Date.now());
       setRestRemaining(remaining);
       if (remaining === 0) {
+        const completedAt = restEndsAtRef.current || Date.now();
         restEndsAtRef.current = 0;
         setTimerRunning(false);
         markTimerChanged();
         haptic([120, 80, 120]);
-        void showSystemNotification("Rest complete. Time for your next set.", `rest-complete-${Date.now()}`);
+        publishCenterNotification(
+          {
+            id: `rest:${completedAt}`,
+            kind: "rest",
+            title: "Rest complete",
+            message: "Time for your next set.",
+            createdAt: completedAt,
+          },
+          user?.id,
+        );
+        if (!nativeLocalNotificationsAvailable()) {
+          void showSystemNotification("Rest complete. Time for your next set.", `rest-complete-${Date.now()}`);
+        }
       }
     };
     tick();
@@ -53,5 +82,6 @@ export function useTrackTimerLifecycle({ timer, markTimerChanged, refs }: UseTra
     timerMode,
     timerRunning,
     timerStartedAtRef,
+    user?.id,
   ]);
 }

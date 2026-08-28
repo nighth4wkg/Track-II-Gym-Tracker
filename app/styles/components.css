@@ -3029,3 +3029,83 @@ html.dragging-task-active [data-task-id] {
 .nav-item.active {
   transform: translateX(2px);
 }
+
+.track-app-underlay {
+  min-height: 100dvh;
+}
+
+.track-app-underlay.is-covered {
+  pointer-events: none;
+  user-select: none;
+}
+
+.native-launch-intro {
+  position: fixed;
+  z-index: var(--track-layer-critical);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--surface);
+  color: var(--ink);
+  opacity: 1;
+  visibility: visible;
+  transition:
+    opacity 360ms var(--track-ease-gentle),
+    visibility 360ms linear;
+}
+
+.native-launch-intro.is-exiting {
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+}
+
+.native-launch-intro-mark {
+  width: 78px;
+  height: 78px;
+  border-radius: 20px;
+  box-shadow: 0 18px 48px rgb(0 0 0 / 42%);
+  animation: native-launch-heartbeat 1.8s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.native-launch-intro.is-exiting .native-launch-intro-mark {
+  animation: native-launch-pop 360ms var(--track-ease-spring) both;
+}
+
+@keyframes native-launch-heartbeat {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.92;
+  }
+  14% {
+    transform: scale(1.04);
+    opacity: 1;
+  }
+  28% {
+    transform: scale(1);
+  }
+  42% {
+    transform: scale(1.025);
+  }
+}
+
+@keyframes native-launch-pop {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.16);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-launch-intro,
+  .native-launch-intro-mark {
+    animation: none;
+    transition: opacity 160ms linear;
+  }
+}

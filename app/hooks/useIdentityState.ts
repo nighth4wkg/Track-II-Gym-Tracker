@@ -2,7 +2,13 @@
 
 import { useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import type { PersonalInfo, ReleaseSignal, TrackAnnouncement, UpdatesViewStatus } from "../trackTypes";
+import type {
+  AccountPresenceStatus,
+  PersonalInfo,
+  ReleaseSignal,
+  TrackAnnouncement,
+  UpdatesViewStatus,
+} from "../trackTypes";
 import { TRACK_UI_COPY } from "../trackConstants";
 
 export function useIdentityState() {
@@ -30,6 +36,7 @@ export function useIdentityState() {
   const [updatesViewStatus, setUpdatesViewStatus] = useState<UpdatesViewStatus>("idle");
   const [updatesViewMessage, setUpdatesViewMessage] = useState("");
   const [adminAuthorized, setAdminAuthorized] = useState(false);
+  const [accountPresenceStatus, setAccountPresenceStatus] = useState<AccountPresenceStatus>("connecting");
   const [updateCheckBusy, setUpdateCheckBusy] = useState(false);
   const [updateCheckMessage, setUpdateCheckMessage] = useState("");
   const [availableUpdateVersion, setAvailableUpdateVersion] = useState<string | null>(null);
@@ -85,6 +92,8 @@ export function useIdentityState() {
     setUpdatesViewMessage,
     adminAuthorized,
     setAdminAuthorized,
+    accountPresenceStatus,
+    setAccountPresenceStatus,
     updateCheckBusy,
     setUpdateCheckBusy,
     updateCheckMessage,

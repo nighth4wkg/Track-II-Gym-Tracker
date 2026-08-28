@@ -15,6 +15,7 @@ import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../exer
 import { createTrackAppOverlayProps } from "./createTrackAppOverlayProps";
 import { createTrackSplitMenuProps } from "./createTrackSplitMenuProps";
 import { activePageFromNavigation } from "../navigationPage";
+import { useTrackAppNotifications } from "../hooks/useTrackAppNotifications";
 
 export function TrackAppView({ active: activeResult, controllers, local, nativeApp, state, tasks }: TrackAppViewProps) {
   const active = activeResult ?? null;
@@ -85,7 +86,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     workoutDate,
     workoutEditor,
   } = controllers;
-
+  const notificationCenterProps = useTrackAppNotifications(identity, timer, controllers.workoutDraftRecovery);
   const { visible, openCount } = useMemo(() => filterWorkoutTasks(tasks, filter), [filter, tasks]);
   const searchQueryTerm = searchQuery.trim();
   const exerciseSuggestions = buildExerciseSuggestions(exerciseNames, searchQueryTerm);
@@ -106,7 +107,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const accountUsername = String(user?.user_metadata?.username ?? "").trim() || "username";
   const accountRoleLabel = isAdmin ? "Admin" : "User";
   const accountRoleInitial = isAdmin ? "A" : "U";
-  const accountPresenceLabel = identity.cloudReady ? "Online" : "Connecting…";
   const activeSplitId = active?.id ?? "";
   const workoutActionsAvailable =
     identity.cloudReady &&
@@ -117,7 +117,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   const releaseAvailable = nativeApp && Boolean(availableUpdateVersion || updateReady);
   const updateVersion = availableUpdateVersion ?? updateReady?.remoteVersion ?? "";
   const debugUpdateVisible = nativeApp && isAdmin && debugUpdateNotification;
-
   const { updateRankCategoryOverride, updateRankEquipmentOverride } = accountActions;
   const { addExercise, addTask, closeSettings, hideSidebar, navigateBottomTab, openSettings, toggleSidebar } =
     interactions;
@@ -144,7 +143,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   } = bottomTabs;
   const { offerUndo } = undo;
   const { markTimerChanged } = timerPersistence;
-
   const workoutEditorContextValue = createWorkoutEditorContextValue({
     completionEnabled,
     tasks,
@@ -169,7 +167,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     interactions,
     workoutEditor,
   });
-
   const mainHandlers: Pick<
     ComponentProps<"main">,
     "onTouchStartCapture" | "onTouchEndCapture" | "onPointerDownCapture" | "onPointerCancelCapture" | "onClickCapture"
@@ -183,7 +180,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
         haptic(10);
     },
   };
-
   const sidebarProps = {
     mobileOpen: mobileSidebarOpen,
     sidebarCollapsed,
@@ -206,7 +202,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     accountRoleLabel,
     accountRoleInitial,
     accountUsername,
-    accountPresenceLabel,
+    accountPresenceStatus: identity.accountPresenceStatus,
     headerStatus,
     lastSuccessfulSyncAt: identity.lastSuccessfulSyncAt,
     onRetrySync: cloudSync.retrySync,
@@ -230,8 +226,8 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       workout.setSplitMenu({ id, x: event.clientX, y: event.clientY }),
     onCloseMobileSidebar: () => workout.setMobileSidebarOpen(false),
     onOpenSettings: openSettings,
+    notificationCenterProps,
   };
-
   const workspaceProps = {
     homeTransition,
     cloudReady: identity.cloudReady,
@@ -313,7 +309,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onShowSuggestionsChange: workout.setShowSuggestions,
     workoutEditorContextValue,
   };
-
   const bottomTabProps = {
     activeTab: activeBottomTab,
     highlightedTab: highlightedBottomTab,
@@ -335,7 +330,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     },
     onPointerDown: beginBottomTabHold,
   };
-
   const splitMenuProps = createTrackSplitMenuProps({
     menu: splitMenu,
     lists,
@@ -345,7 +339,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onDuplicate: duplicateSplit,
     onRemove: removeSplit,
   });
-
   const settingsModalProps = createSettingsModalProps({ closeSettings, isAdmin, settings, settingsTabsRef });
   const overlayProps = createTrackAppOverlayProps({
     controllers,
@@ -357,7 +350,6 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     state,
     updateVersion,
   });
-
   return (
     <TrackAppShell
       nativeApp={nativeApp}
@@ -392,6 +384,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       settingsModalProps={settingsModalProps}
       undoToastProps={overlayProps.undoToastProps}
       workoutDraftRecoveryProps={overlayProps.workoutDraftRecoveryProps}
+      notificationCenterProps={notificationCenterProps}
     />
   );
 }

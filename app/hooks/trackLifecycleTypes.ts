@@ -24,6 +24,7 @@ export type LifecycleIdentityState = Pick<
   | "setAnnouncement"
   | "setAnnouncementOffset"
   | "setAdminAuthorized"
+  | "setAccountPresenceStatus"
 >;
 
 export type LifecycleWorkoutState = Pick<

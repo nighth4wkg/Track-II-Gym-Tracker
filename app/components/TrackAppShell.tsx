@@ -10,6 +10,7 @@ import { AdminUsersButton } from "./AdminUsersDirectoryModels";
 import { AnnouncementBanner } from "./AnnouncementBanner";
 import { BottomTabBar } from "./BottomTabBar";
 import { FinishWorkoutButton } from "./FinishWorkoutButton";
+import { NotificationCenterPanel, NotificationCenterTrigger, type NotificationCenterProps } from "./NotificationCenter";
 import { ScrollShortcuts } from "./ScrollShortcuts";
 import { SyncConflictBanner } from "./SyncConflictBanner";
 import { SettingsModal } from "./SettingsModal";
@@ -50,6 +51,7 @@ export type TrackAppShellProps = {
   settingsModalProps: ComponentProps<typeof SettingsModal>;
   undoToastProps?: ComponentProps<typeof UndoToast>;
   workoutDraftRecoveryProps?: ComponentProps<typeof WorkoutDraftRecoveryModal>;
+  notificationCenterProps: NotificationCenterProps;
 };
 
 export function TrackAppShell({
@@ -76,6 +78,7 @@ export function TrackAppShell({
   settingsModalProps,
   undoToastProps,
   workoutDraftRecoveryProps,
+  notificationCenterProps,
 }: TrackAppShellProps) {
   const syncConflictVisible = /conflict|review changes/i.test(sidebarProps.headerStatus);
   return (
@@ -145,6 +148,11 @@ export function TrackAppShell({
                   />
                 )}
               {isAdmin && <AdminUsersButton onClick={onOpenAdminUsers} />}
+              <NotificationCenterTrigger
+                unreadCount={notificationCenterProps.unreadCount}
+                open={notificationCenterProps.open}
+                onToggle={notificationCenterProps.onToggle}
+              />
             </div>
           </header>
           <WorkspaceContent {...workspaceProps} />
@@ -158,6 +166,7 @@ export function TrackAppShell({
         <ActionModalOverlays {...actionModalProps} />
         {settingsOpen && <SettingsModal {...settingsModalProps} />}
         {undoToastProps && <UndoToast {...undoToastProps} />}
+        <NotificationCenterPanel {...notificationCenterProps} />
       </main>
     </SettingsProvider>
   );

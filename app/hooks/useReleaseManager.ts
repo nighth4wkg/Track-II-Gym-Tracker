@@ -6,15 +6,8 @@ import { haptic } from "../haptics";
 import { TRACK_BUILD_ID, TRACK_RELEASES_URL, TRACK_WEB_ORIGIN, isNewerTrackVersion } from "../trackConfig";
 import { SITE_UPDATE_COUNTDOWN_SECONDS, SITE_UPDATE_POLL_MS, TRACK_TIMING } from "../trackConstants";
 import type { JsonValue, ReleaseSignal, RemoteRelease, UpdateCheckResult } from "../trackTypes";
-import {
-  isJsonObject,
-  isStringValue,
-  promiseWithTimeout,
-  safeStorageGet,
-  safeStorageSet,
-  showSystemNotification,
-  readNotificationPermission,
-} from "../trackUtils";
+import { readNotificationPermission, showSystemNotification } from "../notifications";
+import { isJsonObject, isStringValue, promiseWithTimeout, safeStorageGet, safeStorageSet } from "../trackUtils";
 
 type UseReleaseManagerOptions = {
   nativeApp: boolean;

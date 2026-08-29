@@ -62,6 +62,12 @@ function addLocalDays(timestamp: number, days: number) {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate() + days).getTime();
 }
 
+/** Return the start of the local calendar week, using Monday as day one. */
+export function startOfLocalWeek(timestamp: number) {
+  const day = new Date(timestamp).getDay();
+  return addLocalDays(startOfLocalDay(timestamp), -((day + 6) % 7));
+}
+
 function localDayCount(start: number, end: number) {
   return Math.max(1, Math.round((startOfLocalDay(end) - startOfLocalDay(start)) / DAY_MS) + 1);
 }
@@ -194,7 +200,8 @@ export function timeframeBounds(timeframe: DashboardTimeframe, timestamps: numbe
   const currentYearStart = new Date(new Date(now).getFullYear(), 0, 1).getTime();
   if (timeframe === "all") return { start: firstLog, end: now };
   if (timeframe === "ytd") return { start: Math.max(firstLog, currentYearStart), end: now };
-  const durationDays = timeframe === "week" ? 7 : MONTH_DAYS;
+  if (timeframe === "week") return { start: startOfLocalWeek(now), end: now };
+  const durationDays = MONTH_DAYS;
   return { start: addLocalDays(today, -(durationDays - 1)), end: now };
 }
 
@@ -214,17 +221,17 @@ function countIntoBuckets(workoutTimestamps: number[], starts: number[], ends: n
 }
 
 function buildDailyActivityPoints(workoutTimestamps: number[], end: number) {
-  const lastDay = startOfLocalDay(end);
-  const starts = Array.from({ length: 7 }, (_, index) => addLocalDays(lastDay, index - 6));
+  const weekStart = startOfLocalWeek(end);
+  const starts = Array.from({ length: 7 }, (_, index) => addLocalDays(weekStart, index));
   const ends = starts.map((start) => addLocalDays(start, 1));
   const counts = countIntoBuckets(workoutTimestamps, starts, ends);
+  const weekdayLabels = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
   return starts.map((bucketStart, index) => {
     const count = counts[index];
-    const weekday = new Intl.DateTimeFormat(undefined, { weekday: "narrow" }).format(bucketStart);
     return {
       count,
       label: formatCountLabel(formatShortDate(bucketStart), count),
-      shortLabel: weekday,
+      shortLabel: weekdayLabels[new Date(bucketStart).getDay()],
     };
   });
 }

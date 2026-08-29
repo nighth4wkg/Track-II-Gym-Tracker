@@ -138,9 +138,7 @@ export function useSplitActions({
       const wasSaved = savedSplitsRef.current.has(id);
       const previousFinishedSignature = finishedSignaturesRef.current[id];
       const previousFinishedDate = finishedDatesRef.current[id];
-      let transitionTimer: number | null = null;
       const restore = () => {
-        if (transitionTimer !== null) window.clearTimeout(transitionTimer);
         setHomeTransition(false);
         setLists((current) => {
           if (current.some((list) => list.id === id)) return current;
@@ -179,12 +177,11 @@ export function useSplitActions({
       });
       if (lists.length === 1 && lists[0].id === id) {
         setSplitMenu(null);
-        setHomeTransition(true);
-        transitionTimer = window.setTimeout(() => {
+        runViewTransition(() => {
           setLists([]);
           setActiveId("");
           setHomeTransition(false);
-        }, 380);
+        });
         offerUndo("Split deleted", restore);
         return;
       }

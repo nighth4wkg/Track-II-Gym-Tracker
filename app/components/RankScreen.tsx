@@ -1,7 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef, useState } from "react";
-import { applyAnimatedStyles } from "../domMotion";
+import { useMemo, useState } from "react";
 import {
   buildRankSummaries,
   EQUIPMENT_LABELS,
@@ -9,13 +8,17 @@ import {
   MUSCLE_GROUPS,
   MUSCLE_LABELS,
   RANK_META,
+  strongestRankSummary,
   type EquipmentType,
   type MuscleGroup,
+  type RankLevel,
   type RankTask,
 } from "../rankData";
 import { TRACK_LIMITS } from "../trackConstants";
 import { RankBodyMap } from "./RankBodyMap";
+import { RankMeter } from "./RankMeter";
 import { MotionSelect } from "./MotionSelect";
+import { PageHeader } from "./PageHeader";
 import { runViewTransition } from "../viewTransitions";
 
 type RankScreenProps = {
@@ -33,17 +36,24 @@ function rankToneClass(label: string) {
   return `rank-tone-${label.toLowerCase().replace(/\s+/g, "-")}`;
 }
 
-function RankMeter({ progress, tone }: { progress: number; tone: string }) {
-  const fillRef = useRef<HTMLElement>(null);
-  const visualProgress = progress >= 99 ? 94 : progress;
-  useLayoutEffect(() => {
-    applyAnimatedStyles(fillRef.current, { "--rank-progress": `${visualProgress}%` }, 180);
-  }, [visualProgress]);
-  return (
-    <span className={`rank-meter ${tone}`}>
-      <i ref={fillRef} />
-    </span>
-  );
+const RANK_LEVELS: RankLevel[] = ["newbie", "intermediate", "gym-bro", "advanced", "elite"];
+const RANK_LABELS = {
+  untracked: "Needs data",
+  newbie: "Newbie",
+  intermediate: "Pump chaser",
+  "gym-bro": "Locked in",
+  advanced: "Chad",
+  elite: "Final boss",
+} satisfies Record<RankLevel, string>;
+
+function rankDisplayLabel(level: RankLevel) {
+  return RANK_LABELS[level];
+}
+
+function nextDisplayRankLabel(level: RankLevel) {
+  const index = RANK_LEVELS.indexOf(level);
+  const next = index >= 0 ? RANK_LEVELS[index + 1] : RANK_LEVELS[0];
+  return next ? rankDisplayLabel(next) : "Elite mastery";
 }
 
 function muscleGroupFromSelect(value: string): MuscleGroup | null {
@@ -63,6 +73,25 @@ const EQUIPMENT_SELECT_OPTIONS = [
   { value: "auto", label: "Auto" },
   ...EQUIPMENT_TYPES.map((equipment) => ({ value: equipment, label: EQUIPMENT_LABELS[equipment] })),
 ] as const;
+
+function RankSideToggle({ side, onChange }: { side: "front" | "back"; onChange: (side: "front" | "back") => void }) {
+  return (
+    <div className="rank-map-toggle" role="tablist" aria-label="Body view">
+      {(["front", "back"] as const).map((option) => (
+        <button
+          key={option}
+          type="button"
+          role="tab"
+          aria-selected={side === option}
+          className={side === option ? "selected" : ""}
+          onClick={() => onChange(option)}
+        >
+          {option === "front" ? "Front" : "Back"}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 export function RankScreen({
   tasks,
@@ -101,11 +130,9 @@ export function RankScreen({
     [summaries],
   );
   const trackedExerciseCount = trackedSummaries.reduce((total, summary) => total + summary.trackedExercises, 0);
-  const strongestSummary = trackedSummaries.length
-    ? trackedSummaries.reduce((strongest, summary) => (summary.score > strongest.score ? summary : strongest))
-    : null;
+  const strongestSummary = strongestRankSummary(trackedSummaries);
   const selectedSummary = summaries.find((summary) => summary.group === selected) ?? null;
-  const selectedTone = selectedSummary ? rankToneClass(selectedSummary.label) : "";
+  const selectedTone = selectedSummary ? rankToneClass(RANK_META[selectedSummary.level].label) : "";
   const selectGroup = (group: MuscleGroup, side: "front" | "back", canToggle = true) => {
     runViewTransition(() => {
       if (canToggle && selected === group && selectedSide === side) {
@@ -119,14 +146,22 @@ export function RankScreen({
       setSelectedSide(side);
     });
   };
+  const switchSide = (side: "front" | "back") => {
+    if (side === selectedSide) return;
+    runViewTransition(() => {
+      setSwitchDirection(side === "back" ? "forward" : "backward");
+      setSelectedSide(side);
+    });
+  };
 
   return (
     <div className="rank-screen">
-      <div className="eyebrow">TRAINING INSIGHTS</div>
-      <div className="rank-title-row">
-        <h1>Rank</h1>
-        <p>Your strength by muscle group.</p>
-      </div>
+      <PageHeader
+        className="rank-page-header"
+        eyebrow="TRAINING INSIGHTS"
+        title="Rank"
+        description="Your strength by muscle group."
+      />
       <section className="rank-insight-strip" aria-label="Rank overview">
         <div className="rank-insight-card">
           <span>Tracked groups</span>
@@ -143,13 +178,26 @@ export function RankScreen({
         <div className="rank-insight-card">
           <span>Strongest area</span>
           <strong>{strongestSummary ? MUSCLE_LABELS[strongestSummary.group] : "—"}</strong>
-          <small>{strongestSummary ? strongestSummary.label : "Complete a session"}</small>
+          <small>
+            {strongestSummary
+              ? `${rankDisplayLabel(strongestSummary.level)} · ${strongestSummary.progress}% through tier`
+              : "Complete a session"}
+          </small>
         </div>
       </section>
       {!selectedSummary ? (
         <section className="rank-hero-card is-overview" aria-label="Front and back strength maps">
           <div className="rank-map-wrap">
-            <RankBodyMap summaries={summaries} selected={null} onSelect={(group, side) => selectGroup(group, side)} />
+            <div className="rank-map-toolbar">
+              <span>View</span>
+              <RankSideToggle side={selectedSide} onChange={switchSide} />
+            </div>
+            <RankBodyMap
+              summaries={summaries}
+              selected={null}
+              activeSide={selectedSide}
+              onSelect={(group, side) => selectGroup(group, side)}
+            />
           </div>
           {!trackedSummaries.length && (
             <div className="rank-empty-note" role="status">
@@ -161,6 +209,10 @@ export function RankScreen({
       ) : (
         <section className={`rank-hero-card is-focused rank-switch-${switchDirection}`} key={selectedSummary.group}>
           <div className="rank-map-wrap">
+            <div className="rank-map-toolbar">
+              <span>View</span>
+              <RankSideToggle side={selectedSide} onChange={switchSide} />
+            </div>
             <RankBodyMap
               summaries={summaries}
               selected={selected}
@@ -174,7 +226,7 @@ export function RankScreen({
                 <span className={`rank-selected-dot ${selectedTone}`} />
                 <div>
                   <strong>
-                    {MUSCLE_LABELS[selectedSummary.group]} - {selectedSummary.label}
+                    {MUSCLE_LABELS[selectedSummary.group]} - {rankDisplayLabel(selectedSummary.level)}
                   </strong>
                 </div>
               </div>
@@ -241,7 +293,8 @@ export function RankScreen({
       </div>
       <section className="rank-grid" aria-label="Muscle group ranks">
         {summaries.map((summary) => {
-          const tone = rankToneClass(summary.label);
+          const tone = rankToneClass(RANK_META[summary.level].label);
+          const label = rankDisplayLabel(summary.level);
           return (
             <button
               key={summary.group}
@@ -250,9 +303,9 @@ export function RankScreen({
             >
               <span className="rank-card-top">
                 <span className="rank-card-name">{MUSCLE_LABELS[summary.group]}</span>
-                <span className={`rank-card-level ${tone}`}>{summary.label}</span>
+                <span className={`rank-card-level ${tone}`}>{label}</span>
               </span>
-              <RankMeter progress={summary.progress} tone={tone} />
+              <RankMeter progress={summary.progress} eliteProgress={summary.eliteProgress} tone={tone} />
               <span className="rank-card-bottom">
                 <span>
                   {summary.trackedExercises
@@ -260,8 +313,14 @@ export function RankScreen({
                     : "No data yet"}
                 </span>
                 <span className="rank-card-progress">
-                  <b>{summary.score > 0 ? `${summary.progress}%` : "-"}</b>
-                  {summary.score > 0 && summary.level !== "elite" && <small>to {summary.nextLevelLabel}</small>}
+                  <b>{summary.score > 0 ? `${summary.eliteProgress}% to Elite` : "-"}</b>
+                  {summary.score > 0 && (
+                    <small>
+                      {summary.level === "elite"
+                        ? "Elite reached"
+                        : `${summary.progress}% through ${label} · next ${nextDisplayRankLabel(summary.level)}`}
+                    </small>
+                  )}
                 </span>
               </span>
             </button>
@@ -269,12 +328,17 @@ export function RankScreen({
         })}
       </section>
       <section className="rank-legend" aria-label="Rank legend">
-        <div className="rank-legend-title">Rank scale</div>
+        <div className="rank-legend-header">
+          <div>
+            <div className="rank-legend-title">Rank scale</div>
+            <small>Bars show total progress to Elite</small>
+          </div>
+        </div>
         <div className="rank-legend-items">
-          {(["newbie", "intermediate", "gym-bro", "advanced", "elite"] as const).map((level) => (
+          {RANK_LEVELS.map((level) => (
             <span key={level}>
               <i className={rankToneClass(RANK_META[level].label)} />
-              {RANK_META[level].label}
+              {rankDisplayLabel(level)}
             </span>
           ))}
         </div>

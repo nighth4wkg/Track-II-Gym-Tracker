@@ -52,6 +52,8 @@ export type TrackAppShellProps = {
   undoToastProps?: ComponentProps<typeof UndoToast>;
   workoutDraftRecoveryProps?: ComponentProps<typeof WorkoutDraftRecoveryModal>;
   notificationCenterProps: NotificationCenterProps;
+  syncConflict?: ComponentProps<typeof SyncConflictBanner>["conflict"];
+  onKeepMergedSyncConflict: () => void;
 };
 
 export function TrackAppShell({
@@ -79,8 +81,10 @@ export function TrackAppShell({
   undoToastProps,
   workoutDraftRecoveryProps,
   notificationCenterProps,
+  syncConflict,
+  onKeepMergedSyncConflict,
 }: TrackAppShellProps) {
-  const syncConflictVisible = /conflict|review changes/i.test(sidebarProps.headerStatus);
+  const syncConflictVisible = Boolean(syncConflict);
   return (
     <SettingsProvider value={settingsContextValue}>
       <main className={shellClassName} {...mainHandlers}>
@@ -108,7 +112,13 @@ export function TrackAppShell({
         {adminUsersPanelProps?.open && <AdminUsersPanel {...adminUsersPanelProps} />}
         <Sidebar {...sidebarProps} />
         {syncConflictVisible && (
-          <SyncConflictBanner onRetry={sidebarProps.onRetrySync} onUseCloudCopy={sidebarProps.onUseCloudCopy} />
+          <SyncConflictBanner
+            conflict={syncConflict}
+            statusKey={`${sidebarProps.headerStatus}-${syncConflict?.revision ?? ""}`}
+            onRetry={sidebarProps.onRetrySync}
+            onUseCloudCopy={sidebarProps.onUseCloudCopy}
+            onKeepMerged={onKeepMergedSyncConflict}
+          />
         )}
 
         <section className="workspace">

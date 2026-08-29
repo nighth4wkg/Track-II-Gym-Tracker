@@ -1,6 +1,7 @@
 import type { TouchEvent } from "react";
 import { calendarDateKey } from "../calendarTypes";
 import { haptic } from "../haptics";
+import { PageHeader } from "./PageHeader";
 
 type CalendarMonthOverviewProps = {
   month: Date;
@@ -42,15 +43,17 @@ export function CalendarMonthOverview({
 
   return (
     <>
-      <div className="calendar-title-row">
-        <div className="calendar-title-copy">
-          <span className="settings-kicker">WORKOUT HISTORY</span>
-          <h1>Calendar</h1>
-        </div>
-        <button className="calendar-today ui-button ui-button-secondary" onClick={onToday}>
-          Today
-        </button>
-      </div>
+      <PageHeader
+        className="calendar-page-header"
+        eyebrow="WORKOUT HISTORY"
+        title="Calendar"
+        description="Review your completed training sessions."
+        actions={
+          <button className="calendar-today ui-button ui-button-secondary" onClick={onToday}>
+            Today
+          </button>
+        }
+      />
       <section className="calendar-insight-strip" aria-label="Workout history summary">
         <div className="calendar-insight-card">
           <span>This month</span>

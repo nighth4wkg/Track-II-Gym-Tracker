@@ -119,7 +119,7 @@ export function useTrackRealtimeSync({
     const scheduleQueuedRefresh = (knownRevision: number | null = null, request: RefreshRequest = {}) => {
       rememberQueuedRevision(knownRevision);
       rememberQueuedRequest(request);
-      if (cancelled || refreshTrailingTimer !== null) return;
+      if (cancelled || document.hidden || refreshTrailingTimer !== null) return;
       refreshTrailingTimer = window.setTimeout(() => {
         refreshTrailingTimer = null;
         const queuedRevision = refreshQueuedRevision;
@@ -206,6 +206,11 @@ export function useTrackRealtimeSync({
 
     const refreshFromCloud = async (knownRevision: number | null = null, request: RefreshRequest = {}) => {
       if (cancelled) return;
+      if (document.hidden) {
+        rememberQueuedRevision(knownRevision);
+        rememberQueuedRequest(request);
+        return;
+      }
       if (cloudWriteInProgress.current || workoutFinishInFlight.current) {
         refreshQueued = true;
         scheduleQueuedRefresh(knownRevision, request);
@@ -238,6 +243,7 @@ export function useTrackRealtimeSync({
     const queueRefresh = (knownRevision: number | null = null, request: RefreshRequest = {}) => {
       rememberQueuedRevision(knownRevision);
       rememberQueuedRequest(request);
+      if (cancelled || document.hidden) return;
       if (refreshTrailingTimer !== null) {
         window.clearTimeout(refreshTrailingTimer);
         refreshTrailingTimer = null;

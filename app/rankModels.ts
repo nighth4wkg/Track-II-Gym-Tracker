@@ -63,6 +63,7 @@ export type RankSummary = {
   confidence: RankConfidence;
   recentPerformances: number;
   progress: number;
+  eliteProgress: number;
   nextLevelLabel: string;
 };
 

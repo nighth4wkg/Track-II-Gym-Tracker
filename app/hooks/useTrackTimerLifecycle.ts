@@ -63,7 +63,7 @@ export function useTrackTimerLifecycle({ timer, markTimerChanged, refs, user }: 
           user?.id,
         );
         if (!nativeLocalNotificationsAvailable()) {
-          void showSystemNotification("Rest complete. Time for your next set.", `rest-complete-${Date.now()}`);
+          void showSystemNotification("Rest complete. Time for your next set.", `rest:${completedAt}`);
         }
       }
     };

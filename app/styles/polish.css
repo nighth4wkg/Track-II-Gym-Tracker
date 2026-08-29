@@ -322,9 +322,6 @@
   }
 }
 
-/* Mobile clarity pass: keep every page and overlay on a crisp paint surface.
-   iOS home-screen Safari is especially sensitive to filter/backdrop layers on
-   fixed or transformed ancestors, so mobile uses opacity/position motion only. */
 @keyframes mobile-content-arrive {
   from {
     opacity: 0;
@@ -367,8 +364,6 @@
 }
 
 @media (max-width: 1200px) {
-  /* The header already reserves the safe area. Keep one compact shared rhythm
-     below it for Workout, Timer, Calendar, Rank, and the empty home state. */
   /* Every top-level page begins on the same baseline below the mobile header. */
   .content {
     padding-top: 28px;
@@ -390,7 +385,6 @@
   }
 
   .content,
-  .content-exit,
   .timer-screen,
   .calendar-screen,
   .rank-screen,
@@ -412,10 +406,6 @@
   .content {
     animation: mobile-content-arrive 0.38s var(--track-ease-spring) both;
   }
-  .content-exit {
-    animation: none !important;
-    transform: scale(0.99) translateY(6px) !important;
-  }
   .timer-mode-stage:not(.timer-transition-idle) {
     animation: mobile-stage-arrive 0.3s var(--track-ease-spring) both;
   }
@@ -429,17 +419,11 @@
     top: calc(74px + env(safe-area-inset-top));
   }
 
-  /* Move every settings category down with the page content, including Admin,
-     while retaining a scrollable full-screen sheet on short phones. */
   .settings-content {
-    /* The tab strip already owns the top safe area. Adding it again here
-       pushed the title and notification controls far below the tabs. */
     padding-top: 22px !important;
     padding-bottom: calc(56px + env(safe-area-inset-bottom)) !important;
   }
 
-  /* Keep modal text sharp in Safari/PWA and avoid a filtered fixed ancestor
-     intercepting taps around close buttons. The scrims remain translucent. */
   .settings-backdrop,
   .password-reset-backdrop,
   .exercise-confirm-backdrop,
@@ -479,9 +463,6 @@
   }
 }
 
-/* Mobile settings layout: the tab strip is part of the sheet flow, not a
-   second grid row hidden below the content. This keeps the category tabs near
-   the top and prevents the arrow control from floating over a large blank gap. */
 .settings-backdrop {
   overflow: hidden;
   overscroll-behavior: contain;
@@ -626,8 +607,6 @@
   }
 }
 
-/* Account identity: make the signed-in role immediately scannable without
-   exposing private identity fields in the compact sidebar footer. */
 .account-role-badge {
   width: 30px;
   height: 30px;
@@ -683,8 +662,6 @@
   }
 }
 
-/* Calendar detail: keep the readable surface centered while visually nesting
-   expanded sets inside the exercise row. */
 .calendar-detail-scroll-wrap {
   display: flex;
   justify-content: center;
@@ -734,8 +711,6 @@
   }
 }
 
-/* Settings: use the balanced admin-card treatment for every visible pane and
-   combine the legacy single-action privacy/backup/account sections. */
 .settings-view > .setting-section {
   margin: 18px 0 0;
   padding: 20px;
@@ -1116,10 +1091,10 @@
   left: 50%;
   width: min(560px, calc(100vw - 32px));
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  box-sizing: border-box;
   transform: translateX(-50%);
   border: 1px solid color-mix(in srgb, #d4932d 42%, var(--line));
   border-radius: var(--track-radius-card);
@@ -1129,7 +1104,6 @@
   animation: track-reveal var(--track-motion-standard) var(--track-ease-gentle) both;
 }
 .sync-conflict-banner > div:first-child {
-  min-width: 0;
   display: grid;
   gap: 4px;
 }
@@ -1140,13 +1114,18 @@
 .sync-conflict-banner span {
   color: var(--muted);
   font-size: 11px;
-  line-height: 1.4;
 }
 .sync-conflict-actions {
   flex: 0 0 auto;
   display: flex;
-  align-items: center;
   gap: 7px;
+}
+.sync-conflict-review {
+  flex: 1 1 100%;
+}
+.sync-conflict-snapshots {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .sync-conflict-actions button {
   min-height: 30px;
@@ -1585,8 +1564,6 @@
   }
 }
 
-/* Final review pass: keep setting panes focused, make workout controls read as
-   a true table, and keep the timer/rank feedback legible at every scale. */
 .updates-page-card-heading {
   align-items: center;
 }
@@ -1690,6 +1667,49 @@
   font-size: 9px;
   font-weight: 550;
 }
+.rank-meter {
+  position: relative;
+  overflow: visible;
+}
+.rank-meter i {
+  position: relative;
+  z-index: 1;
+}
+.rank-meter-ticks {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  pointer-events: none;
+}
+.rank-meter-ticks b {
+  position: absolute;
+  top: -2px;
+  width: 1px;
+  height: 11px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--ink) 48%, var(--line));
+}
+.rank-card-progress {
+  max-width: 68%;
+}
+.rank-card-progress b {
+  white-space: nowrap;
+}
+.rank-legend-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+}
+.rank-legend-header > div:first-child {
+  min-width: 0;
+}
+.rank-legend-header small {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 10px;
+}
 .rank-legend-items i {
   border: 1px solid color-mix(in srgb, var(--ink) 30%, var(--line));
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--surface) 45%, transparent);
@@ -1718,8 +1738,6 @@
   }
 }
 
-/* Finish is a session-level action, so keep it in the app header rather than
-   floating beside the exercise list or competing with scroll shortcuts. */
 .desktop-finish-action {
   position: fixed;
   z-index: 140;
@@ -1920,8 +1938,6 @@
   }
 }
 
-/* Beta review refinements: keep empty states useful without introducing a
-   second sticky control that can compete with the bottom navigation. */
 .workout-page .composer {
   border-color: var(--track-interactive-border);
   background: var(--track-interactive-surface);
@@ -2064,8 +2080,6 @@
   display: none;
 }
 
-/* Workout logging controls: keep small labels readable without making the
-   numeric fields compete with the values being entered. */
 .workout-page .task {
   border-color: var(--track-workout-input-border);
   background: var(--track-workout-card-surface);
@@ -2164,8 +2178,6 @@
   }
 }
 
-/* Keep the two floating surfaces spatially continuous when their anchor
-   changes with sidebar state, safe-area insets, or responsive layout. */
 .bottom-tab-bar {
   transition:
     opacity 0.24s ease,
@@ -2192,9 +2204,6 @@
   }
 }
 
-/* Native-sized mobile controls keep the same editable set model as desktop:
-   the weight unit remains a real button, while Reps and RIR keep readable
-   suffixes instead of disappearing into tiny pseudo-labels. */
 .workout-page .set-input > input {
   font-weight: 600;
 }
@@ -2253,16 +2262,12 @@
   }
 }
 
-/* Short phones should place workout details immediately below the close
-   control. The larger 80px inset was safe but left an unnecessary void. */
 @media (max-width: 699px) {
   .calendar-detail-scroll {
     padding-top: max(54px, calc(18px + env(safe-area-inset-top)));
   }
 }
 
-/* Stable workout grids: every set uses the same track widths, inset, and
-   trailing action gutter at every responsive size. */
 .workout-page .set-row,
 .workout-page .set-row > * {
   min-width: 0;
@@ -2286,9 +2291,6 @@
     column-gap: 10px;
     padding-inline: 2px;
   }
-  /* Tablet layouts used to inherit pages.css' compact rule, which hid the
-     heading row while leaving the three input columns visible. Keep the
-     labels available on iPad and aligned to the same tracks as each value. */
   .workout-page .set-heading {
     display: grid;
     align-items: center;
@@ -2342,8 +2344,6 @@
   }
 }
 
-/* Number steppers are browser chrome, not part of the Track II control. They
-   overlap the unit suffix on compact profile cards, especially on iOS. */
 input[type="number"] {
   appearance: textfield;
   -moz-appearance: textfield;
@@ -2360,24 +2360,10 @@ input[type="number"]::-webkit-outer-spin-button {
   min-width: 0;
 }
 
-/* Keep the workout heading rhythm intentional instead of leaving the search
-   composer in a second, visually unrelated vertical group. */
-.workout-page > .eyebrow {
-  margin-bottom: 10px;
-}
-.workout-page .title-row h1 {
-  line-height: 1.1;
-}
-.workout-page .title-row p {
-  margin-top: 8px;
-}
 .workout-page .composer {
   margin-top: 16px;
 }
 
-/* Mobile settings returns to the compact, horizontally scrollable tab strip.
-   It keeps the original thumb-friendly navigation while the desktop sidebar
-   remains icon-based at wider widths. */
 @media (max-width: 699px) {
   .settings-modal > .settings-mobile-tabs-wrap {
     display: block;
@@ -2446,9 +2432,6 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
-/* Tablets and landscape phones can use the actual desktop sidebar without
-   squeezing the content into a horizontal tab strip. Narrow phones keep the
-   original horizontally scrollable category tabs. */
 @media (min-width: 700px) and (max-width: 1200px) {
   .settings-modal {
     display: grid;
@@ -2470,8 +2453,6 @@ input[type="number"]::-webkit-outer-spin-button {
   }
 }
 
-/* One logo surface is used for the header and empty-state mark so the brand
-   does not change polarity as users move through the app. */
 :root {
   --track-logo-surface: #101010;
   --track-logo-ink: #f7f7f4;
@@ -2488,17 +2469,11 @@ input[type="number"]::-webkit-outer-spin-button {
   color: var(--track-logo-ink);
 }
 
-/* Apple-like motion with cheap compositing: animate opacity and transforms,
-   avoid blur/backdrop repaints on frequently moving mobile surfaces, and keep
-   the browser's compositor responsible for the frame pacing. */
 .content {
   transition:
     opacity 0.34s ease,
     transform 0.42s var(--track-ease-gentle);
   view-transition-name: track-workspace;
-}
-.content-exit {
-  filter: none;
 }
 html.track-view-transitioning .content {
   animation: track-workspace-fallback var(--track-motion-standard) var(--track-ease-gentle) both;
@@ -2519,7 +2494,7 @@ html.track-view-transitioning .content {
 
 @keyframes track-workspace-fallback {
   from {
-    opacity: 0.82;
+    opacity: 1;
     transform: translate3d(0, 6px, 0) scale(0.992);
   }
   to {
@@ -2528,15 +2503,23 @@ html.track-view-transitioning .content {
   }
 }
 @keyframes track-workspace-old {
+  from {
+    opacity: 1;
+    transform: none;
+  }
   to {
     opacity: 0;
-    transform: scale(0.995);
+    transform: none;
   }
 }
 @keyframes track-workspace-new {
   from {
     opacity: 0;
-    transform: scale(1.005);
+    transform: none;
+  }
+  to {
+    opacity: 1;
+    transform: none;
   }
 }
 .bottom-tab-bar,
@@ -2565,8 +2548,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* A short, visible setup path turns an empty split into the next three
-   actions without introducing a separate onboarding state to persist. */
 .workout-start-steps,
 .welcome-start-steps {
   display: grid;
@@ -2639,9 +2620,6 @@ html.track-view-transitioning .content {
   white-space: nowrap;
 }
 
-/* Keep exercise search compact on mobile until the user asks for it. The
-   expanded composer stays in the workout flow, so it cannot cover cards or
-   drift away from the split title at unusual viewport sizes. */
 .workout-page .exercise-composer .suggestions {
   left: 0;
   right: 0;
@@ -2655,9 +2633,6 @@ html.track-view-transitioning .content {
   display: none;
 }
 @media (max-width: 700px) {
-  .workout-page .title-row {
-    align-items: flex-start;
-  }
   .mobile-search-toggle {
     align-self: flex-start;
     margin-top: 0;
@@ -2741,9 +2716,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* A unit is a lightweight action, not a selected segmented-control state.
-   Keep its tap target clear of the numeric value and animate only the label
-   that changed. */
 .workout-page .weight-set-input > .weight-unit-toggle {
   background: transparent;
   color: var(--track-input-label);
@@ -2905,8 +2877,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* iPad/tablet rows keep the compact value grid, so their visible heading must
-   use those same tracks instead of inheriting the desktop proportions. */
 @media (min-width: 701px) and (max-width: 1200px) {
   .workout-page .set-row {
     --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) 30px;
@@ -2920,9 +2890,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* Finish is the only destructive session action that asks for confirmation.
-   The dialog uses the same compact surface language as the other prompts,
-   with a spring-like settle that remains cheap to composite. */
 .finish-confirm-backdrop {
   background: rgba(0, 0, 0, 0.74);
 }
@@ -2986,8 +2953,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* Undo follows the same Apple-like settle while the existing progress line
-   still communicates when the reversible window expires. */
 .undo-toast {
   animation: undo-toast-in 0.42s var(--track-ease-gentle) both;
 }
@@ -3013,9 +2978,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* Keep frequently moving surfaces on the compositor-friendly path.  Solid
-   surfaces preserve contrast without asking the browser to repaint the page
-   behind a blur on every frame. */
 .bottom-tab-bar,
 .undo-toast,
 .track-notification,
@@ -3040,8 +3002,6 @@ html.track-view-transitioning .content {
   background: color-mix(in srgb, var(--surface) 96%, var(--raised));
 }
 
-/* Keep the mobile settings carousel and its continuation control on one
-   physical row, including inside Capacitor's safe-area viewport. */
 @media (max-width: 699px) {
   .settings-modal > .settings-mobile-tabs-wrap {
     position: relative;
@@ -3160,8 +3120,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* Release polish: keep the onboarding path calm, readable, and responsive as
-   each step changes while respecting reduced-motion preferences. */
 .settings-title-row {
   align-items: center;
 }
@@ -3252,9 +3210,6 @@ html.track-view-transitioning .content {
   }
 }
 
-/* Deslop UI refinement: a single surface, spacing, and interaction language
-   across the shell and every primary page. Keep this pass token-led so future
-   visual changes stay local and the page styles do not drift apart again. */
 :root {
   --track-card-fill: color-mix(in srgb, var(--raised) 92%, var(--surface));
   --track-card-border: color-mix(in srgb, var(--line) 88%, transparent);
@@ -3323,35 +3278,6 @@ body {
 ):focus-visible {
   outline: 2px solid color-mix(in srgb, var(--ink) 46%, transparent);
   outline-offset: 3px;
-}
-
-.dashboard-title-row,
-.calendar-title-row,
-.rank-title-row {
-  align-items: flex-end;
-}
-
-.rank-title-row {
-  align-items: flex-start;
-  flex-direction: column;
-  gap: 0;
-  justify-content: flex-start;
-  text-align: left;
-}
-
-.rank-title-row h1,
-.rank-title-row p {
-  text-align: left;
-}
-
-.dashboard-title-row {
-  margin: 4px 0 24px;
-}
-
-.dashboard-title-row p,
-.calendar-title-row p,
-.rank-title-row p {
-  line-height: 1.45;
 }
 
 .dashboard-period-select .motion-select-trigger {
@@ -3450,10 +3376,6 @@ body {
   border-radius: var(--track-radius-control);
 }
 
-.calendar-title-row {
-  margin-bottom: var(--track-space-5);
-}
-
 .calendar-insight-strip,
 .rank-insight-strip {
   gap: var(--track-space-3);
@@ -3504,10 +3426,6 @@ body {
 .calendar-legend {
   margin-top: var(--track-space-5);
   padding-top: var(--track-space-4);
-}
-
-.rank-title-row {
-  margin-bottom: var(--track-space-5);
 }
 
 .rank-hero-card {
@@ -3682,12 +3600,6 @@ body {
     padding-top: 28px;
   }
 
-  .dashboard-title-row,
-  .calendar-title-row,
-  .rank-title-row {
-    gap: var(--track-space-3);
-  }
-
   .dashboard-period-select {
     align-self: flex-start;
   }
@@ -3707,18 +3619,6 @@ body {
 }
 
 @media (max-width: 560px) {
-  .dashboard-title-row {
-    align-items: flex-start;
-  }
-
-  .dashboard-title-row h1 {
-    font-size: 32px;
-  }
-
-  .dashboard-title-row p {
-    max-width: 190px;
-  }
-
   .dashboard-stat-grid article {
     padding: var(--track-space-4);
   }
@@ -3733,8 +3633,6 @@ body {
   }
 }
 
-/* Compact account tools share one anchor so sync and notifications remain
-   discoverable without adding another competing status dot. */
 .account-panel-tools {
   min-width: 0;
   display: flex;
@@ -3829,6 +3727,10 @@ body {
   animation: menu-in 0.22s var(--track-ease-spring) both;
   overscroll-behavior: contain;
 }
+.notification-center-panel.is-closing {
+  animation: notification-center-out var(--track-motion-interactive) var(--track-ease-gentle) both;
+  pointer-events: none;
+}
 .notification-center-header {
   display: flex;
   align-items: flex-start;
@@ -3869,6 +3771,7 @@ body {
   font-size: 10px;
   font-weight: 650;
   cursor: pointer;
+  white-space: nowrap;
 }
 .notification-center-actions > button:hover:not(:disabled),
 .notification-center-actions > button:focus-visible {
@@ -4022,6 +3925,23 @@ body {
   font-size: 10px;
   line-height: 1.45;
 }
+@keyframes notification-center-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-5px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-center-panel,
+  .notification-center-panel.is-closing {
+    animation: none;
+  }
+}
 
 @media (max-width: 560px) {
   .notification-center-panel {
@@ -4032,5 +3952,435 @@ body {
   }
   .notification-center-header {
     padding: 15px 15px 12px;
+  }
+}
+
+.page-header {
+  width: 100%;
+  margin: 0 0 var(--track-space-5);
+}
+.page-header-eyebrow {
+  display: block;
+  margin-bottom: var(--track-space-3);
+}
+.page-header-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--track-space-5);
+  min-width: 0;
+}
+.page-header-copy {
+  min-width: 0;
+}
+.page-header-copy h1 {
+  margin: 0;
+  font-size: clamp(32px, 4vw, 50px);
+  line-height: 1.05;
+  letter-spacing: -0.045em;
+}
+.page-header-copy p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.page-header-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  min-width: 0;
+}
+.workout-page-header,
+.dashboard-page-header,
+.calendar-page-header,
+.rank-page-header {
+  margin-bottom: var(--track-space-6);
+}
+
+/* A content reserve is calculated from the dock itself so safe-area changes
+   on iPad/iPhone cannot cover the last set, chart, or rank card. */
+:root {
+  --track-bottom-content-reserve: calc(var(--track-bottom-tab-height) + var(--track-bottom-tab-edge) + 36px);
+}
+@media (max-width: 1200px) {
+  :root {
+    --track-bottom-content-reserve: calc(
+      var(--track-bottom-tab-height) + var(--track-bottom-tab-edge) + var(--track-safe-bottom) + 32px
+    );
+  }
+}
+html,
+body {
+  scroll-padding-bottom: var(--track-bottom-content-reserve);
+}
+.content {
+  padding-bottom: var(--track-bottom-content-reserve) !important;
+}
+
+/* The raw Rank SVG has neutral fills before React applies the rank palette.
+   Keep that first paint on a dark placeholder surface instead of exposing a
+   white frame while the map is hydrated. */
+.loading-skeleton-block {
+  background: color-mix(in srgb, var(--surface) 84%, var(--ink) 16%);
+}
+.loading-skeleton-block::after {
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    color-mix(in srgb, var(--ink) 4%, transparent) 34%,
+    color-mix(in srgb, var(--ink) 11%, transparent) 50%,
+    transparent 72%
+  );
+}
+.rank-body-map-shell {
+  position: relative;
+  border-radius: var(--track-radius-card);
+  view-transition-name: rank-body-map;
+}
+.rank-body-map-shell:not(.is-ready) {
+  min-height: 360px;
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--ink) 5%, transparent), transparent 44%),
+    color-mix(in srgb, var(--surface) 84%, var(--ink) 16%);
+}
+.rank-body-map-shell:not(.is-ready) .rank-body-map-svg {
+  visibility: hidden;
+}
+.rank-body-map-svg {
+  width: 100%;
+  line-height: 0;
+}
+.rank-body-map-tooltip {
+  position: absolute;
+  z-index: 4;
+  max-width: min(190px, calc(100% - 24px));
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, var(--line));
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 96%, var(--raised));
+  color: var(--ink);
+  padding: 7px 9px;
+  box-shadow: var(--track-shadow-float);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 10px));
+  white-space: nowrap;
+}
+.rank-map-toolbar {
+  width: min(100%, 820px);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-bottom: var(--track-space-3);
+}
+.rank-map-toolbar > span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.rank-map-toggle button {
+  min-height: 44px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .rank-muscle-path:hover {
+    transform-box: fill-box;
+    transform-origin: center;
+    transform: scale(1.012);
+  }
+}
+
+.rank-category-control {
+  gap: 4px;
+}
+.rank-category-control > span {
+  color: color-mix(in srgb, var(--muted) 82%, transparent);
+  font-size: 9px;
+}
+.rank-category-control .motion-select-trigger {
+  min-height: 34px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding-inline: 9px 24px;
+  box-shadow: none;
+  font-size: 10px;
+}
+.rank-category-control .motion-select-trigger:hover,
+.rank-category-control .motion-select-trigger:focus-visible,
+.rank-category-control .motion-select.is-open .motion-select-trigger {
+  border-color: var(--line);
+  background: var(--soft);
+  color: var(--ink);
+}
+
+/* Exercise cards read as name → grouped result → editable set details. */
+.task .mobile-exercise-title,
+.task .task-text {
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 760;
+  letter-spacing: -0.012em;
+}
+.collapsed-summary small {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 9px;
+}
+.collapsed-summary i {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.collapsed-summary .collapsed-metrics {
+  color: var(--track-text-secondary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.progression-coach {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  gap: 3px 8px;
+  margin: 0 0 var(--track-space-4);
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--track-accent-success) 24%, var(--line));
+  border-radius: var(--track-radius-control);
+  background: color-mix(in srgb, var(--track-accent-success) 7%, var(--track-workout-card-surface));
+}
+.progression-coach.is-hold {
+  border-color: color-mix(in srgb, var(--track-accent-warning) 25%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-warning) 7%, var(--track-workout-card-surface));
+}
+.progression-coach.is-plateau {
+  border-color: color-mix(in srgb, var(--track-accent-online-ink) 25%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-online-ink) 7%, var(--track-workout-card-surface));
+}
+.progression-coach-kicker {
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+.progression-coach strong {
+  color: var(--ink);
+  font-size: 11px;
+}
+.progression-coach > span:last-child {
+  min-width: 0;
+  color: var(--track-text-secondary);
+  font-size: 10px;
+  line-height: 1.35;
+}
+.mobile-exercise-menu button.coach-menu-item {
+  color: var(--track-accent-online-ink);
+}
+.mobile-exercise-menu button:disabled,
+.mobile-exercise-menu button:disabled:hover {
+  cursor: not-allowed;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0.55;
+}
+
+/* Do not remove set labels on a tablet. At phone width the fields become
+   clearly labeled cards so RIR and reps never disappear behind fixed tracks. */
+@media (max-width: 1200px) {
+  .workout-page .set-row:not(.set-heading) {
+    --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) 30px;
+    grid-template-columns: var(--workout-set-grid);
+    column-gap: 8px;
+  }
+  .workout-page .set-heading {
+    display: grid !important;
+    grid-template-columns: var(--workout-set-grid);
+    column-gap: 8px;
+    min-height: 22px;
+    padding: 0 6px 5px 0;
+  }
+  .workout-page .set-heading span {
+    color: var(--muted);
+    font-size: 9px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-align: center;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-number,
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    justify-self: center;
+  }
+}
+@media (max-width: 640px) {
+  .page-header-row {
+    align-items: flex-start;
+    gap: var(--track-space-3);
+  }
+  .page-header-copy h1 {
+    font-size: 32px;
+  }
+  .page-header-copy p {
+    max-width: 30ch;
+  }
+  .page-header-actions {
+    align-self: flex-start;
+  }
+  .workout-page .set-heading {
+    display: none !important;
+  }
+  .workout-page .set-row:not(.set-heading) {
+    --workout-set-grid: repeat(3, minmax(0, 1fr)) 30px;
+    grid-template-columns: var(--workout-set-grid);
+    grid-template-areas:
+      "set set set remove"
+      "weight reps rir remove";
+    gap: 7px;
+    padding: 9px;
+    border: 1px solid var(--line) !important;
+    border-radius: var(--track-radius-control) !important;
+    background: var(--soft) !important;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-number {
+    grid-area: set;
+    width: auto;
+    justify-self: start;
+  }
+  .workout-page .set-row:not(.set-heading) > .weight-set-input {
+    grid-area: weight;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(3) {
+    grid-area: reps;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(4) {
+    grid-area: rir;
+  }
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    grid-area: remove;
+    align-self: end;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input {
+    position: relative;
+    padding-top: 15px;
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input::before {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    color: var(--muted);
+    content: "Value";
+    font-size: 8px;
+    font-weight: 750;
+    letter-spacing: 0.08em;
+    text-align: center;
+    text-transform: uppercase;
+  }
+  .workout-page .set-row:not(.set-heading) > .weight-set-input::before {
+    content: "Weight";
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(3)::before {
+    content: "Reps";
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(4)::before {
+    content: "RIR";
+  }
+  .workout-page .set-row:not(.set-heading) > .set-input > input {
+    height: 40px;
+    padding-right: 8px;
+  }
+  .workout-page .set-row:not(.set-heading) > .weight-set-input > input {
+    padding-right: 34px;
+  }
+  .workout-page .weight-set-input > .weight-unit-toggle {
+    height: 40px;
+  }
+  .progression-coach {
+    grid-template-columns: 1fr;
+  }
+  .progression-coach > span:last-child {
+    grid-column: 1;
+  }
+}
+
+/* The notification surface is anchored after layout measurement. Keeping the
+   unmeasured state invisible prevents the old top-left portal flash. */
+.notification-center-panel[data-positioned="false"] {
+  visibility: hidden;
+  opacity: 0;
+  animation: none;
+}
+.notification-center-panel[data-positioned="true"] {
+  visibility: visible;
+}
+.notification-center-clear {
+  border: 1px solid color-mix(in srgb, var(--line) 90%, transparent) !important;
+  background: color-mix(in srgb, var(--soft) 76%, transparent) !important;
+  color: var(--track-text-secondary) !important;
+}
+.notification-center-clear:hover:not(:disabled),
+.notification-center-clear:focus-visible {
+  border-color: color-mix(in srgb, var(--ink) 30%, var(--line)) !important;
+  background: var(--soft) !important;
+  color: var(--ink) !important;
+}
+
+.notification-center-actions > button,
+.notification-center-actions .notification-center-close,
+.admin-user-more,
+.admin-users-close,
+.admin-users-back,
+.settings-close {
+  min-height: 44px;
+}
+.notification-center-actions .notification-center-close,
+.admin-users-close,
+.admin-user-more {
+  min-width: 44px;
+}
+
+@media (max-width: 560px) {
+  .notification-center-header {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 12px;
+  }
+  .notification-center-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}
+
+.workout-draft-card {
+  view-transition-name: track-workout-recovery;
+}
+
+.notification-center-trigger,
+.mobile-menu-button,
+.mobile-search-toggle,
+.calendar-nav,
+.rank-map-toggle button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.mobile-search-toggle {
+  width: 44px;
+  height: 44px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rank-body-map-tooltip,
+  .rank-muscle-path,
+  .progression-coach {
+    transition: none !important;
+  }
+  .rank-body-map-shell:not(.is-ready) .rank-body-map-svg {
+    visibility: visible;
   }
 }

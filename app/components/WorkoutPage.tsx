@@ -1,8 +1,9 @@
 "use client";
 
 import { useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
-import { ConnectedTaskCard } from "./TaskCard";
 import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
+import { PageHeader } from "./PageHeader";
+import { VirtualizedTaskList } from "./VirtualizedTaskList";
 import { FILTER_LABELS, FILTER_OPTIONS, POPULAR_QUICK_PICK_STARTERS, TRACK_INTERACTION } from "../trackConstants";
 import type { Checklist, Filter, Task } from "../trackTypes";
 
@@ -15,6 +16,7 @@ type WorkoutPageProps = {
   inputRef: RefObject<HTMLInputElement | null>;
   openCount: number;
   progressFading: boolean;
+  draggingTaskId: string | null;
   searchQueryActive: boolean;
   showSuggestions: boolean;
   quickPickExercises: readonly string[];
@@ -38,6 +40,7 @@ export function WorkoutPage({
   inputRef,
   openCount,
   progressFading,
+  draggingTaskId,
   quickPickExercises,
   searchQueryActive,
   showSuggestions,
@@ -113,29 +116,30 @@ export function WorkoutPage({
 
   return (
     <div className="workout-page">
-      <div className="eyebrow">WORKOUT SPLIT</div>
-      <div className="title-row">
-        <div>
-          <h1>{active.title}</h1>
-          <p>
-            {tasks.length === 0
-              ? "Add an exercise to start."
-              : `${tasks.length} ${tasks.length === 1 ? "exercise" : "exercises"}`}
-          </p>
-        </div>
-        <button
-          type="button"
-          className="mobile-search-toggle"
-          aria-label={mobileSearchOpen ? "Hide exercise search" : "Search exercises"}
-          aria-expanded={mobileSearchOpen}
-          onClick={toggleMobileSearch}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-            <circle cx="10.8" cy="10.8" r="6.4" />
-            <path d="m15.6 15.6 4.2 4.2" />
-          </svg>
-        </button>
-      </div>
+      <PageHeader
+        className="workout-page-header"
+        eyebrow="WORKOUT SPLIT"
+        title={active.title}
+        description={
+          tasks.length === 0
+            ? "Add an exercise to start."
+            : `${tasks.length} ${tasks.length === 1 ? "exercise" : "exercises"}`
+        }
+        actions={
+          <button
+            type="button"
+            className="mobile-search-toggle"
+            aria-label={mobileSearchOpen ? "Hide exercise search" : "Search exercises"}
+            aria-expanded={mobileSearchOpen}
+            onClick={toggleMobileSearch}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <circle cx="10.8" cy="10.8" r="6.4" />
+              <path d="m15.6 15.6 4.2 4.2" />
+            </svg>
+          </button>
+        }
+      />
       <form
         ref={composerRef}
         className={`composer exercise-composer${mobileSearchOpen ? " is-mobile-search-open" : ""}`}
@@ -229,10 +233,8 @@ export function WorkoutPage({
         </div>
       )}
       {tasks.length > 0 && !hasLoggedFirstSet && <WorkoutSetupSteps className="workout-start-steps" stage={3} />}
-      <div className={progressFading ? "task-list progress-fading" : "task-list"} aria-live="polite">
-        {visible.map((task) => (
-          <ConnectedTaskCard key={task.id} task={task} />
-        ))}
+      <div className="task-list-shell" aria-live="polite">
+        <VirtualizedTaskList tasks={visible} progressFading={progressFading} draggingTaskId={draggingTaskId} />
         {visible.length === 0 && (
           <div className={`empty ui-empty${tasks.length === 0 ? " empty-split" : " empty-filter"}`}>
             <div className="empty-mark">

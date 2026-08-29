@@ -1,8 +1,9 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useEffect, useRef, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent } from "react";
 import type { TrackCenterNotification, TrackNotificationKind } from "../notificationCenter";
+import { TRACK_TIMING } from "../trackConstants";
 
 export type NotificationCenterProps = {
   items: TrackCenterNotification[];
@@ -12,6 +13,7 @@ export type NotificationCenterProps = {
   onClose: () => void;
   onMarkRead: (id: string) => void;
   onMarkAllRead: () => void;
+  onClearAll: () => void;
   onDismiss: (id: string) => void;
 };
 
@@ -51,6 +53,8 @@ export function NotificationCenterTrigger({
       data-notification-center-trigger="true"
       onClick={onToggle}
       aria-expanded={open}
+      aria-controls="notification-center-panel"
+      aria-haspopup="dialog"
       aria-label={unreadCount ? `Notifications, ${unreadCount} unread` : "Notifications"}
       title={unreadCount ? `${unreadCount} unread notifications` : "Notifications"}
     >
@@ -71,9 +75,61 @@ export function NotificationCenterPanel({
   onClose,
   onMarkRead,
   onMarkAllRead,
+  onClearAll,
   onDismiss,
 }: NotificationCenterPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
+  const [mounted, setMounted] = useState(open);
+  const [panelPosition, setPanelPosition] = useState<{ top: number; left: number } | null>(null);
+
+  useEffect(() => {
+    if (open) {
+      if (mounted) return undefined;
+      const frame = window.requestAnimationFrame(() => setMounted(true));
+      return () => window.cancelAnimationFrame(frame);
+    }
+    if (!mounted) return undefined;
+    const timer = window.setTimeout(() => setMounted(false), TRACK_TIMING.dropdownCloseAnimationMs);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [mounted, open]);
+
+  useLayoutEffect(() => {
+    if (!mounted || !open || !globalThis.window) return undefined;
+    const positionPanel = () => {
+      const triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-notification-center-trigger='true']"));
+      const trigger =
+        triggers.find((candidate) => {
+          const rect = candidate.getBoundingClientRect();
+          const styles = window.getComputedStyle(candidate);
+          return rect.width > 0 && rect.height > 0 && styles.display !== "none" && styles.visibility !== "hidden";
+        }) ?? triggers[0];
+      if (!trigger) return;
+      const rect = trigger.getBoundingClientRect();
+      const viewportPadding = 12;
+      const panelWidth = Math.min(370, Math.max(240, window.innerWidth - viewportPadding * 2));
+      const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 420;
+      const below = rect.bottom + 8;
+      const top =
+        below + panelHeight <= window.innerHeight - viewportPadding
+          ? below
+          : Math.max(viewportPadding, rect.top - panelHeight - 8);
+      const left = Math.max(
+        viewportPadding,
+        Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - viewportPadding),
+      );
+      setPanelPosition({ top, left });
+    };
+    const frame = window.requestAnimationFrame(positionPanel);
+    window.addEventListener("resize", positionPanel);
+    window.addEventListener("scroll", positionPanel, true);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener("resize", positionPanel);
+      window.removeEventListener("scroll", positionPanel, true);
+    };
+  }, [items.length, mounted, open]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -95,7 +151,7 @@ export function NotificationCenterPanel({
     };
   }, [onClose, open]);
 
-  if (!open || !globalThis.document) return null;
+  if ((!open && !mounted) || !globalThis.document) return null;
 
   const onNotificationClick = (event: MouseEvent<HTMLButtonElement>, item: TrackCenterNotification) => {
     event.currentTarget.blur();
@@ -103,7 +159,16 @@ export function NotificationCenterPanel({
   };
 
   return createPortal(
-    <section ref={panelRef} className="notification-center-panel" role="dialog" aria-label="Notification center">
+    <section
+      ref={panelRef}
+      className={`notification-center-panel${!open ? " is-closing" : ""}`}
+      id="notification-center-panel"
+      data-positioned={panelPosition ? "true" : "false"}
+      style={panelPosition ? { top: panelPosition.top, left: panelPosition.left, right: "auto" } : undefined}
+      role="dialog"
+      aria-label="Notification center"
+      aria-hidden={!open}
+    >
       <header className="notification-center-header">
         <div>
           <span className="notification-center-kicker">INBOX</span>
@@ -112,6 +177,9 @@ export function NotificationCenterPanel({
         <div className="notification-center-actions">
           <button type="button" onClick={onMarkAllRead} disabled={!unreadCount}>
             Mark all read
+          </button>
+          <button type="button" className="notification-center-clear" onClick={onClearAll} disabled={!items.length}>
+            Clear all
           </button>
           <button
             type="button"

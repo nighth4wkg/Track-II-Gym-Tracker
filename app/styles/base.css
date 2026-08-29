@@ -796,11 +796,6 @@ nav {
     opacity 0.38s cubic-bezier(0.4, 0, 0.2, 1),
     transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.content-exit {
-  opacity: 0;
-  transform: scale(0.975) translateY(8px);
-  pointer-events: none;
-}
 .mobile-header {
   display: none;
 }
@@ -818,23 +813,12 @@ nav {
   line-height: 1.2;
   margin-bottom: var(--track-space-3);
 }
-.title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  gap: var(--track-space-5);
-}
 h1 {
   margin: 0;
   font-size: 36px;
   line-height: 1.08;
   letter-spacing: -1.25px;
   font-weight: 650;
-}
-.title-row p {
-  margin: 10px 0 0;
-  color: var(--muted);
-  font-size: 14px;
 }
 .clear-button {
   border: 0;
@@ -3031,9 +3015,6 @@ footer {
   h1 {
     font-size: 31px;
   }
-  .title-row {
-    align-items: flex-start;
-  }
   .clear-button {
     margin-top: 3px;
   }
@@ -3161,13 +3142,6 @@ footer {
 /* Compact calendar and workout detail view. */
 .calendar-screen {
   width: min(640px, 100%);
-}
-.calendar-title-row h1 {
-  font-size: 30px;
-}
-.calendar-title-row p {
-  margin-top: 6px;
-  font-size: 12px;
 }
 .calendar-card {
   margin-top: 17px;

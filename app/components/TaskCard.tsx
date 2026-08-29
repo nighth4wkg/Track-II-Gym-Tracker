@@ -2,20 +2,25 @@
 
 import {
   memo,
-  useCallback,
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type DragEvent,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
-import { createPortal } from "react-dom";
 import { useConnectedTaskCard } from "../contexts/WorkoutEditorContext";
+import { useTaskCardMenu } from "../hooks/useTaskCardMenu";
 import { ExerciseHistoryButton } from "./ExerciseHistoryButton";
-import { weightProgressionDelta } from "../trackUtils";
-import { focusNextSetInput, sameTask, summarizeSetValues, type TaskCardSet, type TaskCardTask } from "../taskCardUtils";
+import { TaskCardMenu } from "./TaskCardMenu";
+import { TaskSetRow } from "./TaskSetRow";
+import {
+  buildProgressionCoach,
+  sameTask,
+  summarizeSetValues,
+  type TaskCardSet,
+  type TaskCardTask,
+} from "../taskCardUtils";
 export type { TaskCardSet, TaskCardTask } from "../taskCardUtils";
 
 type TaskCardProps = {
@@ -32,6 +37,7 @@ type TaskCardProps = {
   onToggleMenu: () => void;
   onStartEdit: () => void;
   onToggleDone: () => void;
+  onCompleteSetAndStartRest: (setId: string) => void;
   onDelete: () => void;
   onMove: () => void;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>) => void;
@@ -50,6 +56,11 @@ type TaskCardProps = {
   onAddSet: () => void;
 };
 
+type CoachDecision = {
+  title: string;
+  value: "accepted" | "repeat";
+};
+
 function TaskCardView({
   task,
   dragging,
@@ -64,6 +75,7 @@ function TaskCardView({
   onToggleMenu,
   onStartEdit,
   onToggleDone,
+  onCompleteSetAndStartRest,
   onDelete,
   onMove,
   onPointerDown,
@@ -81,81 +93,35 @@ function TaskCardView({
   onRemoveSet,
   onAddSet,
 }: TaskCardProps) {
+  const progressionCoach = buildProgressionCoach(task);
   const className = `${task.done ? "task ui-panel done" : "task ui-panel"}${task.collapsed ? " collapsed" : ""}${dragging ? " dragging" : ""}${completionEnabled ? "" : " completion-hidden"}`;
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const skipNextEditBlur = useRef(false);
-  const unitToggleTimer = useRef<number | null>(null);
-  const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
-  const [togglingUnitId, setTogglingUnitId] = useState<string | null>(null);
-  const positionMenu = useCallback(() => {
-    const trigger = menuButtonRef.current;
-    if (!trigger || !globalThis.window) return;
-    const rect = trigger.getBoundingClientRect();
-    const width = 158;
-    const height = completionEnabled ? 128 : 88;
-    const left = Math.max(8, Math.min(rect.right - width, window.innerWidth - width - 8));
-    const below = rect.bottom + 5;
-    const top = below + height <= window.innerHeight - 8 ? below : Math.max(8, rect.top - height - 5);
-    setMenuPosition({ top, left });
-  }, [completionEnabled]);
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [coachDecision, setCoachDecision] = useState<CoachDecision | null>(null);
+  const activeCoachDecision =
+    coachDecision && coachDecision.title === progressionCoach?.title ? coachDecision.value : null;
 
-  useLayoutEffect(() => {
-    if (!mobileExerciseMenu) return undefined;
-    const frame = window.requestAnimationFrame(positionMenu);
-    window.addEventListener("resize", positionMenu);
-    window.addEventListener("scroll", positionMenu, true);
-    return () => {
-      window.cancelAnimationFrame(frame);
-      window.removeEventListener("resize", positionMenu);
-      window.removeEventListener("scroll", positionMenu, true);
-    };
-  }, [mobileExerciseMenu, positionMenu]);
+  const {
+    menuButtonRef,
+    menuRef,
+    menuPosition,
+    closeMenu,
+    toggleMenu: toggleExerciseMenu,
+  } = useTaskCardMenu({
+    completionEnabled,
+    menuOpen: mobileExerciseMenu,
+    onToggleMenu,
+  });
 
   useEffect(() => {
     if (editing) skipNextEditBlur.current = false;
   }, [editing]);
 
-  useEffect(() => {
-    if (!mobileExerciseMenu) return;
-    const dismiss = (event: PointerEvent) => {
-      const target = event.target;
-      if (!(target instanceof Node)) return;
-      if (menuRef.current?.contains(target) || menuButtonRef.current?.contains(target)) return;
-      onToggleMenu();
-    };
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onToggleMenu();
-    };
-    document.addEventListener("pointerdown", dismiss, true);
-    document.addEventListener("keydown", handleKey);
-    return () => {
-      document.removeEventListener("pointerdown", dismiss, true);
-      document.removeEventListener("keydown", handleKey);
-    };
-  }, [mobileExerciseMenu, onToggleMenu]);
-
-  useEffect(
-    () => () => {
-      if (unitToggleTimer.current !== null) window.clearTimeout(unitToggleTimer.current);
-    },
-    [],
-  );
-
-  const toggleSetUnit = (setId: string) => {
-    onToggleSetUnit(setId);
-    setTogglingUnitId(setId);
-    if (unitToggleTimer.current !== null) window.clearTimeout(unitToggleTimer.current);
-    unitToggleTimer.current = window.setTimeout(() => {
-      setTogglingUnitId(null);
-      unitToggleTimer.current = null;
-    }, 280);
-  };
-
-  const toggleExerciseMenu = () => {
-    if (mobileExerciseMenu) setMenuPosition(null);
-    else positionMenu();
-    onToggleMenu();
+  const toggleCoach = () => {
+    if (!progressionCoach) return;
+    setCoachOpen((open) => !open);
+    closeMenu();
+    if (mobileExerciseMenu) onToggleMenu();
   };
 
   return (
@@ -221,22 +187,22 @@ function TaskCardView({
                   {task.sets?.length ?? 1} {(task.sets?.length ?? 1) === 1 ? "set" : "sets"}
                 </i>
                 <i>
-                  {summarizeSetValues(
-                    (task.sets ?? []).map((set) => set.weight),
-                    (task.sets?.[0]?.unit ?? "kg").toUpperCase(),
-                  )}
-                </i>
-                <i>
-                  {summarizeSetValues(
-                    (task.sets ?? []).map((set) => set.reps),
-                    "REPS",
-                  )}
-                </i>
-                <i>
-                  {summarizeSetValues(
-                    (task.sets ?? []).map((set) => set.rir),
-                    "RIR",
-                  )}
+                  <span className="collapsed-metrics">
+                    {summarizeSetValues(
+                      (task.sets ?? []).map((set) => set.weight),
+                      (task.sets?.[0]?.unit ?? "kg").toUpperCase(),
+                    )}{" "}
+                    ×{" "}
+                    {summarizeSetValues(
+                      (task.sets ?? []).map((set) => set.reps),
+                      "REPS",
+                    )}{" "}
+                    ·{" "}
+                    {summarizeSetValues(
+                      (task.sets ?? []).map((set) => set.rir),
+                      "RIR",
+                    )}
+                  </span>
                 </i>
                 {task.done && <b>Done</b>}
               </small>
@@ -251,26 +217,19 @@ function TaskCardView({
         >
           •••
         </button>
-        {mobileExerciseMenu &&
-          menuPosition &&
-          globalThis.document &&
-          createPortal(
-            <div
-              ref={menuRef}
-              className="mobile-exercise-menu exercise-menu-portal"
-              style={{ top: menuPosition.top, left: menuPosition.left }}
-              onPointerDown={(event) => event.stopPropagation()}
-            >
-              <button onClick={onStartEdit}>Edit name</button>
-              {completionEnabled && (
-                <button onClick={onToggleDone}>{task.done ? "Mark not done" : "Mark complete"}</button>
-              )}
-              <button className="danger" onClick={onDelete}>
-                Delete exercise
-              </button>
-            </div>,
-            document.body,
-          )}
+        <TaskCardMenu
+          menuOpen={mobileExerciseMenu}
+          menuPosition={menuPosition}
+          menuRef={menuRef}
+          completionEnabled={completionEnabled}
+          taskDone={task.done}
+          coachOpen={coachOpen}
+          progressionCoach={progressionCoach}
+          onStartEdit={onStartEdit}
+          onToggleCoach={toggleCoach}
+          onToggleDone={onToggleDone}
+          onDelete={onDelete}
+        />
       </div>
       <span className="drag-handle" aria-hidden="true" />
       {completionEnabled && (
@@ -283,93 +242,72 @@ function TaskCardView({
           <div className="exercise-card-title">
             <span className="task-text">{task.text}</span>
           </div>
+          {coachOpen && progressionCoach && (
+            <aside className={"progression-coach is-" + progressionCoach.tone} role="status">
+              <span className="progression-coach-kicker">Smart coach</span>
+              <strong>{progressionCoach.title}</strong>
+              <span>{progressionCoach.detail}</span>
+              <span className="progression-coach-confidence">Confidence: {progressionCoach.confidence}</span>
+              <div className="progression-coach-actions">
+                <button
+                  type="button"
+                  className="ui-button ui-button-secondary"
+                  onClick={() => setCoachDecision({ title: progressionCoach.title, value: "accepted" })}
+                  aria-label={`Accept smart coach suggestion for ${task.text}`}
+                >
+                  Accept suggestion
+                </button>
+                <button
+                  type="button"
+                  className="ui-button ui-button-secondary"
+                  onClick={() => setCoachDecision({ title: progressionCoach.title, value: "repeat" })}
+                  aria-label={`Repeat the current load for ${task.text}`}
+                >
+                  Repeat load
+                </button>
+                <button
+                  type="button"
+                  className="ui-button ui-button-quiet"
+                  onClick={() => {
+                    setCoachDecision(null);
+                    setCoachOpen(false);
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+              {activeCoachDecision && (
+                <span className="progression-coach-decision" aria-live="polite">
+                  {activeCoachDecision === "accepted"
+                    ? "Accepted — adjust the next load manually; Track II never changes it for you."
+                    : "Repeat selected — keep the current load for the next exposure."}
+                </span>
+              )}
+            </aside>
+          )}
           <div className="sets-table">
             <div className="set-row set-heading">
               <span>SET</span>
               <span>WEIGHT</span>
               <span>REPS</span>
               <span>RIR</span>
+              <span>ACTION</span>
               <span />
             </div>
-            {(task.sets ?? []).map((set, index) => {
-              const progressionDelta = weightProgressionDelta(set);
-              return (
-                <div className="set-row" key={set.id}>
-                  <span className="set-number">{index + 1}</span>
-                  <span className="set-input weight-set-input" data-suffix={set.unit}>
-                    <input
-                      value={set.weight}
-                      onChange={(event) => onUpdateSet(set.id, "weight", event.target.value)}
-                      onBlur={() => onFinishSetWeightEdit(set)}
-                      onKeyDown={(event) => focusNextSetInput(event, "reps")}
-                      onFocus={(event) => onBeginSetWeightEdit(set, event.currentTarget)}
-                      inputMode="decimal"
-                      enterKeyHint="next"
-                      data-set-field="weight"
-                      aria-label={`${task.text} set ${index + 1} weight`}
-                    />
-                    <button
-                      type="button"
-                      className={togglingUnitId === set.id ? "weight-unit-toggle is-toggling" : "weight-unit-toggle"}
-                      onClick={() => toggleSetUnit(set.id)}
-                      aria-label={`Change weight unit for ${task.text} set ${index + 1}`}
-                    >
-                      {set.unit.toUpperCase()}
-                    </button>
-                    {progressionDelta !== null && (
-                      <em className={progressionDelta > 0 ? "rep-delta set-delta up" : "rep-delta set-delta down"}>
-                        {progressionDelta > 0 ? "+" : ""}
-                        {progressionDelta}
-                      </em>
-                    )}
-                  </span>
-                  <span className="set-input">
-                    <input
-                      value={set.reps}
-                      onChange={(event) => onUpdateSet(set.id, "reps", event.target.value)}
-                      onBlur={() => !set.reps && onUpdateSet(set.id, "reps", "1")}
-                      onKeyDown={(event) => focusNextSetInput(event, "rir")}
-                      onFocus={(event) => event.currentTarget.select()}
-                      inputMode="numeric"
-                      enterKeyHint="next"
-                      data-set-field="reps"
-                      aria-label={`${task.text} set ${index + 1} reps`}
-                    />
-                    {set.lastReps !== undefined && Number(set.reps) !== set.lastReps && (
-                      <em
-                        className={
-                          Number(set.reps) > set.lastReps ? "rep-delta set-delta up" : "rep-delta set-delta down"
-                        }
-                      >
-                        {Number(set.reps) > set.lastReps ? "+" : ""}
-                        {Number(set.reps) - set.lastReps}
-                      </em>
-                    )}
-                  </span>
-                  <span className="set-input">
-                    <input
-                      value={set.rir}
-                      onChange={(event) => onUpdateSet(set.id, "rir", event.target.value)}
-                      onBlur={() => set.rir === "" && onUpdateSet(set.id, "rir", "0")}
-                      onKeyDown={(event) => focusNextSetInput(event, null)}
-                      onFocus={(event) => event.currentTarget.select()}
-                      inputMode="numeric"
-                      enterKeyHint="done"
-                      data-set-field="rir"
-                      aria-label={`${task.text} set ${index + 1} RIR`}
-                    />
-                  </span>
-                  <button
-                    className="remove-set"
-                    onClick={() => onRemoveSet(set.id)}
-                    disabled={(task.sets?.length ?? 0) <= 1}
-                    aria-label={`Remove set ${index + 1}`}
-                  >
-                    ×
-                  </button>
-                </div>
-              );
-            })}
+            {(task.sets ?? []).map((set, index) => (
+              <TaskSetRow
+                key={set.id}
+                task={task}
+                set={set}
+                index={index}
+                onCompleteSetAndStartRest={onCompleteSetAndStartRest}
+                onUpdateSet={onUpdateSet}
+                onFinishSetWeightEdit={onFinishSetWeightEdit}
+                onBeginSetWeightEdit={onBeginSetWeightEdit}
+                onToggleSetUnit={onToggleSetUnit}
+                onRemoveSet={onRemoveSet}
+              />
+            ))}
           </div>
           <button className="add-set" onClick={onAddSet}>
             ＋ Add set
@@ -388,9 +326,16 @@ export const TaskCard = memo(
     previous.completionEnabled === next.completionEnabled &&
     previous.editing === next.editing &&
     ((!previous.editing && !next.editing) || previous.editValue === next.editValue) &&
-    previous.mobileExerciseMenu === next.mobileExerciseMenu,
+    previous.mobileExerciseMenu === next.mobileExerciseMenu &&
+    previous.onCompleteSetAndStartRest === next.onCompleteSetAndStartRest,
 );
 
-export function ConnectedTaskCard({ task }: { task: TaskCardTask }) {
-  return <TaskCardView {...useConnectedTaskCard(task)} />;
-}
+export const ConnectedTaskCard = memo(
+  function ConnectedTaskCard({ task }: { task: TaskCardTask }) {
+    // Keep the context-connected adapter tiny, then let the memoized view decide
+    // whether this particular exercise changed. Editing one set should not
+    // repaint every card in a long split.
+    return <TaskCard {...useConnectedTaskCard(task)} />;
+  },
+  (previous, next) => previous.task === next.task,
+);

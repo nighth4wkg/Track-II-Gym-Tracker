@@ -12,6 +12,7 @@ import {
 import { readWorkoutDrafts, removeWorkoutDraft, upsertWorkoutDraft } from "../offlineStore";
 import type { Checklist, Task, WorkoutDraft } from "../trackTypes";
 import { cloneWorkoutTasks, workoutDraftSignature } from "../workoutDraft";
+import { runViewTransition } from "../viewTransitions";
 
 type CleanWorkoutState = { tasks: Task[]; wasSaved: boolean };
 
@@ -83,25 +84,32 @@ export function useWorkoutDraftRecovery({
       const latest = [...validDrafts].sort((left, right) => right.updatedAt - left.updatedAt)[0];
       if (latest) {
         const draftIds = new Set(validDrafts.map((draft) => draft.splitId));
-        setLists((current) =>
-          current.map((list) => {
-            const draft = draftsRef.current.get(list.id);
-            return draft
-              ? { ...list, title: draft.splitTitle, tasks: cloneWorkoutTasks(draft.tasks), updatedAt: draft.updatedAt }
-              : list;
-          }),
-        );
-        setActiveId(latest.splitId);
-        setDirtySplits((current) => new Set([...current, ...draftIds]));
-        setSavedSplits((current) => {
-          const next = new Set(current);
-          for (const splitId of draftIds) next.delete(splitId);
-          savedSplitsRef.current = next;
-          return next;
+        runViewTransition(() => {
+          setLists((current) =>
+            current.map((list) => {
+              const draft = draftsRef.current.get(list.id);
+              return draft
+                ? {
+                    ...list,
+                    title: draft.splitTitle,
+                    tasks: cloneWorkoutTasks(draft.tasks),
+                    updatedAt: draft.updatedAt,
+                  }
+                : list;
+            }),
+          );
+          setActiveId(latest.splitId);
+          setDirtySplits((current) => new Set([...current, ...draftIds]));
+          setSavedSplits((current) => {
+            const next = new Set(current);
+            for (const splitId of draftIds) next.delete(splitId);
+            savedSplitsRef.current = next;
+            return next;
+          });
+          setWorkoutActionsExiting(false);
+          setNotice({ draft: latest, recoveredAt: Date.now() });
         });
-        setWorkoutActionsExiting(false);
-        setNotice({ draft: latest, recoveredAt: Date.now() });
-      } else setNotice(null);
+      } else runViewTransition(() => setNotice(null));
       setHydratedFor(userId);
     });
     return () => {
@@ -177,41 +185,43 @@ export function useWorkoutDraftRecovery({
     [],
   );
 
-  const continueWorkout = useCallback(() => setNotice(null), []);
+  const continueWorkout = useCallback(() => runViewTransition(() => setNotice(null)), []);
 
   const discardDraft = useCallback(() => {
     if (!notice || !userId) return;
     const { draft } = notice;
-    setLists((current) =>
-      current.map((list) =>
-        list.id === draft.splitId
-          ? { ...list, title: draft.splitTitle, tasks: cloneWorkoutTasks(draft.baselineTasks), updatedAt: Date.now() }
-          : list,
-      ),
-    );
-    setDirtySplits((current) => {
-      const next = new Set(current);
-      next.delete(draft.splitId);
-      return next;
+    runViewTransition(() => {
+      setLists((current) =>
+        current.map((list) =>
+          list.id === draft.splitId
+            ? { ...list, title: draft.splitTitle, tasks: cloneWorkoutTasks(draft.baselineTasks), updatedAt: Date.now() }
+            : list,
+        ),
+      );
+      setDirtySplits((current) => {
+        const next = new Set(current);
+        next.delete(draft.splitId);
+        return next;
+      });
+      setSavedSplits((current) => {
+        const next = new Set(current);
+        if (draft.wasSaved) next.add(draft.splitId);
+        else next.delete(draft.splitId);
+        savedSplitsRef.current = next;
+        return next;
+      });
+      draftsRef.current.delete(draft.splitId);
+      if (pendingWriteRef.current?.draft.splitId === draft.splitId) {
+        if (writeTimerRef.current !== null) window.clearTimeout(writeTimerRef.current);
+        writeTimerRef.current = null;
+        pendingWriteRef.current = null;
+      }
+      cleanStatesRef.current.set(draft.splitId, {
+        tasks: cloneWorkoutTasks(draft.baselineTasks),
+        wasSaved: draft.wasSaved,
+      });
+      setNotice(null);
     });
-    setSavedSplits((current) => {
-      const next = new Set(current);
-      if (draft.wasSaved) next.add(draft.splitId);
-      else next.delete(draft.splitId);
-      savedSplitsRef.current = next;
-      return next;
-    });
-    draftsRef.current.delete(draft.splitId);
-    if (pendingWriteRef.current?.draft.splitId === draft.splitId) {
-      if (writeTimerRef.current !== null) window.clearTimeout(writeTimerRef.current);
-      writeTimerRef.current = null;
-      pendingWriteRef.current = null;
-    }
-    cleanStatesRef.current.set(draft.splitId, {
-      tasks: cloneWorkoutTasks(draft.baselineTasks),
-      wasSaved: draft.wasSaved,
-    });
-    setNotice(null);
     void removeWorkoutDraft(userId, draft.splitId);
   }, [notice, savedSplitsRef, setDirtySplits, setLists, setSavedSplits, userId]);
 

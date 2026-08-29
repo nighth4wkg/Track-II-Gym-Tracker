@@ -1,0 +1,53 @@
+.workout-page .set-row {
+  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 58px 32px;
+}
+
+.workout-page .set-complete-action {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 6px;
+}
+
+.workout-page .set-complete-action.is-complete,
+.workout-page .set-row.has-completed-set .set-number {
+  border-color: color-mix(in srgb, var(--track-accent-online) 75%, var(--line));
+  background: color-mix(in srgb, var(--track-accent-online) 18%, var(--soft));
+  color: var(--track-accent-online);
+}
+
+.progression-coach-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 2px;
+}
+
+.progression-coach-actions button {
+  min-height: 32px;
+  padding-inline: 10px;
+  font-size: 10px;
+}
+
+@media (max-width: 1200px) {
+  .workout-page .set-row:not(.set-heading),
+  .workout-page .set-heading {
+    --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) 48px 28px;
+    grid-template-columns: var(--workout-set-grid);
+    column-gap: 8px;
+  }
+}
+
+@media (max-width: 700px) {
+  .workout-page .set-row:not(.set-heading) {
+    grid-template-columns: 30px repeat(3, minmax(0, 1fr)) 44px;
+    grid-template-areas: none;
+  }
+
+  .workout-page .set-row:not(.set-heading) > * {
+    grid-area: auto;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .remove-set {
+    display: none;
+  }
+}

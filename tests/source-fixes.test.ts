@@ -9,6 +9,7 @@ import {
   averageVolumeForDates,
   buildActivityPoints,
   dateKeyTimestamp,
+  startOfLocalWeek,
   timeframeBounds,
   splitVolumeTrend,
 } from "../app/dashboardMetrics.ts";
@@ -24,6 +25,9 @@ import { normalizeSettingsView } from "../app/trackConstants.ts";
 import { cloneWorkoutTasks, workoutDraftSignature } from "../app/workoutDraft.ts";
 import { formatTrackDisplayVersion } from "../app/trackConfig.ts";
 import { ACCOUNT_PRESENCE_LABELS, SYNC_PHASE_LABELS, syncPhaseForLabel } from "../app/syncHealth.ts";
+import { buildProgressionCoach, type TaskCardSet } from "../app/taskCardUtils.ts";
+import { strongestRankSummary } from "../app/rankData.ts";
+import type { RankSummary } from "../app/rankModels.ts";
 import {
   convertSetUnit,
   mergeTrackLists,
@@ -34,7 +38,13 @@ import {
   weightProgressionDelta,
 } from "../app/trackUtils.ts";
 
-const setEntry = (id: string, weight: string) => ({ id, weight, unit: "kg" as const, reps: "8", rir: "2" });
+const setEntry = (id: string, weight: string): TaskCardSet => ({
+  id,
+  weight,
+  unit: "kg",
+  reps: "8",
+  rir: "2",
+});
 const task = (id: string, sets = [setEntry(`${id}-set`, "10")]) => ({
   id,
   text: id,
@@ -57,6 +67,111 @@ test("workout drafts copy set data and ignore presentation-only collapse state",
     workoutDraftSignature({ ...base, tasks: [{ ...tasks[0], collapsed: true }] }),
   );
   assert.notEqual(workoutDraftSignature(base), workoutDraftSignature({ ...base, tasks: [{ ...tasks[0], reps: "9" }] }));
+});
+
+test("progression coach gives conservative next-step cues from set history", () => {
+  const ready = buildProgressionCoach({
+    ...task("bench", [
+      {
+        ...setEntry("bench-set-1", "30"),
+        reps: "10",
+        lastWeight: 30,
+        lastWeightUnit: "kg",
+        lastReps: 8,
+        lastRir: 2,
+        historySessions: 3,
+        historySamples: 6,
+        historyFailureCount: 0,
+      },
+      {
+        ...setEntry("bench-set-2", "30"),
+        reps: "10",
+        lastWeight: 30,
+        lastWeightUnit: "kg",
+        lastReps: 8,
+        lastRir: 2,
+        historySessions: 3,
+        historySamples: 6,
+        historyFailureCount: 0,
+      },
+    ]),
+  });
+  assert.equal(ready?.title, "Evidence supports a small increase");
+  assert.equal(ready?.tone, "up");
+  assert.equal(ready?.confidence, "High");
+  assert.match(ready?.detail ?? "", /32\.5 KG/);
+  assert.match(ready?.detail ?? "", /1–3 RIR/);
+
+  const hold = buildProgressionCoach({
+    ...task("bench", [
+      {
+        ...setEntry("bench-set", "30"),
+        reps: "6",
+        lastWeight: 30,
+        lastWeightUnit: "kg",
+        lastReps: 8,
+      },
+    ]),
+  });
+  assert.equal(hold?.title, "Build the reps");
+
+  const plateau = buildProgressionCoach({
+    ...task("bench", [
+      {
+        ...setEntry("bench-set", "30"),
+        lastWeight: 30,
+        lastWeightUnit: "kg",
+        lastReps: 8,
+      },
+    ]),
+  });
+  assert.equal(plateau?.title, "Hold the load");
+  assert.match(plateau?.detail ?? "", /single plateau is not a reason to increase weight/);
+
+  const oneSetGain = buildProgressionCoach({
+    ...task("bench", [
+      {
+        ...setEntry("bench-set", "30"),
+        reps: "10",
+        lastWeight: 30,
+        lastWeightUnit: "kg",
+        lastReps: 8,
+        lastRir: 2,
+      },
+    ]),
+  });
+  assert.equal(oneSetGain?.title, "Collect more evidence");
+  assert.doesNotMatch(oneSetGain?.detail ?? "", /increase/);
+});
+
+const rankSummary = (overrides: Partial<RankSummary> = {}): RankSummary => ({
+  group: "core",
+  score: 0.8,
+  level: "intermediate",
+  label: "Intermediate",
+  color: "#f4c542",
+  targets: [],
+  bestExercise: "Bench press",
+  bestSet: "30 kg x 8 reps - 2 RIR",
+  detectedAs: "bench press",
+  detectionConfidence: 1,
+  trackedExercises: 1,
+  matchedExercises: [],
+  confidence: "medium",
+  recentPerformances: 2,
+  progress: 50,
+  eliteProgress: 50,
+  nextLevelLabel: "Gym Bro",
+  ...overrides,
+});
+
+test("strongest area prioritizes earned tier before within-tier progress", () => {
+  const strongest = strongestRankSummary([
+    rankSummary({ group: "core", level: "intermediate", progress: 99, score: 0.94, eliteProgress: 59 }),
+    rankSummary({ group: "back", level: "advanced", progress: 37, score: 1.38, eliteProgress: 86 }),
+    rankSummary({ group: "legs", level: "advanced", progress: 11, score: 1.26, eliteProgress: 79 }),
+  ]);
+  assert.equal(strongest?.group, "back");
 });
 
 test("settings always resolves to a visible safe page", () => {
@@ -298,10 +413,21 @@ test("dashboard buckets use local days while modern sessions stay distinct", () 
   const now = new Date(2026, 7, 26, 18, 0, 0, 0).getTime();
   const week = timeframeBounds("week", [], now);
   const all = timeframeBounds("all", [new Date(2026, 7, 5, 23, 30).getTime()], now);
-  assert.equal(new Date(week.start).getDate(), 20);
+  assert.equal(new Date(week.start).getDate(), 24);
   assert.equal(new Date(week.end).getTime(), now);
   assert.equal(new Date(all.start).getDate(), 5);
   assert.equal(new Date(all.end).getTime(), now);
+});
+
+test("weekly dashboard activity starts on Monday with distinct two-letter labels", () => {
+  const now = new Date(2026, 7, 26, 18, 0, 0, 0).getTime();
+  const weekStart = startOfLocalWeek(now);
+  const points = buildActivityPoints([], "week", weekStart, now);
+
+  assert.deepEqual(
+    points.map((point) => point.shortLabel),
+    ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"],
+  );
 });
 
 test("dashboard collapses repeated finishes by local day and split", () => {

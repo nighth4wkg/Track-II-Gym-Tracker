@@ -2,7 +2,10 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
+  useRef,
   type ReactNode,
   type PointerEvent as ReactPointerEvent,
   type TouchEvent as ReactTouchEvent,
@@ -22,6 +25,7 @@ export type WorkoutEditorContextValue = {
   onToggleMenu: (taskId: string) => void;
   onStartEdit: (taskId: string) => void;
   onToggleDone: (taskId: string) => void;
+  onCompleteSetAndStartRest: (taskId: string, setId: string) => void;
   onDelete: (taskId: string) => void;
   onMove: (taskId: string) => void;
   onPointerDown: (event: ReactPointerEvent<HTMLElement>, taskId: string) => void;
@@ -54,6 +58,14 @@ export function useWorkoutEditor() {
 
 export function useConnectedTaskCard(task: TaskCardTask) {
   const editor = useWorkoutEditor();
+  const completeSetAndStartRestRef = useRef(editor.onCompleteSetAndStartRest);
+  useEffect(() => {
+    completeSetAndStartRestRef.current = editor.onCompleteSetAndStartRest;
+  }, [editor.onCompleteSetAndStartRest]);
+  const onCompleteSetAndStartRest = useCallback(
+    (setId: string) => completeSetAndStartRestRef.current(task.id, setId),
+    [task.id],
+  );
   return {
     task,
     dragging: editor.draggingTaskId === task.id,
@@ -68,6 +80,7 @@ export function useConnectedTaskCard(task: TaskCardTask) {
     onToggleMenu: () => editor.onToggleMenu(task.id),
     onStartEdit: () => editor.onStartEdit(task.id),
     onToggleDone: () => editor.onToggleDone(task.id),
+    onCompleteSetAndStartRest,
     onDelete: () => editor.onDelete(task.id),
     onMove: () => editor.onMove(task.id),
     onPointerDown: (event: ReactPointerEvent<HTMLElement>) => editor.onPointerDown(event, task.id),

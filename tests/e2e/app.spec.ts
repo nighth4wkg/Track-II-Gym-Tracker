@@ -3,6 +3,8 @@ import { test, expect, type Page } from "@playwright/test";
 const e2eUsername = process.env.E2E_USERNAME ?? "";
 const e2ePassword = process.env.E2E_PASSWORD ?? "";
 const hasAuthenticatedFixture = Boolean(e2eUsername && e2ePassword);
+if (process.env.E2E_REQUIRE_AUTH === "1" && !hasAuthenticatedFixture)
+  throw new Error("E2E_REQUIRE_AUTH=1 requires E2E_USERNAME and E2E_PASSWORD.");
 
 async function signIn(page: Page) {
   await page.goto("/");
@@ -24,6 +26,10 @@ async function removeExerciseIfPresent(page: Page, exerciseName: string) {
   await page.getByRole("button", { name: "Delete exercise", exact: true }).click();
   await expect(page.getByText(exerciseName, { exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: /Synced/ })).toBeVisible({ timeout: 15_000 });
+}
+
+function visibleNotificationTrigger(page: Page) {
+  return page.locator('[data-notification-center-trigger="true"]:visible').first();
 }
 
 test.describe("public boot and authentication surface", () => {
@@ -86,6 +92,111 @@ test.describe("authenticated page smoke coverage", () => {
     await signIn(page);
     await expect(page.getByRole("navigation", { name: /Primary pages/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  });
+
+  test("split switching replaces the workout surface without duplicating it", async ({ page }) => {
+    await signIn(page);
+    const splits = page.locator("[data-split-id]");
+    test.skip((await splits.count()) < 2, "The protected fixture needs at least two splits for this regression.");
+    const secondSplit = splits.nth(1);
+    const secondTitle = (await secondSplit.locator("span").innerText()).trim();
+    await secondSplit.click();
+    await expect(page.locator(".workout-page-header h1")).toHaveText(secondTitle);
+    await expect(page.locator(".workout-page-header h1")).toHaveCount(1);
+    await expect(page.locator(".workout-page")).toHaveCount(1);
+  });
+
+  test("inbox opens at its trigger and clear all offers an undo", async ({ page }) => {
+    await signIn(page);
+    const notificationId = `e2e:${Date.now()}`;
+    await page.evaluate((id) => {
+      window.dispatchEvent(
+        new CustomEvent("track-notification-created", {
+          detail: {
+            id,
+            kind: "sync",
+            title: "E2E notification",
+            message: "Notification center regression fixture.",
+            createdAt: Date.now(),
+            unread: true,
+          },
+        }),
+      );
+    }, notificationId);
+    const trigger = visibleNotificationTrigger(page);
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    const panel = page.getByRole("dialog", { name: "Notification center" });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByText("E2E notification", { exact: true })).toBeVisible();
+    await panel.getByRole("button", { name: "Clear all", exact: true }).click();
+    await expect(panel.getByText("You’re all caught up", { exact: true })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Notifications cleared" })).toBeVisible();
+  });
+
+  test("Rank front and back controls keep one body view active", async ({ page }) => {
+    await signIn(page);
+    await page
+      .getByRole("navigation", { name: /Primary pages/ })
+      .getByRole("button", { name: "Rank", exact: true })
+      .click();
+    await expect(page.locator(".rank-screen")).toBeVisible();
+    const map = page.locator(".rank-body-map-shell");
+    await page.getByRole("tab", { name: "Back" }).click();
+    await expect(map).toHaveAttribute("data-active-side", "back");
+    await expect(page.locator("#front-view")).toHaveAttribute("aria-hidden", "true");
+    await expect(page.getByRole("tab", { name: "Back" })).toHaveAttribute("aria-selected", "true");
+    await page.getByRole("tab", { name: "Front" }).click();
+    await expect(map).toHaveAttribute("data-active-side", "front");
+    await expect(page.locator("#back-view")).toHaveAttribute("aria-hidden", "true");
+  });
+
+  test("calendar backward navigation uses the same transition contract", async ({ page }) => {
+    await signIn(page);
+    await page
+      .getByRole("navigation", { name: /Primary pages/ })
+      .getByRole("button", { name: "Calendar", exact: true })
+      .click();
+    await expect(page.locator(".calendar-screen")).toBeVisible();
+    const stage = page.locator(".calendar-month-stage");
+    await page.getByRole("button", { name: "Previous month" }).click();
+    await expect(stage).toHaveClass(/previous/);
+    await expect(page.locator(".calendar-month-stage.previous")).toHaveCount(1);
+  });
+
+  test("long workout scrolling leaves the bottom navigation clear", async ({ page }) => {
+    await signIn(page);
+    const workout = page.locator(".workout-page");
+    await expect(workout).toBeVisible();
+    const taskCount = await workout.locator(".task").count();
+    test.skip(taskCount < 8, "The protected fixture needs a longer split for scroll coverage.");
+    await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: "instant" }));
+    const clearance = await page.evaluate(() => {
+      const dock = document.querySelector<HTMLElement>(".bottom-tab-bar");
+      const lastCard = [...document.querySelectorAll<HTMLElement>(".workout-page .task")].at(-1);
+      if (!dock || !lastCard) return null;
+      const dockRect = dock.getBoundingClientRect();
+      const cardRect = lastCard.getBoundingClientRect();
+      return { cardBottom: cardRect.bottom, dockTop: dockRect.top };
+    });
+    expect(clearance).not.toBeNull();
+    expect(clearance?.cardBottom ?? 0).toBeLessThanOrEqual((clearance?.dockTop ?? 0) + 2);
+  });
+
+  test("iPad layout keeps controls and labels inside the viewport", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "ipad", "This check runs in the iPad project only.");
+    await signIn(page);
+    await expect(page.getByRole("navigation", { name: /Primary pages/ })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+    await page
+      .getByRole("navigation", { name: /Primary pages/ })
+      .getByRole("button", { name: "Workout", exact: true })
+      .click();
+    const setRows = page.locator(".workout-page .set-row:not(.set-heading)");
+    if (await setRows.count()) {
+      await expect(setRows.first().getByLabel(/reps$/i)).toBeVisible();
+      await expect(setRows.first().getByLabel(/RIR$/i)).toBeVisible();
+    }
   });
 
   test("browser haptics use the navigator fallback", async ({ page }) => {

@@ -35,6 +35,7 @@ type WorkspaceContentProps = {
   completionEnabled: boolean;
   filter: Filter;
   openCount: number;
+  draggingTaskId: string | null;
   exerciseSuggestions: string[];
   quickPickExercises: readonly string[];
   value: string;
@@ -106,6 +107,7 @@ export function WorkspaceContent({
   completionEnabled,
   filter,
   openCount,
+  draggingTaskId,
   exerciseSuggestions,
   quickPickExercises,
   value,
@@ -254,6 +256,7 @@ export function WorkspaceContent({
               filter={filter}
               inputRef={inputRef}
               openCount={openCount}
+              draggingTaskId={draggingTaskId}
               progressFading={progressFading}
               quickPickExercises={quickPickExercises}
               searchQueryActive={searchQueryActive}
@@ -289,7 +292,12 @@ export function WorkspaceContent({
   })();
 
   return (
-    <div key={renderPage} className={homeTransition ? "content content-exit" : "content"}>
+    <div
+      key={renderPage}
+      className="content"
+      data-active-page={renderPage}
+      data-transitioning={homeTransition || undefined}
+    >
       {!cloudReady ? skeleton : content}
     </div>
   );

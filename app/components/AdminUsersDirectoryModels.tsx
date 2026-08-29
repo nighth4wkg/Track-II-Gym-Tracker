@@ -7,15 +7,19 @@ export type DirectoryUser = { id: string; username: string; lastSeenAt?: string;
 export type ContextMenu = { user: DirectoryUser; x: number; y: number };
 export type AdminUsersPanelProps = { open: boolean; onClose: () => void; currentUserId?: string };
 
-export function isMemberOnline(value?: string, now = Date.now(), isCurrentUser = false) {
-  if (isCurrentUser) return true;
+// Heartbeats run once a minute. A two-minute grace period avoids flicker when
+// a request is briefly delayed, while still allowing the directory to show a
+// stale current user instead of claiming they are permanently online.
+export const PRESENCE_STALE_AFTER_MS = 2 * 60_000;
+
+export function isMemberOnline(value?: string, now = Date.now()) {
   const timestamp = value ? new Date(value).getTime() : Number.NaN;
   if (!Number.isFinite(timestamp)) return false;
-  return Math.max(0, Math.floor((now - timestamp) / 1000)) < 60;
+  return Math.max(0, now - timestamp) < PRESENCE_STALE_AFTER_MS;
 }
 
-export function formatLastSeen(value?: string, now = Date.now(), isCurrentUser = false) {
-  if (isMemberOnline(value, now, isCurrentUser)) return "Online now";
+export function formatLastSeen(value?: string, now = Date.now()) {
+  if (isMemberOnline(value, now)) return "Online now";
   const timestamp = value ? new Date(value).getTime() : Number.NaN;
   if (!Number.isFinite(timestamp)) return "Last seen unavailable";
   const elapsedMinutes = Math.floor(Math.max(0, now - timestamp) / 60_000);

@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import type { OutputBundle } from "rolldown";
 
 const buildId = new Date().toISOString();
@@ -51,6 +51,14 @@ export default defineConfig(({ mode }) => {
               output.source instanceof Uint8Array ? new TextDecoder().decode(output.source) : output.source;
             output.source = replaceBuildTokens(source);
           }
+        },
+        closeBundle() {
+          // Vite copies publicDir files after bundle transforms, so the service
+          // worker needs one final pass or every deployment would share the
+          // literal placeholder cache name.
+          const serviceWorkerPath = new URL("./work/cloudflare-pages/sw.js", import.meta.url);
+          const serviceWorker = readFileSync(serviceWorkerPath, "utf8");
+          writeFileSync(serviceWorkerPath, replaceBuildTokens(serviceWorker), "utf8");
         },
       },
     ],

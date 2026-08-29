@@ -653,8 +653,6 @@
 .admin-user-context {
   position: fixed;
   z-index: 2000;
-  top: var(--menu-top);
-  left: var(--menu-left);
   width: 214px;
   padding: 6px;
   border: 1px solid var(--line);
@@ -1246,23 +1244,6 @@
   width: min(720px, 100%);
   margin: 0 auto;
 }
-.calendar-screen .eyebrow {
-  margin-bottom: 10px;
-}
-.calendar-title-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 18px;
-}
-.calendar-title-row h1 {
-  font-size: 34px;
-}
-.calendar-title-row p {
-  margin: 8px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-}
 .calendar-today {
   height: 34px;
   border: 1px solid var(--line);
@@ -1293,7 +1274,7 @@
   animation: calendar-month-next 0.34s var(--track-ease-spring) both;
 }
 .calendar-month-stage.previous {
-  animation-name: calendar-month-previous;
+  animation: calendar-month-previous 0.34s var(--track-ease-spring) both;
 }
 @keyframes calendar-month-next {
   from {
@@ -1520,12 +1501,6 @@
   .calendar-screen {
     width: 100%;
   }
-  .calendar-title-row {
-    align-items: flex-start;
-  }
-  .calendar-title-row h1 {
-    font-size: 31px;
-  }
   .calendar-card {
     margin-top: 28px;
     padding: 13px;
@@ -1658,13 +1633,6 @@ body {
 /* Final calendar sizing overrides keep the history view compact on desktop and mobile. */
 .calendar-screen {
   width: min(640px, 100%);
-}
-.calendar-title-row h1 {
-  font-size: 30px;
-}
-.calendar-title-row p {
-  margin-top: 6px;
-  font-size: 12px;
 }
 .calendar-card {
   margin-top: 17px;
@@ -1852,9 +1820,6 @@ body {
 @media (max-width: 1200px) {
   .calendar-screen {
     width: 100%;
-  }
-  .calendar-title-row h1 {
-    font-size: 28px;
   }
   .calendar-card {
     margin-top: 14px;

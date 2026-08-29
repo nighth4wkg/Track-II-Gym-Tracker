@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { applyAnimatedStyles, clearAnimatedStyles } from "../domMotion";
+import { readCachedExerciseNames, writeCachedExerciseNames } from "../exerciseCatalogCache";
 import { readNotificationPermission } from "../notifications";
 import {
   accountStorageKey,
@@ -40,8 +41,13 @@ export function useTrackBootstrapLifecycle({
 
   useEffect(() => {
     let mounted = true;
+    const cachedExerciseNames = readCachedExerciseNames();
+    if (cachedExerciseNames.length) setExerciseNames(cachedExerciseNames);
     void import("../exerciseCatalog").then(({ exerciseNames }) => {
-      if (mounted) setExerciseNames(exerciseNames);
+      if (mounted) {
+        setExerciseNames(exerciseNames);
+        writeCachedExerciseNames(exerciseNames);
+      }
     });
     return () => {
       mounted = false;
@@ -127,7 +133,10 @@ export function useTrackBootstrapLifecycle({
 
   useEffect(() => {
     if (!("serviceWorker" in navigator)) return;
-    void navigator.serviceWorker.register("/sw.js").catch(() => undefined);
+    void navigator.serviceWorker
+      .register("/sw.js")
+      .then((registration) => registration.update())
+      .catch(() => undefined);
   }, []);
 
   useEffect(() => {

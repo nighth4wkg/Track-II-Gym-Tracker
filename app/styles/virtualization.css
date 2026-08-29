@@ -1,0 +1,27 @@
+/* Long workout splits render a small viewport window while keeping the normal
+   card markup and drag behavior for shorter lists. */
+.task-list-shell {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  gap: var(--track-space-4);
+}
+
+.task-list-virtualized {
+  position: relative;
+  display: block;
+  width: 100%;
+  min-height: 1px;
+}
+
+.task-list-virtualized-item {
+  position: absolute;
+  inset-inline: 0;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .task-list-virtualized-item {
+    scroll-behavior: auto;
+  }
+}

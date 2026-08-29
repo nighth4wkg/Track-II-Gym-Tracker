@@ -18,7 +18,10 @@ export const ACCOUNT_PRESENCE_LABELS = {
 export function syncPhaseForLabel(label: string): SyncPhase {
   const normalized = label.toLowerCase();
   if (normalized.includes("offline")) return "offline";
-  if (/(retry|failed|couldn|needs attention|not saved|conflict|review changes)/.test(normalized)) return "attention";
+  if (
+    /(retry|failed|couldn|needs attention|not saved|conflict|review changes|stuck|paused|storage|full)/.test(normalized)
+  )
+    return "attention";
   if (/(saving|syncing|loading|updating|merging|update in)/.test(normalized)) return "syncing";
   return "synced";
 }

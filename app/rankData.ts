@@ -15,9 +15,11 @@ import {
   clamp,
   estimateOneRepMax,
   evidenceAdjustedLevel,
+  eliteProgressPercent,
   nextRankLabel,
   numberValue,
   rankPercent,
+  rankLevelIndex,
   scoreToLevel,
 } from "./rankScoring.ts";
 import type {
@@ -42,7 +44,13 @@ export {
   exerciseFamilyKey,
   exerciseMovementCoreKey,
 } from "./rankBenchmarks.ts";
-export { nextRankLabel, rankPercent } from "./rankScoring.ts";
+export {
+  eliteProgressPercent,
+  nextRankLabel,
+  rankLevelIndex,
+  rankMilestonePercent,
+  rankPercent,
+} from "./rankScoring.ts";
 export type { EquipmentType, MuscleGroup } from "./rankTypes.ts";
 export type {
   MuscleTarget,
@@ -54,6 +62,25 @@ export type {
   RankSummary,
   RankTask,
 } from "./rankModels.ts";
+
+/**
+ * Select the summary with the highest earned tier first. Within the same tier,
+ * the current-tier progress is the meaningful tie-breaker; raw score is only
+ * used as a final deterministic tie-break.
+ */
+export function strongestRankSummary(summaries: RankSummary[]) {
+  return summaries.reduce<RankSummary | null>((strongest, candidate) => {
+    if (!strongest) return candidate;
+    const levelDelta = rankLevelIndex(candidate.level) - rankLevelIndex(strongest.level);
+    if (levelDelta !== 0) return levelDelta > 0 ? candidate : strongest;
+    if (candidate.progress !== strongest.progress)
+      return candidate.progress > strongest.progress ? candidate : strongest;
+    if (candidate.eliteProgress !== strongest.eliteProgress) {
+      return candidate.eliteProgress > strongest.eliteProgress ? candidate : strongest;
+    }
+    return candidate.score > strongest.score ? candidate : strongest;
+  }, null);
+}
 
 export function classifyExercise(name: string): MuscleTarget[] {
   // SAFETY: the classifier's public result is built exclusively from the
@@ -346,6 +373,7 @@ export function buildRankSummaries(tasks: RankTask[], options: RankOptions = {})
       confidence,
       recentPerformances,
       progress: rankPercent(score, level),
+      eliteProgress: eliteProgressPercent(score),
       nextLevelLabel: nextRankLabel(level),
     } satisfies RankSummary;
   });

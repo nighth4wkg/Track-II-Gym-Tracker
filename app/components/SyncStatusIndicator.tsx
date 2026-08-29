@@ -9,6 +9,7 @@ type SyncStatusIndicatorProps = {
   lastSuccessfulSyncAt: number | null;
   onRetry: () => void;
   queuedCount?: number;
+  stuckCount?: number;
   compact?: boolean;
 };
 
@@ -22,6 +23,7 @@ export function SyncStatusIndicator({
   lastSuccessfulSyncAt,
   onRetry,
   queuedCount = 0,
+  stuckCount = 0,
   compact = false,
 }: SyncStatusIndicatorProps) {
   const [open, setOpen] = useState(false);
@@ -30,6 +32,7 @@ export function SyncStatusIndicator({
   const tone = syncStatusTone(label);
   const phaseLabel = SYNC_PHASE_LABELS[phase];
   const conflictVisible = /conflict|review changes/i.test(label);
+  const storageVisible = /storage|full/i.test(label);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -73,9 +76,13 @@ export function SyncStatusIndicator({
               {phase === "offline"
                 ? "Your changes are saved on this device and will retry when you are back online."
                 : phase === "attention"
-                  ? conflictVisible
-                    ? "Changes from another device were merged safely. Review the split before retrying."
-                    : "Your latest changes are still safe locally. Retry when your connection is ready."
+                  ? storageVisible
+                    ? "Offline storage is full or unavailable. Existing data was kept; clear device space, then retry the pending upload."
+                    : stuckCount > 0
+                      ? "A queued workout has reached the automatic retry limit. Review the error, then retry when ready."
+                      : conflictVisible
+                        ? "Changes from another device were merged safely. Review the split before retrying."
+                        : "Your latest changes are still safe locally. Retry when your connection is ready."
                   : phase === "syncing"
                     ? "Track II is saving the latest workout changes."
                     : "Your latest workout changes are saved to the cloud."}
@@ -90,6 +97,14 @@ export function SyncStatusIndicator({
               <span>Waiting to upload</span>
               <strong>
                 {queuedCount} workout{queuedCount === 1 ? "" : "s"}
+              </strong>
+            </div>
+          )}
+          {stuckCount > 0 && (
+            <div className="sync-health-meta sync-health-queue sync-health-stuck">
+              <span>Paused items</span>
+              <strong>
+                {stuckCount} workout{stuckCount === 1 ? "" : "s"}
               </strong>
             </div>
           )}

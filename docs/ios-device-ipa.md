@@ -9,7 +9,7 @@ The `Build Track device IPA` workflow creates an `iphoneos` IPA in GitHub Action
 3. At the bottom of the run summary, download **Track-ios-device-ipa**.
 4. Extract `Track.ipa` from the downloaded artifact.
 
-The workflow intentionally does not store Apple signing certificates or passwords. The artifact is unsigned and must be signed for the target iPhone by Sideloadly, AltStore, Xcode, or an Apple Developer signing workflow before iOS will install it.
+The workflow intentionally does not store Apple signing certificates or passwords. The artifact is unsigned and must be signed for the target iPhone by Sideloadly, AltStore, Xcode, or an Apple Developer signing workflow before iOS will install it. For a distributable signed IPA, use the protected `Native Production Release` workflow described in [native-production-release.md](native-production-release.md).
 
 ## Free personal testing
 

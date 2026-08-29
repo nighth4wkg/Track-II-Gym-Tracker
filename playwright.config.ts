@@ -23,6 +23,7 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "ipad", use: { ...devices["iPad (gen 7)"] } },
   ],
   webServer:
     useLocalServer && !process.env.PLAYWRIGHT_MANAGED_SERVER

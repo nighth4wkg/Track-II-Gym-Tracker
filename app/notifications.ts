@@ -1,8 +1,10 @@
 import { AppLauncher } from "@capacitor/app-launcher";
 import { Capacitor } from "@capacitor/core";
 import { LocalNotifications } from "@capacitor/local-notifications";
+import type { JsonValue } from "./trackTypes";
 import { TRACK_ASSET_QUERY } from "./trackConfig";
-import { promiseWithTimeout } from "./trackUtils";
+import { isJsonObject, isStringValue, promiseWithTimeout } from "./trackUtils";
+import { recordNotificationDelivery } from "./notificationTelemetry";
 
 export function nativeLocalNotificationsAvailable() {
   return (
@@ -47,15 +49,24 @@ export function notificationIdFromKey(key: string) {
   return (hash >>> 0) % 2147483647 || 1;
 }
 
+export function notificationIdForNativeDelivery(notification: { id?: number; extra?: JsonValue | undefined }) {
+  const extra = isJsonObject(notification.extra) ? notification.extra : null;
+  for (const value of [extra?.notificationId, extra?.id]) {
+    if (isStringValue(value) && value.trim()) return value;
+  }
+  const id = notification.id;
+  return id !== undefined && Number.isFinite(id) ? `native:${id}` : null;
+}
+
 const notificationDeliveries = new Map<string, Promise<boolean>>();
-const REST_COMPLETION_NOTIFICATION_ID = notificationIdFromKey("track-rest-complete");
+const LEGACY_REST_COMPLETION_NOTIFICATION_ID = notificationIdFromKey("track-rest-complete");
+let scheduledRestCompletionNotificationId: number | null = null;
 let restNotificationGeneration = 0;
 
 async function cancelNativeRestCompletionNotification() {
-  await promiseWithTimeout(
-    LocalNotifications.cancel({ notifications: [{ id: REST_COMPLETION_NOTIFICATION_ID }] }),
-    4000,
-  );
+  const ids = new Set([LEGACY_REST_COMPLETION_NOTIFICATION_ID]);
+  if (scheduledRestCompletionNotificationId !== null) ids.add(scheduledRestCompletionNotificationId);
+  await promiseWithTimeout(LocalNotifications.cancel({ notifications: [...ids].map((id) => ({ id })) }), 4000);
 }
 
 export async function cancelRestCompletionNotification() {
@@ -63,6 +74,7 @@ export async function cancelRestCompletionNotification() {
   restNotificationGeneration += 1;
   try {
     await cancelNativeRestCompletionNotification();
+    scheduledRestCompletionNotificationId = null;
     return true;
   } catch {
     return false;
@@ -72,9 +84,19 @@ export async function cancelRestCompletionNotification() {
 export async function scheduleRestCompletionNotification(endAtMs: number) {
   if (!nativeLocalNotificationsAvailable() || !Number.isFinite(endAtMs) || endAtMs <= Date.now()) return false;
   const generation = ++restNotificationGeneration;
+  const notificationKey = `rest:${Math.round(endAtMs)}`;
+  const nativeNotificationId = notificationIdFromKey(notificationKey);
   try {
     const permission = await promiseWithTimeout(LocalNotifications.checkPermissions(), 4000);
-    if (permission.display !== "granted") return false;
+    if (permission.display !== "granted") {
+      recordNotificationDelivery({
+        notificationId: notificationKey,
+        status: "failed",
+        surface: "native",
+        reason: `permission-${permission.display}`,
+      });
+      return false;
+    }
     // Only one rest alert may exist. This also replaces an alert left behind
     // when a user stops a rest timer and starts another one.
     if (generation !== restNotificationGeneration) return false;
@@ -88,7 +110,7 @@ export async function scheduleRestCompletionNotification(endAtMs: number) {
       LocalNotifications.schedule({
         notifications: [
           {
-            id: REST_COMPLETION_NOTIFICATION_ID,
+            id: nativeNotificationId,
             title: "Track II",
             body: "Rest complete. Time for your next set.",
             foreground: true,
@@ -98,24 +120,41 @@ export async function scheduleRestCompletionNotification(endAtMs: number) {
             interruptionLevel: "active",
             isExactNotification: false,
             schedule: { at: new Date(endAtMs), allowWhileIdle: true },
-            extra: { kind: "rest-complete" },
+            extra: { kind: "rest-complete", notificationId: notificationKey },
           },
         ],
       }),
       8000,
     );
+    scheduledRestCompletionNotificationId = nativeNotificationId;
+    recordNotificationDelivery({ notificationId: notificationKey, status: "scheduled", surface: "native" });
     return true;
   } catch {
+    recordNotificationDelivery({
+      notificationId: notificationKey,
+      status: "failed",
+      surface: "native",
+      reason: "schedule-error",
+    });
     return false;
   }
 }
 
 async function deliverSystemNotification(message: string, id: string) {
   if (!globalThis.window) return false;
+  const surface = nativeLocalNotificationsAvailable() ? "native" : "web";
   try {
     if (nativeLocalNotificationsAvailable()) {
       const permission = await LocalNotifications.checkPermissions();
-      if (permission.display !== "granted") return false;
+      if (permission.display !== "granted") {
+        recordNotificationDelivery({
+          notificationId: id,
+          status: "failed",
+          surface,
+          reason: `permission-${permission.display}`,
+        });
+        return false;
+      }
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -131,9 +170,13 @@ async function deliverSystemNotification(message: string, id: string) {
           },
         ],
       });
+      recordNotificationDelivery({ notificationId: id, status: "displayed", surface });
       return true;
     }
-    if (!("Notification" in window) || Notification.permission !== "granted") return false;
+    if (!("Notification" in window) || Notification.permission !== "granted") {
+      recordNotificationDelivery({ notificationId: id, status: "failed", surface, reason: "permission-denied" });
+      return false;
+    }
     if ("serviceWorker" in navigator) {
       const registration = await navigator.serviceWorker.getRegistration();
       if (registration) {
@@ -143,12 +186,15 @@ async function deliverSystemNotification(message: string, id: string) {
           badge: `/notification-badge.png${TRACK_ASSET_QUERY}`,
           tag: `track-${id}`,
         });
+        recordNotificationDelivery({ notificationId: id, status: "displayed", surface });
         return true;
       }
     }
     new Notification("Track II", { body: message, icon: `/icon-192.png${TRACK_ASSET_QUERY}`, tag: `track-${id}` });
+    recordNotificationDelivery({ notificationId: id, status: "displayed", surface });
     return true;
   } catch {
+    recordNotificationDelivery({ notificationId: id, status: "failed", surface, reason: "delivery-error" });
     /* keep the in-app announcement when system notifications are unavailable */ return false;
   }
 }

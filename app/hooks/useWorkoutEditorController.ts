@@ -3,6 +3,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   type Dispatch,
   type RefObject,
@@ -60,6 +61,13 @@ export function useWorkoutEditorController({
   const dragPointerPosition = useRef({ x: 0, y: 0 });
   const pendingDrag = useRef<{ id: string; x: number; y: number } | null>(null);
   const draggingTaskId = useRef<string | null>(null);
+  const tasksRef = useRef(tasks);
+  const listsRef = useRef(lists);
+  useEffect(() => {
+    tasksRef.current = tasks;
+    listsRef.current = lists;
+  }, [lists, tasks]);
+  const getTask = useCallback((taskId: string) => tasksRef.current.find((task) => task.id === taskId), []);
 
   const updateTasks = useCallback(
     (change: (current: Task[]) => Task[], marksWorkoutChanged = true) => {
@@ -262,253 +270,325 @@ export function useWorkoutEditorController({
     };
   }, [stopActiveDrag]);
 
-  function moveTaskFromPointer(event: ReactPointerEvent) {
-    if (event.pointerType === "touch") return;
-    const pending = pendingDrag.current;
-    if (
-      !draggingTaskId.current &&
-      pending &&
-      Math.hypot(event.clientX - pending.x, event.clientY - pending.y) > TRACK_INTERACTION.dragMovementThreshold
-    ) {
-      if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
-      dragHoldTimer.current = null;
-      pendingDrag.current = null;
-    }
-    if (!draggingTaskId.current) return;
-    dragPointerPosition.current = { x: event.clientX, y: event.clientY };
-    event.preventDefault();
-    updateDraggedTarget(event.clientY);
-    startDraggedAutoScroll();
-  }
-
-  function beginPointerDrag(event: ReactPointerEvent<HTMLElement>, id: string) {
-    if (event.pointerType === "touch") return;
-    dragPointerTarget.current = event.currentTarget;
-    dragPointerId.current = event.pointerId;
-    dragPointerPosition.current = { x: event.clientX, y: event.clientY };
-    pendingDrag.current = { id, x: event.clientX, y: event.clientY };
-    if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
-    dragHoldTimer.current = window.setTimeout(() => {
-      draggingTaskId.current = id;
-      setDragging(id);
-      dragHoldTimer.current = null;
-      pendingDrag.current = null;
-      document.documentElement.classList.add("dragging-task-active");
+  const moveTaskFromPointer = useCallback(
+    (event: ReactPointerEvent) => {
+      if (event.pointerType === "touch") return;
+      const pending = pendingDrag.current;
+      if (
+        !draggingTaskId.current &&
+        pending &&
+        Math.hypot(event.clientX - pending.x, event.clientY - pending.y) > TRACK_INTERACTION.dragMovementThreshold
+      ) {
+        if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
+        dragHoldTimer.current = null;
+        pendingDrag.current = null;
+      }
+      if (!draggingTaskId.current) return;
+      dragPointerPosition.current = { x: event.clientX, y: event.clientY };
+      event.preventDefault();
+      updateDraggedTarget(event.clientY);
       startDraggedAutoScroll();
-    }, TRACK_INTERACTION.dragPointerHoldMs);
-  }
+    },
+    [startDraggedAutoScroll, updateDraggedTarget],
+  );
 
-  function beginCardPointerDrag(event: ReactPointerEvent<HTMLElement>, id: string) {
-    if (event.pointerType === "touch") return;
-    if (!(event.target instanceof Element)) return;
-    const target = event.target;
-    if (target.closest('button, input, textarea, select, a, [contenteditable="true"], .mobile-exercise-menu')) return;
-    beginPointerDrag(event, id);
-  }
-
-  function beginTouchDrag(event: ReactTouchEvent<HTMLElement>, id: string) {
-    if (event.touches.length !== 1) return;
-    if (!(event.target instanceof Element)) return;
-    const target = event.target;
-    if (target.closest('button, input, textarea, select, a, [contenteditable="true"], .mobile-exercise-menu')) return;
-    const touch = event.touches[0];
-    const card = event.currentTarget;
-    if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
-    pendingDrag.current = { id, x: touch.clientX, y: touch.clientY };
-    dragPointerTarget.current = card;
-    dragPointerPosition.current = { x: touch.clientX, y: touch.clientY };
-    dragHoldTimer.current = window.setTimeout(() => {
-      if (!pendingDrag.current || pendingDrag.current.id !== id) return;
-      draggingTaskId.current = id;
-      pendingDrag.current = null;
-      dragHoldTimer.current = null;
-      document.documentElement.classList.add("dragging-task-active");
-      setDragging(id);
-      startDraggedAutoScroll();
-    }, TRACK_INTERACTION.dragTouchHoldMs);
-  }
-
-  function moveTouchDrag(event: ReactTouchEvent) {
-    if (event.touches.length !== 1) return;
-    const touch = event.touches[0];
-    const pending = pendingDrag.current;
-    if (
-      !draggingTaskId.current &&
-      pending &&
-      Math.hypot(touch.clientX - pending.x, touch.clientY - pending.y) > TRACK_INTERACTION.dragMovementThreshold
-    ) {
+  const beginPointerDrag = useCallback(
+    (event: ReactPointerEvent<HTMLElement>, id: string) => {
+      if (event.pointerType === "touch") return;
+      dragPointerTarget.current = event.currentTarget;
+      dragPointerId.current = event.pointerId;
+      dragPointerPosition.current = { x: event.clientX, y: event.clientY };
+      pendingDrag.current = { id, x: event.clientX, y: event.clientY };
       if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
-      dragHoldTimer.current = null;
-      pendingDrag.current = null;
-      return;
-    }
-    if (!draggingTaskId.current) return;
-    event.preventDefault();
-    dragPointerPosition.current = { x: touch.clientX, y: touch.clientY };
-    updateDraggedTarget(touch.clientY);
-    startDraggedAutoScroll();
-  }
+      dragHoldTimer.current = window.setTimeout(() => {
+        draggingTaskId.current = id;
+        setDragging(id);
+        dragHoldTimer.current = null;
+        pendingDrag.current = null;
+        document.documentElement.classList.add("dragging-task-active");
+        startDraggedAutoScroll();
+      }, TRACK_INTERACTION.dragPointerHoldMs);
+    },
+    [setDragging, startDraggedAutoScroll],
+  );
 
-  function endTouchDrag() {
+  const beginCardPointerDrag = useCallback(
+    (event: ReactPointerEvent<HTMLElement>, id: string) => {
+      if (event.pointerType === "touch") return;
+      if (!(event.target instanceof Element)) return;
+      const target = event.target;
+      if (target.closest('button, input, textarea, select, a, [contenteditable="true"], .mobile-exercise-menu')) return;
+      beginPointerDrag(event, id);
+    },
+    [beginPointerDrag],
+  );
+
+  const beginTouchDrag = useCallback(
+    (event: ReactTouchEvent<HTMLElement>, id: string) => {
+      if (event.touches.length !== 1) return;
+      if (!(event.target instanceof Element)) return;
+      const target = event.target;
+      if (target.closest('button, input, textarea, select, a, [contenteditable="true"], .mobile-exercise-menu')) return;
+      const touch = event.touches[0];
+      const card = event.currentTarget;
+      if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
+      pendingDrag.current = { id, x: touch.clientX, y: touch.clientY };
+      dragPointerTarget.current = card;
+      dragPointerPosition.current = { x: touch.clientX, y: touch.clientY };
+      dragHoldTimer.current = window.setTimeout(() => {
+        if (!pendingDrag.current || pendingDrag.current.id !== id) return;
+        draggingTaskId.current = id;
+        pendingDrag.current = null;
+        dragHoldTimer.current = null;
+        document.documentElement.classList.add("dragging-task-active");
+        setDragging(id);
+        startDraggedAutoScroll();
+      }, TRACK_INTERACTION.dragTouchHoldMs);
+    },
+    [setDragging, startDraggedAutoScroll],
+  );
+
+  const moveTouchDrag = useCallback(
+    (event: ReactTouchEvent) => {
+      if (event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const pending = pendingDrag.current;
+      if (
+        !draggingTaskId.current &&
+        pending &&
+        Math.hypot(touch.clientX - pending.x, touch.clientY - pending.y) > TRACK_INTERACTION.dragMovementThreshold
+      ) {
+        if (dragHoldTimer.current !== null) window.clearTimeout(dragHoldTimer.current);
+        dragHoldTimer.current = null;
+        pendingDrag.current = null;
+        return;
+      }
+      if (!draggingTaskId.current) return;
+      event.preventDefault();
+      dragPointerPosition.current = { x: touch.clientX, y: touch.clientY };
+      updateDraggedTarget(touch.clientY);
+      startDraggedAutoScroll();
+    },
+    [startDraggedAutoScroll, updateDraggedTarget],
+  );
+
+  const endTouchDrag = useCallback(() => {
     if (draggingTaskId.current || pendingDrag.current) stopActiveDrag();
-  }
+  }, [stopActiveDrag]);
 
-  function endPointerDrag() {
+  const endPointerDrag = useCallback(() => {
     stopActiveDrag();
-  }
+  }, [stopActiveDrag]);
 
-  function saveEdit(id: string, editValue: string) {
-    const text = editValue.trim();
-    const previous = tasks.find((task) => task.id === id);
-    if (text && previous && previous.text !== text) {
-      updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text } : task)));
-      offerUndo("Exercise renamed", () =>
-        updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text: previous.text } : task))),
-      );
-    }
-    setEditing(null);
-  }
+  const saveEdit = useCallback(
+    (id: string, editValue: string) => {
+      const text = editValue.trim();
+      const previous = tasksRef.current.find((task) => task.id === id);
+      if (text && previous && previous.text !== text) {
+        updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text } : task)));
+        offerUndo("Exercise renamed", () =>
+          updateTasks((current) => current.map((task) => (task.id === id ? { ...task, text: previous.text } : task))),
+        );
+      }
+      setEditing(null);
+    },
+    [offerUndo, setEditing, updateTasks],
+  );
 
-  function toggleDone(id: string) {
-    haptic(18);
-    updateTasks((current) =>
-      current.map((task) => (task.id === id ? { ...task, done: !task.done, collapsed: !task.done } : task)),
-    );
-  }
-
-  function toggleCard(id: string) {
-    haptic(8);
-    updateTasks(
-      (current) => current.map((task) => (task.id === id ? { ...task, collapsed: !task.collapsed } : task)),
-      false,
-    );
-  }
-
-  function updateSet(taskId: string, setId: string, field: "weight" | "reps" | "rir", input: string) {
-    const cleaned =
-      field === "weight"
-        ? sanitizeDecimalInput(input, TRACK_INTERACTION.maxSetWeightChars)
-        : input.replace(/\D/g, "").slice(0, TRACK_INTERACTION.maxSetCountChars);
-    const nextValue =
-      cleaned === ""
-        ? ""
-        : field === "weight"
-          ? cleaned
-          : String(Math.min(TRACK_INTERACTION.maxRepsOrRir, Number(cleaned)));
-    updateTasks((current) =>
-      current.map((task) =>
-        task.id === taskId
-          ? { ...task, sets: (task.sets ?? []).map((set) => (set.id === setId ? { ...set, [field]: nextValue } : set)) }
-          : task,
-      ),
-    );
-  }
-
-  function addSet(taskId: string) {
-    updateTasks((current) =>
-      current.map((task) => {
-        if (task.id !== taskId) return task;
-        const previous = task.sets?.at(-1);
-        const next: SetEntry = {
-          id: crypto.randomUUID(),
-          weight: previous?.weight ?? "0",
-          unit: previous?.unit ?? "kg",
-          reps: previous?.reps ?? "1",
-          rir: previous?.rir ?? "0",
-        };
-        return { ...task, sets: [...(task.sets ?? []), next] };
-      }),
-    );
-  }
-
-  function removeSet(taskId: string, setId: string) {
-    const task = tasks.find((item) => item.id === taskId);
-    const setIndex = task?.sets?.findIndex((set) => set.id === setId) ?? -1;
-    const removedSet = setIndex >= 0 ? task?.sets?.[setIndex] : undefined;
-    if (!removedSet || (task?.sets?.length ?? 0) <= 1) return;
-    updateTasks((current) =>
-      current.map((task) =>
-        task.id === taskId && (task.sets?.length ?? 0) > 1
-          ? { ...task, sets: task.sets?.filter((set) => set.id !== setId) }
-          : task,
-      ),
-    );
-    offerUndo("Set deleted", () =>
+  const toggleDone = useCallback(
+    (id: string) => {
+      haptic(18);
       updateTasks((current) =>
-        current.map((item) => {
-          if (item.id !== taskId || item.sets?.some((set) => set.id === setId)) return item;
-          const nextSets = [...(item.sets ?? [])];
-          nextSets.splice(Math.min(setIndex, nextSets.length), 0, removedSet);
-          return { ...item, sets: nextSets };
+        current.map((task) => (task.id === id ? { ...task, done: !task.done, collapsed: !task.done } : task)),
+      );
+    },
+    [updateTasks],
+  );
+
+  const completeSet = useCallback(
+    (taskId: string, setId: string) => {
+      haptic(10);
+      // Set completion is a short-lived interaction cue, not a replacement for
+      // the append-only workout log. Keep it out of the cloud payload while the
+      // rest timer starts immediately from the same thumb position.
+      updateTasks(
+        (current) =>
+          current.map((task) =>
+            task.id === taskId
+              ? {
+                  ...task,
+                  sets: (task.sets ?? []).map((set) => (set.id === setId ? { ...set, completed: true } : set)),
+                }
+              : task,
+          ),
+        false,
+      );
+    },
+    [updateTasks],
+  );
+
+  const toggleCard = useCallback(
+    (id: string) => {
+      haptic(8);
+      updateTasks(
+        (current) => current.map((task) => (task.id === id ? { ...task, collapsed: !task.collapsed } : task)),
+        false,
+      );
+    },
+    [updateTasks],
+  );
+
+  const updateSet = useCallback(
+    (taskId: string, setId: string, field: "weight" | "reps" | "rir", input: string) => {
+      const cleaned =
+        field === "weight"
+          ? sanitizeDecimalInput(input, TRACK_INTERACTION.maxSetWeightChars)
+          : input.replace(/\D/g, "").slice(0, TRACK_INTERACTION.maxSetCountChars);
+      const nextValue =
+        cleaned === ""
+          ? ""
+          : field === "weight"
+            ? cleaned
+            : String(Math.min(TRACK_INTERACTION.maxRepsOrRir, Number(cleaned)));
+      updateTasks((current) =>
+        current.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                sets: (task.sets ?? []).map((set) => (set.id === setId ? { ...set, [field]: nextValue } : set)),
+              }
+            : task,
+        ),
+      );
+    },
+    [updateTasks],
+  );
+
+  const addSet = useCallback(
+    (taskId: string) => {
+      updateTasks((current) =>
+        current.map((task) => {
+          if (task.id !== taskId) return task;
+          const previous = task.sets?.at(-1);
+          const next: SetEntry = {
+            id: crypto.randomUUID(),
+            weight: previous?.weight ?? "0",
+            unit: previous?.unit ?? "kg",
+            reps: previous?.reps ?? "1",
+            rir: previous?.rir ?? "0",
+          };
+          return { ...task, sets: [...(task.sets ?? []), next] };
         }),
-      ),
-    );
-  }
+      );
+    },
+    [updateTasks],
+  );
 
-  function removeExercise(taskId: string) {
-    const taskIndex = tasks.findIndex((item) => item.id === taskId);
-    const removedTask = taskIndex >= 0 ? tasks[taskIndex] : undefined;
-    if (!removedTask) return;
-    updateTasks((current) => current.filter((item) => item.id !== taskId));
-    setMobileExerciseMenu(null);
-    offerUndo("Exercise deleted", () =>
-      updateTasks((current) => {
-        if (current.some((item) => item.id === taskId)) return current;
-        const next = [...current];
-        next.splice(Math.min(taskIndex, next.length), 0, removedTask);
-        return next;
-      }),
-    );
-  }
+  const removeSet = useCallback(
+    (taskId: string, setId: string) => {
+      const task = tasksRef.current.find((item) => item.id === taskId);
+      const setIndex = task?.sets?.findIndex((set) => set.id === setId) ?? -1;
+      const removedSet = setIndex >= 0 ? task?.sets?.[setIndex] : undefined;
+      if (!removedSet || (task?.sets?.length ?? 0) <= 1) return;
+      updateTasks((current) =>
+        current.map((task) =>
+          task.id === taskId && (task.sets?.length ?? 0) > 1
+            ? { ...task, sets: task.sets?.filter((set) => set.id !== setId) }
+            : task,
+        ),
+      );
+      offerUndo("Set deleted", () =>
+        updateTasks((current) =>
+          current.map((item) => {
+            if (item.id !== taskId || item.sets?.some((set) => set.id === setId)) return item;
+            const nextSets = [...(item.sets ?? [])];
+            nextSets.splice(Math.min(setIndex, nextSets.length), 0, removedSet);
+            return { ...item, sets: nextSets };
+          }),
+        ),
+      );
+    },
+    [offerUndo, updateTasks],
+  );
 
-  function toggleSetUnit(taskId: string, setId: string) {
-    updateTasks((current) =>
-      current.map((task) =>
-        task.id === taskId
-          ? {
-              ...task,
-              sets: (task.sets ?? []).map((set) =>
-                set.id === setId ? convertSetUnit(set, set.unit === "kg" ? "lb" : "kg") : set,
-              ),
-            }
-          : task,
-      ),
-    );
-  }
+  const removeExercise = useCallback(
+    (taskId: string) => {
+      const taskIndex = tasksRef.current.findIndex((item) => item.id === taskId);
+      const removedTask = taskIndex >= 0 ? tasksRef.current[taskIndex] : undefined;
+      if (!removedTask) return;
+      updateTasks((current) => current.filter((item) => item.id !== taskId));
+      setMobileExerciseMenu(null);
+      offerUndo("Exercise deleted", () =>
+        updateTasks((current) => {
+          if (current.some((item) => item.id === taskId)) return current;
+          const next = [...current];
+          next.splice(Math.min(taskIndex, next.length), 0, removedTask);
+          return next;
+        }),
+      );
+    },
+    [offerUndo, setMobileExerciseMenu, updateTasks],
+  );
 
-  function applyGlobalUnit(unit: WeightUnit) {
-    setDefaultUnit(unit);
-    savedSplitsRef.current = new Set<string>();
-    setSavedSplits(new Set<string>());
-    setWorkoutActionsExiting(false);
-    const changedSplitIds = lists
-      .filter((list) => list.tasks.some((task) => (task.sets ?? []).some((set) => set.unit !== unit)))
-      .map((list) => list.id);
-    if (changedSplitIds.length) setDirtySplits((current) => new Set([...current, ...changedSplitIds]));
-    setLists((current) =>
-      current.map((list) => {
-        const tasks = list.tasks.map((task) => ({
-          ...task,
-          sets: (task.sets ?? []).map((set) => convertSetUnit(set, unit)),
-        }));
-        return changedSplitIds.includes(list.id) ? { ...list, updatedAt: Date.now(), tasks } : list;
-      }),
-    );
-  }
+  const toggleSetUnit = useCallback(
+    (taskId: string, setId: string) => {
+      updateTasks((current) =>
+        current.map((task) =>
+          task.id === taskId
+            ? {
+                ...task,
+                sets: (task.sets ?? []).map((set) =>
+                  set.id === setId ? convertSetUnit(set, set.unit === "kg" ? "lb" : "kg") : set,
+                ),
+              }
+            : task,
+        ),
+      );
+    },
+    [updateTasks],
+  );
 
-  function applyExerciseUnit(taskId: string, unit: WeightUnit) {
-    updateTasks((current) =>
-      current.map((task) =>
-        task.id === taskId ? { ...task, sets: (task.sets ?? []).map((set) => convertSetUnit(set, unit)) } : task,
-      ),
-    );
-  }
+  const applyGlobalUnit = useCallback(
+    (unit: WeightUnit) => {
+      setDefaultUnit(unit);
+      savedSplitsRef.current = new Set<string>();
+      setSavedSplits(new Set<string>());
+      setWorkoutActionsExiting(false);
+      const changedSplitIds = listsRef.current
+        .filter((list) => list.tasks.some((task) => (task.sets ?? []).some((set) => set.unit !== unit)))
+        .map((list) => list.id);
+      if (changedSplitIds.length) setDirtySplits((current) => new Set([...current, ...changedSplitIds]));
+      setLists((current) =>
+        current.map((list) => {
+          const tasks = list.tasks.map((task) => ({
+            ...task,
+            sets: (task.sets ?? []).map((set) => convertSetUnit(set, unit)),
+          }));
+          return changedSplitIds.includes(list.id) ? { ...list, updatedAt: Date.now(), tasks } : list;
+        }),
+      );
+    },
+    [savedSplitsRef, setDefaultUnit, setDirtySplits, setLists, setSavedSplits, setWorkoutActionsExiting],
+  );
 
-  function syncLatestProgressAcrossSplits() {
-    const plan = buildLatestExerciseProgressPlan(lists);
+  const applyExerciseUnit = useCallback(
+    (taskId: string, unit: WeightUnit) => {
+      updateTasks((current) =>
+        current.map((task) =>
+          task.id === taskId ? { ...task, sets: (task.sets ?? []).map((set) => convertSetUnit(set, unit)) } : task,
+        ),
+      );
+    },
+    [updateTasks],
+  );
+
+  const syncLatestProgressAcrossSplits = useCallback(() => {
+    const plan = buildLatestExerciseProgressPlan(listsRef.current);
     if (!plan.changedSplitIds.length) return plan;
     const changedIds = new Set(plan.changedSplitIds);
-    const previousLists = new Map(lists.filter((list) => changedIds.has(list.id)).map((list) => [list.id, list]));
+    const previousLists = new Map(
+      listsRef.current.filter((list) => changedIds.has(list.id)).map((list) => [list.id, list]),
+    );
     savedSplitsRef.current = new Set([...savedSplitsRef.current].filter((id) => !changedIds.has(id)));
     setSavedSplits(new Set(savedSplitsRef.current));
     setDirtySplits((current) => new Set([...current, ...plan.changedSplitIds]));
@@ -525,48 +605,80 @@ export function useWorkoutEditorController({
       setDirtySplits((current) => new Set([...current, ...plan.changedSplitIds]));
     });
     return plan;
-  }
+  }, [offerUndo, savedSplitsRef, setDirtySplits, setLists, setSavedSplits, setWorkoutActionsExiting]);
 
-  function beginSetWeightEdit(taskId: string, set: SetEntry, input: HTMLInputElement) {
+  const beginSetWeightEdit = useCallback((taskId: string, set: SetEntry, input: HTMLInputElement) => {
     const key = `${taskId}:${set.id}`;
     if (Number(set.weight) > 0) weightBeforeEdit.current[key] = set.weight;
     else if (set.lastWeight && set.lastWeight > 0) weightBeforeEdit.current[key] = String(set.lastWeight);
     input.select();
-  }
+  }, []);
 
-  function finishSetWeightEdit(taskId: string, set: SetEntry) {
-    const normalized = normalizeWeightInputOnBlur(set.weight);
-    if (normalized === null || Number(normalized) === 0) {
-      const previous =
-        weightBeforeEdit.current[`${taskId}:${set.id}`] ||
-        (set.lastWeight && set.lastWeight > 0 ? String(set.lastWeight) : "");
-      updateSet(taskId, set.id, "weight", previous || "0");
-      return;
-    }
-    if (normalized !== set.weight) updateSet(taskId, set.id, "weight", normalized);
-  }
+  const finishSetWeightEdit = useCallback(
+    (taskId: string, set: SetEntry) => {
+      const normalized = normalizeWeightInputOnBlur(set.weight);
+      if (normalized === null || Number(normalized) === 0) {
+        const previous =
+          weightBeforeEdit.current[`${taskId}:${set.id}`] ||
+          (set.lastWeight && set.lastWeight > 0 ? String(set.lastWeight) : "");
+        updateSet(taskId, set.id, "weight", previous || "0");
+        return;
+      }
+      if (normalized !== set.weight) updateSet(taskId, set.id, "weight", normalized);
+    },
+    [updateSet],
+  );
 
-  return {
-    updateTasks,
-    moveTask,
-    moveTaskFromPointer,
-    beginCardPointerDrag,
-    beginTouchDrag,
-    moveTouchDrag,
-    endTouchDrag,
-    endPointerDrag,
-    saveEdit,
-    toggleDone,
-    toggleCard,
-    updateSet,
-    addSet,
-    removeSet,
-    removeExercise,
-    toggleSetUnit,
-    applyGlobalUnit,
-    applyExerciseUnit,
-    syncLatestProgressAcrossSplits,
-    beginSetWeightEdit,
-    finishSetWeightEdit,
-  };
+  return useMemo(
+    () => ({
+      getTask,
+      updateTasks,
+      moveTask,
+      moveTaskFromPointer,
+      beginCardPointerDrag,
+      beginTouchDrag,
+      moveTouchDrag,
+      endTouchDrag,
+      endPointerDrag,
+      saveEdit,
+      toggleDone,
+      completeSet,
+      toggleCard,
+      updateSet,
+      addSet,
+      removeSet,
+      removeExercise,
+      toggleSetUnit,
+      applyGlobalUnit,
+      applyExerciseUnit,
+      syncLatestProgressAcrossSplits,
+      beginSetWeightEdit,
+      finishSetWeightEdit,
+    }),
+    [
+      addSet,
+      applyExerciseUnit,
+      applyGlobalUnit,
+      beginCardPointerDrag,
+      beginSetWeightEdit,
+      beginTouchDrag,
+      completeSet,
+      endPointerDrag,
+      endTouchDrag,
+      finishSetWeightEdit,
+      getTask,
+      moveTask,
+      moveTaskFromPointer,
+      moveTouchDrag,
+      removeExercise,
+      removeSet,
+      saveEdit,
+      syncLatestProgressAcrossSplits,
+      toggleCard,
+      toggleDone,
+      toggleSetUnit,
+      updateSet,
+      updateTasks,
+    ],
+  );
 }

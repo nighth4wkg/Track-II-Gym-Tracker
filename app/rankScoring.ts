@@ -73,6 +73,8 @@ const RANK_THRESHOLDS = {
 
 const RANK_ORDER: Exclude<RankLevel, "untracked">[] = ["newbie", "intermediate", "gym-bro", "advanced", "elite"];
 
+const ELITE_START_SCORE = RANK_THRESHOLDS.elite.min;
+
 export function scoreToLevel(score: number): RankLevel {
   if (!Number.isFinite(score) || score <= 0) return "untracked";
   return (
@@ -117,6 +119,31 @@ export function rankPercent(score: number, level: RankLevel = scoreToLevel(score
   const range = RANK_THRESHOLDS[level];
   const progress = ((score - range.min) / (range.max - range.min)) * 100;
   return Math.max(0, Math.min(level === "elite" ? 100 : 99, Math.round(progress)));
+}
+
+/**
+ * Return a stable ordering for comparisons between summaries. Untracked is
+ * deliberately below every earned tier so a zero-data group can never win a
+ * strongest-area comparison.
+ */
+export function rankLevelIndex(level: RankLevel) {
+  return level === "untracked" ? -1 : RANK_ORDER.indexOf(level);
+}
+
+/**
+ * Progress across the complete rank scale, rather than only inside the
+ * current tier. This keeps the bar meaningful when a user moves from one
+ * milestone to the next.
+ */
+export function eliteProgressPercent(score: number) {
+  if (!Number.isFinite(score) || score <= 0) return 0;
+  return Math.max(0, Math.min(100, Math.round((score / ELITE_START_SCORE) * 100)));
+}
+
+/** Position of a tier boundary on the complete Newbie-to-Elite scale. */
+export function rankMilestonePercent(level: RankLevel) {
+  if (level === "untracked") return 0;
+  return Math.max(0, Math.min(100, Math.round((RANK_THRESHOLDS[level].min / ELITE_START_SCORE) * 1000) / 10));
 }
 
 export function nextRankLabel(level: RankLevel) {

@@ -10,6 +10,7 @@ import {
 } from "../notificationCenter";
 import { syncPhaseForLabel, type SyncPhase } from "../syncHealth";
 import type { TimerRuntimeState, TrackAnnouncement, WorkoutDraft } from "../trackTypes";
+import { recordNotificationDelivery } from "../notificationTelemetry";
 
 type UseNotificationCenterOptions = {
   userId: string | null;
@@ -66,6 +67,7 @@ export function useNotificationCenter({
 
   const record = useCallback(
     (notification: TrackCenterNotification) => {
+      recordNotificationDelivery({ notificationId: notification.id, status: "displayed", surface: "in-app" });
       commit((current) => {
         if (current.some((item) => item.id === notification.id)) return current;
         return [notification, ...current];
@@ -171,16 +173,42 @@ export function useNotificationCenter({
   const unreadCount = useMemo(() => items.reduce((count, item) => count + (item.unread ? 1 : 0), 0), [items]);
   const markRead = useCallback(
     (id: string) => {
+      recordNotificationDelivery({ notificationId: id, status: "opened", surface: "in-app" });
       commit((current) => current.map((item) => (item.id === id && item.unread ? { ...item, unread: false } : item)));
     },
     [commit],
   );
   const markAllRead = useCallback(() => {
+    items
+      .filter((item) => item.unread)
+      .forEach((item) => {
+        recordNotificationDelivery({ notificationId: item.id, status: "opened", surface: "in-app" });
+      });
     commit((current) => current.map((item) => (item.unread ? { ...item, unread: false } : item)));
-  }, [commit]);
-  const dismiss = useCallback((id: string) => commit((current) => current.filter((item) => item.id !== id)), [commit]);
+  }, [commit, items]);
+  const dismiss = useCallback(
+    (id: string) => {
+      recordNotificationDelivery({ notificationId: id, status: "dismissed", surface: "in-app" });
+      commit((current) => current.filter((item) => item.id !== id));
+    },
+    [commit],
+  );
+  const clearAll = useCallback(() => {
+    items.forEach((item) => {
+      recordNotificationDelivery({ notificationId: item.id, status: "dismissed", surface: "in-app" });
+    });
+    commit(() => []);
+  }, [commit, items]);
+  const restore = useCallback(
+    (snapshot: TrackCenterNotification[]) =>
+      commit((current) => {
+        const currentIds = new Set(current.map((item) => item.id));
+        return [...snapshot.filter((item) => !currentIds.has(item.id)), ...current];
+      }),
+    [commit],
+  );
   const toggle = useCallback(() => setOpen((current) => !current), []);
   const close = useCallback(() => setOpen(false), []);
 
-  return { items, unreadCount, open, toggle, close, markRead, markAllRead, dismiss };
+  return { items, unreadCount, open, toggle, close, markRead, markAllRead, clearAll, restore, dismiss };
 }

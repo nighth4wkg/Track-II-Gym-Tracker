@@ -1,14 +1,13 @@
 "use client";
 
-import { useMemo, type ComponentProps } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { TrackAppShell } from "./TrackAppShell";
 import type { BottomTabId } from "./BottomTabBar";
 import type { EquipmentType, MuscleGroup } from "../rankTypes";
-import { POPULAR_QUICK_PICK_EXERCISES } from "../trackConstants";
+import { POPULAR_QUICK_PICK_EXERCISES, TRACK_INTERACTION } from "../trackConstants";
 import { haptic } from "../haptics";
 import type { TrackAppViewProps } from "../trackAppViewTypes";
 import { bottomTabFromNavigation, buildExerciseSuggestions, filterWorkoutTasks } from "../trackViewSelectors";
-import { createWorkoutEditorContextValue } from "./createWorkoutEditorContextValue";
 import { createSettingsContextValue } from "./createSettingsContextValue";
 import { createSettingsModalProps } from "./createSettingsModalProps";
 import { buildAllSplitRankTasks, buildLatestExerciseProgressPlan } from "../exerciseProgress";
@@ -16,6 +15,8 @@ import { createTrackAppOverlayProps } from "./createTrackAppOverlayProps";
 import { createTrackSplitMenuProps } from "./createTrackSplitMenuProps";
 import { activePageFromNavigation } from "../navigationPage";
 import { useTrackAppNotifications } from "../hooks/useTrackAppNotifications";
+import { useWorkoutEditorContextValue } from "../hooks/useWorkoutEditorContextValue";
+import { createTrackAppMainHandlers } from "./createTrackAppMainHandlers";
 
 export function TrackAppView({ active: activeResult, controllers, local, nativeApp, state, tasks }: TrackAppViewProps) {
   const active = activeResult ?? null;
@@ -86,11 +87,16 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     workoutDate,
     workoutEditor,
   } = controllers;
-  const notificationCenterProps = useTrackAppNotifications(identity, timer, controllers.workoutDraftRecovery);
+  const notificationCenterProps = useTrackAppNotifications(identity, timer, controllers.workoutDraftRecovery, undo);
   const { visible, openCount } = useMemo(() => filterWorkoutTasks(tasks, filter), [filter, tasks]);
-  const searchQueryTerm = searchQuery.trim();
-  const exerciseSuggestions = buildExerciseSuggestions(exerciseNames, searchQueryTerm);
-  const searchQueryActive = searchQueryTerm.length > 0;
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchQuery(searchQuery), TRACK_INTERACTION.searchDebounceMs);
+    return () => window.clearTimeout(timer);
+  }, [searchQuery]);
+  const debouncedSearchQueryTerm = debouncedSearchQuery.trim();
+  const exerciseSuggestions = buildExerciseSuggestions(exerciseNames, debouncedSearchQueryTerm);
+  const searchQueryActive = debouncedSearchQueryTerm.length > 0;
   const syncProgressPreview = useMemo(() => {
     const { exerciseCount, splitCount } = buildLatestExerciseProgressPlan(lists);
     return { exerciseCount, splitCount };
@@ -143,11 +149,11 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
   } = bottomTabs;
   const { offerUndo } = undo;
   const { markTimerChanged } = timerPersistence;
-  const workoutEditorContextValue = createWorkoutEditorContextValue({
+  const workoutEditorContextValue = useWorkoutEditorContextValue({
     completionEnabled,
-    tasks,
     workout,
     editor: workoutEditor,
+    startRest: startRestTimer,
   });
 
   const settingsContextValue = createSettingsContextValue({
@@ -167,19 +173,12 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     interactions,
     workoutEditor,
   });
-  const mainHandlers: Pick<
-    ComponentProps<"main">,
-    "onTouchStartCapture" | "onTouchEndCapture" | "onPointerDownCapture" | "onPointerCancelCapture" | "onClickCapture"
-  > = {
+  const mainHandlers = createTrackAppMainHandlers({
     onTouchStartCapture: handleSwipeStart,
     onTouchEndCapture: handleSwipeEnd,
     onPointerDownCapture: beginDesktopSidebarSwipe,
     onPointerCancelCapture: cancelDesktopSidebarSwipe,
-    onClickCapture: (event) => {
-      if (event.target instanceof Element && event.target.closest(".theme-toggle, .segmented-control button"))
-        haptic(10);
-    },
-  };
+  });
   const sidebarProps = {
     mobileOpen: mobileSidebarOpen,
     sidebarCollapsed,
@@ -208,6 +207,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     onRetrySync: cloudSync.retrySync,
     onUseCloudCopy: cloudSync.resolveSyncConflict,
     offlineQueueCount: cloudSync.offlineQueueCount,
+    offlineQueueStuckCount: cloudSync.offlineQueueStuckCount,
     settingsOpen,
     onGoHome: goHome,
     onHideSidebar: hideSidebar,
@@ -237,6 +237,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     tasks,
     rankTasks: allSplitRankTasks,
     visible,
+    draggingTaskId: workout.dragging,
     completionEnabled,
     filter,
     openCount,
@@ -385,6 +386,8 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
       undoToastProps={overlayProps.undoToastProps}
       workoutDraftRecoveryProps={overlayProps.workoutDraftRecoveryProps}
       notificationCenterProps={notificationCenterProps}
+      syncConflict={cloudSync.syncConflict}
+      onKeepMergedSyncConflict={cloudSync.keepMergedSyncConflict}
     />
   );
 }

@@ -284,11 +284,13 @@ test("beta UX surfaces expose concise summaries and useful empty states", async 
   assert.match(await read("app/trackConstants.ts"), /POPULAR_QUICK_PICK_EXERCISES/);
   assert.match(calendar, /className="calendar-insight-strip"/);
   assert.match(calendar, /className="calendar-empty-note ui-empty"/);
+  assert.match(calendar, /calendar-month-stage/);
   assert.match(rank, /className="rank-insight-strip"/);
   assert.match(rank, /className="rank-empty-note"/);
   assert.match(base, /var\(--font-geist-sans\),[\s\S]*?-apple-system,[\s\S]*?BlinkMacSystemFont/);
   assert.match(base, /-webkit-font-smoothing: antialiased/);
   assert.match(css, /\.calendar-insight-card,[\s\S]*?\.rank-insight-card/);
+  assert.match(css, /\.calendar-month-stage\.previous \{[\s\S]*?animation: calendar-month-previous 0\.34s/);
   assert.match(css, /\.empty-starter-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)/);
   assert.match(css, /\.account-panel-heading \.sync-health-popover \{[\s\S]*?bottom: calc\(100% \+ 8px\)/);
   assert.match(sidebar, /onRetry=\{onRetrySync\}[\s\S]*?compact/);
@@ -310,7 +312,7 @@ test("Dashboard exposes timeframe inspection, progression, volume guidance, and 
     workspace,
     /lazy\(async \(\) => \(\{ default: \(await import\("\.\/DashboardScreen"\)\)\.DashboardScreen \}\)\)/,
   );
-  assert.match(dashboard, /Last week/);
+  assert.match(dashboard, /This week/);
   assert.match(dashboard, /Last month/);
   assert.match(dashboard, /Year to date/);
   assert.match(dashboard, /All time/);
@@ -335,6 +337,12 @@ test("Dashboard exposes timeframe inspection, progression, volume guidance, and 
   assert.match(dashboard, /dashboard-volume-delta/);
   assert.match(dashboard, /formatVolumeDelta/);
   assert.match(dashboard, /activityWorkoutCount === 1 \? "workout" : "workouts"/);
+  assert.match(dashboard, /MUSCLE_GROUPS\.indexOf\(left\.group\) - MUSCLE_GROUPS\.indexOf\(right\.group\)/);
+  assert.match(
+    css,
+    /\.dashboard-muscle-list > div \{[\s\S]*?grid-template-columns: minmax\(60px, max-content\) minmax\(0, 1fr\) max-content;/,
+  );
+  assert.doesNotMatch(css, /\.dashboard-muscle-list em \{[^}]*text-overflow: ellipsis/);
   assert.match(settings, /SettingsStandardViews/);
   assert.match(standardSettings, /case "appearance"/);
   assert.match(standardSettings, /case "account"/);
@@ -389,16 +397,18 @@ test("release metadata keeps web and native package versions aligned", async () 
 });
 
 test("Rank is wired to current task data and uses the semantic flat anatomy SVG", async () => {
-  const [page, workspaceContent, navigationState, rank, rankScreen, rankBodyMap, rankSvg, css] = await Promise.all([
-    readPageSource(),
-    read("app/components/WorkspaceContent.tsx"),
-    read("app/hooks/useNavigationState.ts"),
-    readRankSource(),
-    read("app/components/RankScreen.tsx"),
-    read("app/components/RankBodyMap.tsx"),
-    read("app/assets/rank-muscle-map.svg"),
-    readCssSource(),
-  ]);
+  const [page, workspaceContent, navigationState, rank, rankScreen, rankMeter, rankBodyMap, rankSvg, css] =
+    await Promise.all([
+      readPageSource(),
+      read("app/components/WorkspaceContent.tsx"),
+      read("app/hooks/useNavigationState.ts"),
+      readRankSource(),
+      read("app/components/RankScreen.tsx"),
+      read("app/components/RankMeter.tsx"),
+      read("app/components/RankBodyMap.tsx"),
+      read("app/assets/rank-muscle-map.svg"),
+      readCssSource(),
+    ]);
 
   assert.match(
     workspaceContent,
@@ -414,6 +424,8 @@ test("Rank is wired to current task data and uses the semantic flat anatomy SVG"
   assert.match(rank, /detectExerciseTargets/);
   assert.match(rank, /matchedExercises/);
   assert.match(rank, /weightedRows\[0\]\.score \* 0\.65 \+ weightedRows\[1\]\.score \* 0\.35/);
+  assert.match(rank, /strongestRankSummary/);
+  assert.match(rank, /eliteProgressPercent/);
   assert.match(rank, /FREE_WEIGHT_UNILATERAL_MULTIPLIER = 1\.2/);
   assert.match(rank, /detectEquipmentType/);
   assert.match(rank, /equipmentAdjustedBenchmark/);
@@ -426,6 +438,14 @@ test("Rank is wired to current task data and uses the semantic flat anatomy SVG"
   assert.match(rankScreen, /selectedSummary\.matchedExercises\.map/);
   assert.match(rankScreen, /rank-correction-controls/);
   assert.match(rankScreen, /rank-selected-primary/);
+  assert.match(rankMeter, /rank-meter-ticks/);
+  assert.match(rankMeter, /rankMilestonePercent/);
+  assert.match(rankScreen, /rankDisplayLabel/);
+  assert.match(rankScreen, /nextDisplayRankLabel/);
+  assert.match(rankScreen, /Pump chaser/);
+  assert.match(rankScreen, /Locked in/);
+  assert.match(rankScreen, /Final boss/);
+  assert.doesNotMatch(rankScreen, /rank-label-toggle|Culture|Standard/);
   assert.match(css, /\.rank-selected-primary \{ min-width:0; display:flex; flex-wrap:wrap; align-items:baseline;/);
   assert.match(css, /\.rank-selected-list \{ display:grid; gap:8px; padding:8px; border-top:/);
   assert.match(css, /\.rank-selected-set \{[^}]*text-align:left/);
@@ -434,6 +454,7 @@ test("Rank is wired to current task data and uses the semantic flat anatomy SVG"
   assert.match(rankScreen, /Equipment/);
   assert.match(rankScreen, /EQUIPMENT_TYPES\.map/);
   assert.match(rankScreen, /summary\.progress/);
+  assert.match(rankScreen, /summary\.eliteProgress/);
   assert.match(rankScreen, /aria-label="Front and back strength maps"/);
   assert.match(rankScreen, /<RankBodyMap\s+summaries=\{summaries\}/);
   assert.match(rankScreen, /activeSide=\{selectedSide\}/);
@@ -447,7 +468,7 @@ test("Rank is wired to current task data and uses the semantic flat anatomy SVG"
   assert.match(rankBodyMap, /path\.style\.setProperty\("fill", fill\)/);
   assert.match(rankBodyMap, /path\.style\.setProperty\("--rank-muscle-color", fill\)/);
   assert.match(rankBodyMap, /const RANK_MAP_MARKUP = \{ __html: rankMuscleMapSvg \}/);
-  assert.match(rankBodyMap, /useLayoutEffect\(\(\) => \{[\s\S]*?\n  \}\);/);
+  assert.match(rankBodyMap, /useLayoutEffect\(\(\) => \{[\s\S]*?\n  \},?(?:\s*\[[^\]]*\])?\);/);
   assert.match(rankSvg, /viewBox="0 0 900 600"/);
   assert.match(rankSvg, /id="front-view"/);
   assert.match(rankSvg, /id="back-view"/);
@@ -495,7 +516,7 @@ test("Rank is wired to current task data and uses the semantic flat anatomy SVG"
   assert.doesNotMatch(rankSvg, /rank-map-details|<circle|<ellipse/i);
   assert.match(rankSvg, /react-muscle-highlighter 1\.2\.0 \(MIT\)/);
   assert.doesNotMatch(rankBodyMap, /rank-anatomy-|rank-body-shadow|<clipPath|<linearGradient/);
-  assert.doesNotMatch(rankScreen, /rank-map-toggle/);
+  assert.match(rankScreen, /rank-map-toggle/);
   assert.doesNotMatch(rankScreen, /YOUR CURRENT PROFILE/);
   assert.doesNotMatch(rankScreen, /% of exercise standard/);
   assert.doesNotMatch(rankScreen, /Machine load kept/);
@@ -781,6 +802,47 @@ test("announcements acknowledge once, offline workouts queue safely, and metrics
   assert.match(pagesEntry, /startWebVitals/);
 });
 
+test("offline shell, telemetry, and native release contracts stay wired", async () => {
+  const [
+    serviceWorker,
+    offlinePage,
+    offlineCss,
+    viteConfig,
+    syncTelemetry,
+    notificationTelemetry,
+    appNotifications,
+    nativeWorkflow,
+  ] = await Promise.all([
+    read("public/sw.js"),
+    read("public/offline.html"),
+    read("public/offline.css"),
+    read("vite.pages.config.ts"),
+    read("app/syncTelemetry.ts"),
+    read("app/notificationTelemetry.ts"),
+    read("app/hooks/useTrackAppNotifications.ts"),
+    read(".github/workflows/native-production-release.yml"),
+  ]);
+
+  assert.match(serviceWorker, /TRACK_CACHE_PREFIX/);
+  assert.match(serviceWorker, /SHELL_URLS/);
+  assert.match(serviceWorker, /caches\.match\(OFFLINE_URL\)/);
+  assert.match(serviceWorker, /TRACK_SW_SKIP_WAITING/);
+  assert.match(offlinePage, /offline\.css/);
+  assert.match(offlinePage, /saved workout data stays on this device/);
+  assert.match(offlineCss, /color-scheme: dark/);
+  assert.match(viteConfig, /closeBundle()/);
+  assert.match(viteConfig, /cloudflare-pages\/sw\.js/);
+  assert.match(syncTelemetry, /track:sync-telemetry/);
+  assert.match(syncTelemetry, /MAX_SYNC_TELEMETRY_EVENTS/);
+  assert.match(notificationTelemetry, /track:notification-delivery/);
+  assert.match(notificationTelemetry, /scheduled.*displayed.*dismissed.*opened.*failed/);
+  assert.match(appNotifications, /localNotificationReceived/);
+  assert.match(appNotifications, /localNotificationActionPerformed/);
+  assert.match(nativeWorkflow, /Signed Android APK and AAB/);
+  assert.match(nativeWorkflow, /Signed iOS IPA/);
+  assert.match(nativeWorkflow, /publish_testflight/);
+});
+
 test("dashboard summaries are session-based, cached, and protected", async () => {
   const [migration, metrics, api, identity] = await Promise.all([
     read("supabase/migrations/20260831_dashboard_summary.sql"),
@@ -914,7 +976,7 @@ test("responsive workout controls keep one aligned grid and remove native number
     css,
     /\.workout-page \.set-row \.set-input:nth-child\(3\)::after,[\s\S]*?content:none;[\s\S]*?display:none;/,
   );
-  assert.match(css, /\.workout-page \.title-row \{[\s\S]*?align-items:flex-start;/);
+  assert.match(css, /\.page-header-row \{[\s\S]*?align-items:flex-end;/);
   assert.match(css, /\.workout-page \.add-set \{[\s\S]*?width:100%;/);
   assert.match(css, /input\[type="number"\] \{[\s\S]*?appearance:textfield;/);
   assert.match(css, /::-webkit-inner-spin-button/);
@@ -926,9 +988,9 @@ test("responsive workout controls keep one aligned grid and remove native number
 });
 
 test("beta workout flow keeps logging keyboard-friendly and mobile actions reachable", async () => {
-  const [taskCard, workoutPage, workspace, finishButton, splitGesture, splitActions, css, transitions] =
+  const [taskSetRow, workoutPage, workspace, finishButton, splitGesture, splitActions, css, transitions] =
     await Promise.all([
-      read("app/components/TaskCard.tsx"),
+      read("app/components/TaskSetRow.tsx"),
       read("app/components/WorkoutPage.tsx"),
       read("app/components/WorkspaceContent.tsx"),
       read("app/components/FinishWorkoutButton.tsx"),
@@ -938,13 +1000,13 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
       read("app/viewTransitions.ts"),
     ]);
 
-  assert.match(taskCard, /data-set-field="weight"/);
-  assert.match(taskCard, /data-set-field="reps"/);
-  assert.match(taskCard, /data-set-field="rir"/);
-  assert.match(taskCard, /focusNextSetInput\(event, "reps"\)/);
-  assert.match(taskCard, /focusNextSetInput\(event, "rir"\)/);
-  assert.match(taskCard, /inputMode="decimal"[\s\S]*?enterKeyHint="next"/);
-  assert.match(taskCard, /inputMode="numeric"[\s\S]*?enterKeyHint="done"/);
+  assert.match(taskSetRow, /data-set-field="weight"/);
+  assert.match(taskSetRow, /data-set-field="reps"/);
+  assert.match(taskSetRow, /data-set-field="rir"/);
+  assert.match(taskSetRow, /focusNextSetInput\(event, "reps"\)/);
+  assert.match(taskSetRow, /focusNextSetInput\(event, "rir"\)/);
+  assert.match(taskSetRow, /inputMode="decimal"[\s\S]*?enterKeyHint="next"/);
+  assert.match(taskSetRow, /inputMode="numeric"[\s\S]*?enterKeyHint="done"/);
   assert.match(workoutPage, /className="workout-start-steps"/);
   assert.match(workspace, /className="welcome-start-steps"/);
   assert.match(finishButton, /aria-haspopup="dialog"/);
@@ -956,10 +1018,14 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(splitActions, /runViewTransition/);
   assert.match(transitions, /startViewTransition/);
   assert.match(css, /view-transition-name: track-workspace;/);
+  assert.match(css, /view-transition-name: rank-body-map;/);
+  assert.match(css, /--track-bottom-content-reserve/);
+  assert.match(css, /@keyframes track-workspace-old[\s\S]*?to \{[\s\S]*?opacity: 0;/);
+  assert.match(css, /@keyframes track-workspace-new[\s\S]*?from \{[\s\S]*?opacity: 0;/);
   assert.match(css, /\.welcome-start-steps \{[\s\S]*?gap:10px;/);
   assert.match(css, /\.welcome-start-steps \+ \.welcome-button \{[\s\S]*?margin-top:clamp\(14px,2\.5vh,20px\);/);
-  assert.match(taskCard, /className=\{togglingUnitId === set\.id/);
-  assert.match(taskCard, /set\.unit\.toUpperCase\(\)/);
+  assert.match(taskSetRow, /className=\{togglingUnit \? "weight-unit-toggle is-toggling"/);
+  assert.match(taskSetRow, /set\.unit\.toUpperCase\(\)/);
   assert.match(splitGesture, /splitHoldMenuOpened/);
   assert.match(splitGesture, /function splitMenuPosition/);
   assert.match(splitGesture, /splitMenuOffsetY/);
@@ -1006,7 +1072,7 @@ test("mobile pages share a lower crisp surface and blur-free overlays", async ()
     css,
     /\.settings-content \{[^}]*padding-top:22px !important;[^}]*padding-bottom:calc\(56px \+ env\(safe-area-inset-bottom\)\) !important;[^}]*\}/,
   );
-  assert.match(css, /\.content, \.content-exit, \.timer-screen, \.calendar-screen, \.rank-screen,/);
+  assert.match(css, /\.content, \.timer-screen, \.calendar-screen, \.rank-screen,/);
   assert.match(css, /\.settings-view\[class\*="view-"\] > \.setting-section/);
   assert.match(css, /\.settings-backdrop, \.password-reset-backdrop, \.exercise-confirm-backdrop,/);
   assert.match(css, /\.admin-users-header \{ padding-top:max\(18px,env\(safe-area-inset-top\)\); \}/);
@@ -1075,7 +1141,8 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
   assert.match(css, /\.theme-preview-grid/);
   assert.match(css, /\.exercise-unit-settings,[\s\S]*?-webkit-font-smoothing:antialiased;/);
   assert.match(rank, /className="rank-card-progress"/);
-  assert.match(rank, /to \{summary\.nextLevelLabel\}/);
+  assert.match(rank, /summary\.eliteProgress/);
+  assert.match(rank, /Bars show total progress to Elite/);
   assert.match(rank, /summary\.trackedExercises === 1 \? "exercise" : "exercises"/);
   assert.doesNotMatch(rank, /rankNextColor|linear-gradient/);
   assert.doesNotMatch(timer, /timer-progress-ring|strokeDashoffset|restRingOffset|has-progress-ring/);
@@ -1113,8 +1180,7 @@ test("page headers share one rhythm and scroll shortcuts sit just above the tab 
   const css = await readCssSource();
 
   assert.match(css, /\.content \{ width:min\(1120px, calc\(100% - 72px\)\); margin:0 auto; padding:28px 0 36px; \}/);
-  assert.match(css, /\.rank-title-row \{[\s\S]*?margin-top:0;[\s\S]*?\}/);
-  assert.match(css, /\.calendar-title-copy > \.settings-kicker \{ margin:0 0 14px; \}/);
+  assert.match(css, /\.page-header \{[\s\S]*?margin:0 0 var\(--track-space-5\);/);
   assert.match(css, /\.scroll-shortcuts \{ right:16px; bottom:calc\(96px \+ var\(--track-safe-bottom\)\); \}/);
   assert.match(css, /\.scroll-shortcuts \{ bottom:112px; \}/);
   assert.doesNotMatch(css, /has-workout-actions|workout-actions/);
@@ -1218,13 +1284,16 @@ test("admin settings removes the debug online-user toggle and settings nav does 
 });
 
 test("personal information stays owner-only and exercise menus do not resize collapsed cards", async () => {
-  const [taskCard, css, privacyMigration, adminMemberFunction, usernameAuthFunction] = await Promise.all([
-    read("app/components/TaskCard.tsx"),
-    readCssSource(),
-    read("supabase/migrations/20260812_protect_personal_info.sql"),
-    read("supabase/functions/admin-member-data/index.ts"),
-    read("supabase/functions/username-auth/index.ts"),
-  ]);
+  const [taskCard, taskCardMenu, taskCardMenuHook, css, privacyMigration, adminMemberFunction, usernameAuthFunction] =
+    await Promise.all([
+      read("app/components/TaskCard.tsx"),
+      read("app/components/TaskCardMenu.tsx"),
+      read("app/hooks/useTaskCardMenu.ts"),
+      readCssSource(),
+      read("supabase/migrations/20260812_protect_personal_info.sql"),
+      read("supabase/functions/admin-member-data/index.ts"),
+      read("supabase/functions/username-auth/index.ts"),
+    ]);
   assert.doesNotMatch(taskCard, /mobileExerciseMenu \? " menu-open"/);
   assert.doesNotMatch(css, /\.task\.menu-open/);
   assert.doesNotMatch(css, /\.task\.collapsed\.menu-open \{ min-height:/);
@@ -1232,8 +1301,11 @@ test("personal information stays owner-only and exercise menus do not resize col
     css,
     /\.mobile-exercise-menu\.exercise-menu-portal \{ position:fixed; z-index:2400; top:var\(--menu-top\); left:var\(--menu-left\);/,
   );
-  assert.match(taskCard, /createPortal\(/);
-  assert.match(taskCard, /getBoundingClientRect\(\)/);
+  assert.match(taskCardMenu, /createPortal\(/);
+  assert.match(taskCardMenuHook, /getBoundingClientRect\(\)/);
+  assert.match(taskCardMenu, /Smart coach/);
+  assert.match(taskCard, /coachOpen/);
+  assert.match(taskCardMenu, /disabled=\{!progressionCoach\}/);
   assert.match(privacyMigration, /force row level security/);
   assert.match(privacyMigration, /revoke all on table public\.profiles from anon/);
   assert.match(privacyMigration, /using \(\(select auth\.uid\(\)\) = user_id\)/);
@@ -1317,19 +1389,24 @@ test("Rank detects library, renamed, imported, abbreviated, and misspelled exerc
 });
 
 test("progression history follows stable exercise ids and survives sync merges", async () => {
-  const [page, taskCard] = await Promise.all([readAppSource(), read("app/components/TaskCard.tsx")]);
+  const [page, historyApi, taskSetRow] = await Promise.all([
+    readAppSource(),
+    read("app/data/progressionHistoryApi.ts"),
+    read("app/components/TaskSetRow.tsx"),
+  ]);
 
-  assert.match(page, /session_id,exercise_id,exercise_name,set_number/);
+  assert.match(historyApi, /session_id,exercise_id,exercise_name,set_number/);
   assert.match(page, /latestByExercise\.get\(`\$\{exercise\.id\}:\$\{setNumber\}`\)/);
   assert.match(page, /lastReps: set\.lastReps \?\? remoteSet\?\.lastReps/);
-  assert.match(taskCard, /Number\(set\.reps\) - set\.lastReps/);
-  assert.match(taskCard, /rep-delta set-delta up/);
+  assert.match(taskSetRow, /Number\(set\.reps\) - set\.lastReps/);
+  assert.match(taskSetRow, /rep-delta set-delta up/);
 });
 
 test("large private reads are paginated and presentation state stays local", async () => {
-  const [page, api, pagination, adminFunction, saveMigration, deletionMigration] = await Promise.all([
+  const [page, api, historyApi, pagination, adminFunction, saveMigration, deletionMigration] = await Promise.all([
     readAppSource(),
     read("app/data/trackApi.ts"),
+    read("app/data/progressionHistoryApi.ts"),
     read("app/data/pagination.ts"),
     read("supabase/functions/admin-member-data/index.ts"),
     read("supabase/migrations/20260824_input_validation.sql"),
@@ -1339,7 +1416,7 @@ test("large private reads are paginated and presentation state stays local", asy
   assert.match(pagination, /QUERY_PAGE_SIZE/);
   assert.match(pagination, /MAX_QUERY_PAGES/);
   assert.match(api, /fetchAllPages<SplitRow>/);
-  assert.match(api, /fetchAllPages<LogRow>/);
+  assert.match(historyApi, /fetchAllPages<LogRow>/);
   assert.match(page, /collapsed: false/);
   assert.match(adminFunction, /const MEMBER_DATA_PAGE_SIZE = 1000/);
   assert.match(adminFunction, /listAllRows<SplitRow>/);
@@ -1537,10 +1614,7 @@ test("iOS keeps persistent mobile surfaces sharp", async () => {
     /\.mobile-header \{[\s\S]*?animation:none !important;[\s\S]*?-webkit-backdrop-filter:none !important;/,
   );
   assert.match(css, /\.admin-users-backdrop \{[\s\S]*?-webkit-backdrop-filter:none !important;/);
-  assert.match(
-    css,
-    /\.content, \.content-exit, \.timer-screen, \.calendar-screen, \.rank-screen \{[\s\S]*?animation:none !important;/,
-  );
+  assert.match(css, /\.content, \.timer-screen, \.calendar-screen, \.rank-screen \{[\s\S]*?animation:none !important;/);
   assert.match(css, /\.admin-users-modal,\s*\.admin-users-preview \{[\s\S]*?animation:none !important;/);
 });
 
@@ -1615,33 +1689,43 @@ test("rest completion and announcements deliver immediate client notifications",
 });
 
 test("notification center state and anchored menus stay connected to the right account context", async () => {
-  const [center, centerHook, centerStore, shell, sidebar, taskCard, splitMenu, identity, polish] = await Promise.all([
-    read("app/components/NotificationCenter.tsx"),
-    read("app/hooks/useNotificationCenter.ts"),
-    read("app/notificationCenter.ts"),
-    read("app/components/TrackAppShell.tsx"),
-    read("app/components/Sidebar.tsx"),
-    read("app/components/TaskCard.tsx"),
-    read("app/components/SplitMenu.tsx"),
-    read("app/hooks/useTrackIdentityLifecycle.ts"),
-    read("app/styles/polish.css"),
-  ]);
+  const [center, centerHook, centerStore, shell, sidebar, taskCardMenu, taskCardMenuHook, splitMenu, identity, polish] =
+    await Promise.all([
+      read("app/components/NotificationCenter.tsx"),
+      read("app/hooks/useNotificationCenter.ts"),
+      read("app/notificationCenter.ts"),
+      read("app/components/TrackAppShell.tsx"),
+      read("app/components/Sidebar.tsx"),
+      read("app/components/TaskCardMenu.tsx"),
+      read("app/hooks/useTaskCardMenu.ts"),
+      read("app/components/SplitMenu.tsx"),
+      read("app/hooks/useTrackIdentityLifecycle.ts"),
+      read("app/styles/polish.css"),
+    ]);
 
   assert.match(center, /Notification center/);
   assert.match(center, /Mark all read/);
+  assert.match(center, /Clear all/);
   assert.match(centerHook, /TRACK_NOTIFICATION_EVENT/);
   assert.match(centerHook, /Rest complete/);
+  assert.match(centerHook, /const clearAll = useCallback/);
+  assert.doesNotMatch(centerHook, /runViewTransition/);
+  assert.match(centerHook, /setOpen\(\(current\) => !current\)/);
   assert.match(centerStore, /readNotificationCenter/);
   assert.match(centerStore, /saveNotificationCenter/);
   assert.match(shell, /NotificationCenterPanel/);
   assert.match(shell, /NotificationCenterTrigger/);
   assert.match(sidebar, /NotificationCenterTrigger/);
-  assert.match(taskCard, /mobileExerciseMenu\s*&&\s*menuPosition/);
-  assert.match(taskCard, /style=\{\{\s*top: menuPosition\.top,\s*left: menuPosition\.left\s*\}\}/);
+  assert.match(taskCardMenu, /!menuOpen\s*\|\|\s*!menuPosition/);
+  assert.match(taskCardMenu, /style=\{\{\s*top: menuPosition\.top,\s*left: menuPosition\.left\s*\}\}/);
+  assert.match(taskCardMenuHook, /menuOpen/);
+  assert.match(taskCardMenuHook, /getBoundingClientRect\(\)/);
   assert.match(splitMenu, /style=\{\{\s*top: menu\.y,\s*left: menu\.x\s*\}\}/);
   assert.match(identity, /action: "heartbeat"/);
   assert.match(identity, /setAdminAuthorized\(data\.isAdmin === true\)/);
   assert.match(polish, /\.notification-center-panel/);
+  assert.doesNotMatch(polish, /view-transition-name: track-notification-center;/);
+  assert.match(polish, /view-transition-name: track-workout-recovery;/);
   assert.match(polish, /\.account-online\.is-offline/);
 });
 

@@ -22,10 +22,26 @@ type SnapshotKeyRow = {
   id: "snapshot-key";
   key: CryptoKey;
 };
+export type OfflineQueueEntryStatus = {
+  attempts: number;
+  nextRetryAt: number;
+  lastError?: string;
+  stuck: boolean;
+};
+
+export type OfflineWorkoutQueueState = {
+  entries: WorkoutSessionPayload[];
+  statuses: Record<string, OfflineQueueEntryStatus>;
+  updatedAt: number;
+};
+
+export type OfflineStorageStatus = "ok" | "quota" | "unavailable";
+
 type WorkoutQueueEnvelope = {
   userId: string;
   entries: WorkoutSessionPayload[];
   updatedAt: number;
+  statuses?: Record<string, OfflineQueueEntryStatus>;
 };
 
 type WorkoutDraftEnvelope = {
@@ -46,8 +62,24 @@ const KEY_STORE = "keys";
 
 let databasePromise: Promise<IDBDatabase | null> | null = null;
 let encryptionKeyPromise: Promise<CryptoKey | null> | null = null;
+let offlineStorageStatus: OfflineStorageStatus = "ok";
 const queueOperations = new Map<string, Promise<unknown>>();
 const draftOperations = new Map<string, Promise<unknown>>();
+
+type StorageErrorLike = { name?: string } | null | undefined;
+
+function markStorageFailure(error?: StorageErrorLike) {
+  const name = error?.name ?? "";
+  offlineStorageStatus = /quota|space|storage/i.test(name) ? "quota" : "unavailable";
+}
+
+function markStorageSuccess() {
+  offlineStorageStatus = "ok";
+}
+
+export function getOfflineStorageStatus(): OfflineStorageStatus {
+  return offlineStorageStatus;
+}
 
 function browserCrypto() {
   const browserWindow = globalThis.window;
@@ -79,10 +111,20 @@ function openDatabase() {
           database.createObjectStore(KEY_STORE, { keyPath: "id" });
         }
       };
-      request.onsuccess = () => resolve(request.result);
-      request.onerror = () => resolve(null);
-      request.onblocked = () => resolve(null);
+      request.onsuccess = () => {
+        markStorageSuccess();
+        resolve(request.result);
+      };
+      request.onerror = () => {
+        markStorageFailure(request.error);
+        resolve(null);
+      };
+      request.onblocked = () => {
+        markStorageFailure();
+        resolve(null);
+      };
     } catch {
+      markStorageFailure();
       resolve(null);
     }
   });
@@ -218,6 +260,31 @@ function normalizeWorkoutQueue(entries: JsonValue | WorkoutSessionPayload[]): Wo
   return normalized;
 }
 
+function normalizeOfflineQueueStatuses(entries: readonly WorkoutSessionPayload[], statuses: JsonValue | undefined) {
+  if (!isJsonObject(statuses)) return {};
+  const entryIds = new Set(entries.map((entry) => entry.clientMutationId));
+  const normalizedEntries: Array<[string, OfflineQueueEntryStatus]> = [];
+  for (const [mutationId, rawStatus] of Object.entries(statuses)) {
+    if (!entryIds.has(mutationId) || !isJsonObject(rawStatus)) continue;
+    const attempts = Number(rawStatus.attempts);
+    const nextRetryAt = Number(rawStatus.nextRetryAt);
+    normalizedEntries.push([
+      mutationId,
+      {
+        attempts: Number.isFinite(attempts) ? Math.max(0, Math.floor(attempts)) : 0,
+        nextRetryAt: Number.isFinite(nextRetryAt) ? Math.max(0, nextRetryAt) : 0,
+        lastError: isStringValue(rawStatus.lastError) ? rawStatus.lastError.slice(0, 240) : undefined,
+        stuck: rawStatus.stuck === true,
+      },
+    ]);
+  }
+  return Object.fromEntries(normalizedEntries);
+}
+
+function emptyOfflineWorkoutQueueState(): OfflineWorkoutQueueState {
+  return { entries: [], statuses: {}, updatedAt: 0 };
+}
+
 export async function readTrackSnapshot<T>(userId: string): Promise<TrackLocalSnapshot<T> | null> {
   const database = await openDatabase();
   if (!database) return null;
@@ -251,26 +318,39 @@ export async function readTrackSnapshot<T>(userId: string): Promise<TrackLocalSn
 
 export async function writeTrackSnapshot<T>(snapshot: TrackLocalSnapshot<T>): Promise<boolean> {
   const database = await openDatabase();
-  if (!database) return false;
+  if (!database) {
+    markStorageFailure();
+    return false;
+  }
   const encrypted = await encryptLocalRecord(database, snapshot);
   // Never write private workout data as new plaintext. If Web Crypto is not
   // available, the cloud sync path remains authoritative and this cache is
   // simply skipped.
-  if (!encrypted) return false;
+  if (!encrypted) {
+    markStorageFailure();
+    return false;
+  }
   return new Promise((resolve) => {
     try {
       const request = database.transaction(SNAPSHOT_STORE, "readwrite").objectStore(SNAPSHOT_STORE).put(encrypted);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
+      request.onsuccess = () => {
+        markStorageSuccess();
+        resolve(true);
+      };
+      request.onerror = () => {
+        markStorageFailure(request.error);
+        resolve(false);
+      };
     } catch {
+      markStorageFailure();
       resolve(false);
     }
   });
 }
 
-async function readWorkoutQueueRecord(userId: string): Promise<WorkoutSessionPayload[]> {
+async function readWorkoutQueueState(userId: string): Promise<OfflineWorkoutQueueState> {
   const database = await openDatabase();
-  if (!database) return [];
+  if (!database) return emptyOfflineWorkoutQueueState();
   return new Promise((resolve) => {
     try {
       const request = database
@@ -282,7 +362,7 @@ async function readWorkoutQueueRecord(userId: string): Promise<WorkoutSessionPay
         // encrypted queue record written by this module.
         const stored = request.result as StoredWorkoutQueue | undefined;
         if (!stored) {
-          resolve([]);
+          resolve(emptyOfflineWorkoutQueueState());
           return;
         }
         // SAFETY: the encrypted predicate rules out the cipher record; the
@@ -290,46 +370,80 @@ async function readWorkoutQueueRecord(userId: string): Promise<WorkoutSessionPay
         const envelope = isEncryptedLocalRecord(stored)
           ? await decryptLocalRecord<WorkoutQueueEnvelope>(database, stored)
           : (stored as WorkoutQueueEnvelope);
-        resolve(envelope?.userId === userId ? normalizeWorkoutQueue(envelope.entries) : []);
+        if (envelope?.userId !== userId) {
+          resolve(emptyOfflineWorkoutQueueState());
+          return;
+        }
+        const entries = normalizeWorkoutQueue(envelope.entries);
+        resolve({
+          entries,
+          statuses: normalizeOfflineQueueStatuses(entries, envelope.statuses),
+          updatedAt: Number.isFinite(envelope.updatedAt) ? envelope.updatedAt : 0,
+        });
       };
-      request.onerror = () => resolve([]);
+      request.onerror = () => resolve(emptyOfflineWorkoutQueueState());
     } catch {
-      resolve([]);
+      resolve(emptyOfflineWorkoutQueueState());
     }
   });
 }
 
-async function writeWorkoutQueueRecord(userId: string, entries: WorkoutSessionPayload[]) {
+async function writeWorkoutQueueState(userId: string, state: OfflineWorkoutQueueState) {
   const database = await openDatabase();
-  if (!database) return false;
-  if (!entries.length) {
+  if (!database) {
+    markStorageFailure();
+    return false;
+  }
+  if (!state.entries.length) {
     return new Promise<boolean>((resolve) => {
       try {
         const request = database
           .transaction(WORKOUT_QUEUE_STORE, "readwrite")
           .objectStore(WORKOUT_QUEUE_STORE)
           .delete(userId);
-        request.onsuccess = () => resolve(true);
-        request.onerror = () => resolve(false);
+        request.onsuccess = () => {
+          markStorageSuccess();
+          resolve(true);
+        };
+        request.onerror = () => {
+          markStorageFailure(request.error);
+          resolve(false);
+        };
       } catch {
+        markStorageFailure();
         resolve(false);
       }
     });
   }
-  const envelope: WorkoutQueueEnvelope = { userId, entries, updatedAt: Date.now() };
+  const envelope: WorkoutQueueEnvelope = {
+    userId,
+    entries: state.entries,
+    statuses: state.statuses,
+    updatedAt: Date.now(),
+  };
   const encrypted = await encryptLocalRecord(database, envelope);
   // Queue entries contain the same private workout data as the snapshot. Do
   // not fall back to a new plaintext record when encryption is unavailable.
-  if (!encrypted) return false;
+  if (!encrypted) {
+    markStorageFailure();
+    return false;
+  }
   return new Promise<boolean>((resolve) => {
     try {
       const request = database
         .transaction(WORKOUT_QUEUE_STORE, "readwrite")
         .objectStore(WORKOUT_QUEUE_STORE)
         .put(encrypted);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
+      request.onsuccess = () => {
+        markStorageSuccess();
+        resolve(true);
+      };
+      request.onerror = () => {
+        markStorageFailure(request.error);
+        resolve(false);
+      };
     } catch {
+      markStorageFailure();
       resolve(false);
     }
   });
@@ -349,32 +463,81 @@ function queueOperation<T>(userId: string, operation: () => Promise<T>) {
 }
 
 export function readOfflineWorkoutQueue(userId: string) {
-  return queueOperation(userId, () => readWorkoutQueueRecord(userId));
+  return queueOperation(userId, async () => (await readWorkoutQueueState(userId)).entries);
+}
+
+export function readOfflineWorkoutQueueState(userId: string) {
+  return queueOperation(userId, () => readWorkoutQueueState(userId));
 }
 
 export function enqueueOfflineWorkoutSession(userId: string, entry: WorkoutSessionPayload) {
   return queueOperation(userId, async () => {
     if (!isWorkoutSessionPayload(entry)) return false;
-    const current = await readWorkoutQueueRecord(userId);
-    const next = coalesceOfflineWorkoutQueue(current, entry, TRACK_LIMITS.maxOfflineQueueEntries);
+    const current = await readWorkoutQueueState(userId);
+    const next = coalesceOfflineWorkoutQueue(current.entries, entry, TRACK_LIMITS.maxOfflineQueueEntries);
     if (!next) return false;
-    return writeWorkoutQueueRecord(userId, next);
+    return writeWorkoutQueueState(userId, {
+      entries: next,
+      statuses: current.statuses,
+      updatedAt: Date.now(),
+    });
   });
 }
 
 export function removeOfflineWorkoutSession(userId: string, clientMutationId: string) {
   return queueOperation(userId, async () => {
-    const current = await readWorkoutQueueRecord(userId);
-    if (!current.some((entry) => entry.clientMutationId === clientMutationId)) return true;
-    return writeWorkoutQueueRecord(
-      userId,
-      current.filter((entry) => entry.clientMutationId !== clientMutationId),
+    const current = await readWorkoutQueueState(userId);
+    if (!current.entries.some((entry) => entry.clientMutationId === clientMutationId)) return true;
+    const statuses = { ...current.statuses };
+    delete statuses[clientMutationId];
+    return writeWorkoutQueueState(userId, {
+      entries: current.entries.filter((entry) => entry.clientMutationId !== clientMutationId),
+      statuses,
+      updatedAt: Date.now(),
+    });
+  });
+}
+
+export function recordOfflineWorkoutFailure(
+  userId: string,
+  clientMutationId: string,
+  message: string,
+  nextRetryAt: number,
+) {
+  return queueOperation(userId, async () => {
+    const current = await readWorkoutQueueState(userId);
+    if (!current.entries.some((entry) => entry.clientMutationId === clientMutationId)) return false;
+    const previous = current.statuses[clientMutationId];
+    const attempts = (previous?.attempts ?? 0) + 1;
+    const stuck = attempts >= TRACK_LIMITS.maxOfflineQueueRetries;
+    return writeWorkoutQueueState(userId, {
+      entries: current.entries,
+      statuses: {
+        ...current.statuses,
+        [clientMutationId]: {
+          attempts,
+          nextRetryAt: stuck ? 0 : Math.max(0, nextRetryAt),
+          lastError: message.slice(0, 240),
+          stuck,
+        },
+      },
+      updatedAt: Date.now(),
+    });
+  });
+}
+
+export function resetOfflineWorkoutQueueFailures(userId: string) {
+  return queueOperation(userId, async () => {
+    const current = await readWorkoutQueueState(userId);
+    const statuses = Object.fromEntries(
+      current.entries.map((entry) => [entry.clientMutationId, { attempts: 0, nextRetryAt: 0, stuck: false }]),
     );
+    return writeWorkoutQueueState(userId, { entries: current.entries, statuses, updatedAt: Date.now() });
   });
 }
 
 export function deleteOfflineWorkoutQueue(userId: string) {
-  return queueOperation(userId, async () => writeWorkoutQueueRecord(userId, []));
+  return queueOperation(userId, async () => writeWorkoutQueueState(userId, emptyOfflineWorkoutQueueState()));
 }
 
 function validWorkoutDraft(draft: WorkoutDraft) {
@@ -420,7 +583,10 @@ async function readWorkoutDraftRecord(userId: string): Promise<WorkoutDraft[]> {
 
 async function writeWorkoutDraftRecord(userId: string, drafts: WorkoutDraft[]) {
   const database = await openDatabase();
-  if (!database) return false;
+  if (!database) {
+    markStorageFailure();
+    return false;
+  }
   if (!drafts.length) {
     return new Promise<boolean>((resolve) => {
       try {
@@ -428,25 +594,42 @@ async function writeWorkoutDraftRecord(userId: string, drafts: WorkoutDraft[]) {
           .transaction(WORKOUT_DRAFT_STORE, "readwrite")
           .objectStore(WORKOUT_DRAFT_STORE)
           .delete(userId);
-        request.onsuccess = () => resolve(true);
-        request.onerror = () => resolve(false);
+        request.onsuccess = () => {
+          markStorageSuccess();
+          resolve(true);
+        };
+        request.onerror = () => {
+          markStorageFailure(request.error);
+          resolve(false);
+        };
       } catch {
+        markStorageFailure();
         resolve(false);
       }
     });
   }
   const envelope: WorkoutDraftEnvelope = { userId, drafts, updatedAt: Date.now() };
   const encrypted = await encryptLocalRecord(database, envelope);
-  if (!encrypted) return false;
+  if (!encrypted) {
+    markStorageFailure();
+    return false;
+  }
   return new Promise<boolean>((resolve) => {
     try {
       const request = database
         .transaction(WORKOUT_DRAFT_STORE, "readwrite")
         .objectStore(WORKOUT_DRAFT_STORE)
         .put(encrypted);
-      request.onsuccess = () => resolve(true);
-      request.onerror = () => resolve(false);
+      request.onsuccess = () => {
+        markStorageSuccess();
+        resolve(true);
+      };
+      request.onerror = () => {
+        markStorageFailure(request.error);
+        resolve(false);
+      };
     } catch {
+      markStorageFailure();
       resolve(false);
     }
   });

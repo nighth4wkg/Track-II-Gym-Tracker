@@ -2,7 +2,6 @@
 
 import {
   useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
@@ -10,7 +9,6 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { supabase } from "../supabase";
-import { applyAnimatedStyles } from "../domMotion";
 import { AdminDirectorySkeleton } from "./LoadingSkeletons";
 import { useModalFocus } from "../hooks/useModalFocus";
 import { TRACK_TIMING } from "../trackConstants";
@@ -24,7 +22,7 @@ import {
 } from "./AdminUsersDirectoryModels";
 export { AdminUsersButton, formatLastSeen, isMemberOnline } from "./AdminUsersDirectoryModels";
 
-export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPanelProps) {
+export function AdminUsersPanel({ open, onClose }: AdminUsersPanelProps) {
   const [users, setUsers] = useState<DirectoryUser[]>([]);
   const [member, setMember] = useState<AdminMemberResult | null>(null);
   const [selectedSplitId, setSelectedSplitId] = useState("");
@@ -142,14 +140,6 @@ export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPane
     return () => document.removeEventListener("pointerdown", dismiss, true);
   }, [contextMenu]);
 
-  useLayoutEffect(() => {
-    if (!contextMenu) return;
-    applyAnimatedStyles(contextMenuRef.current, {
-      "--menu-left": `${contextMenu.x}px`,
-      "--menu-top": `${contextMenu.y}px`,
-    });
-  }, [contextMenu]);
-
   function showMenu(user: DirectoryUser, x: number, y: number) {
     const width = 214;
     const height = 142;
@@ -243,11 +233,7 @@ export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPane
               <p className="admin-users-empty">No Track members were found.</p>
             ) : (
               users.map((directoryUser) => {
-                const online = isMemberOnline(
-                  directoryUser.lastSeenAt,
-                  directoryNow,
-                  directoryUser.id === currentUserId,
-                );
+                const online = isMemberOnline(directoryUser.lastSeenAt, directoryNow);
                 const initial = directoryUser.username.trim().charAt(0).toUpperCase() || "?";
                 return (
                   <div
@@ -278,9 +264,7 @@ export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPane
                         <strong>@{directoryUser.username}</strong>
                         {directoryUser.isAdmin && <em className="admin-user-role-badge">Admin</em>}
                       </span>
-                      <small>
-                        {formatLastSeen(directoryUser.lastSeenAt, directoryNow, directoryUser.id === currentUserId)}
-                      </small>
+                      <small>{formatLastSeen(directoryUser.lastSeenAt, directoryNow)}</small>
                     </span>
                     <button
                       type="button"
@@ -369,6 +353,7 @@ export function AdminUsersPanel({ open, onClose, currentUserId }: AdminUsersPane
           <div
             ref={contextMenuRef}
             className="admin-user-context"
+            style={{ top: contextMenu.y, left: contextMenu.x }}
             role="menu"
             aria-label={`Actions for @${contextMenu.user.username}`}
             onPointerDown={(event) => event.stopPropagation()}

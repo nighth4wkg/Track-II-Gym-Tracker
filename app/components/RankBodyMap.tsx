@@ -1,5 +1,9 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
+import type {
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+  PointerEvent as ReactPointerEvent,
+} from "react";
 import rankMuscleMapSvg from "../assets/rank-muscle-map.svg?raw";
 import { MUSCLE_LABELS, type MuscleGroup } from "../rankData";
 import type { RankSummary } from "../rankModels";
@@ -81,13 +85,15 @@ function rankFill(summary: RankSummary | undefined) {
 export function RankBodyMap({ summaries, selected, activeSide = null, onSelect }: RankBodyMapProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const colors = useMemo(() => new Map(summaries.map((summary) => [summary.group, summary])), [summaries]);
+  const [ready, setReady] = useState(false);
+  const [hovered, setHovered] = useState<{ label: string; x: number; y: number } | null>(null);
 
   useLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return;
 
     const svg = root.querySelector<SVGSVGElement>("svg.rank-body-map");
-    const isFocused = Boolean(selected && activeSide);
+    const isFocused = Boolean(activeSide);
     if (svg) {
       svg.setAttribute("viewBox", isFocused && activeSide ? FOCUSED_VIEWBOX[activeSide] : FULL_MAP_VIEWBOX);
       svg.setAttribute("aria-label", isFocused ? `${activeSide} strength map` : "Front and back body muscle map");
@@ -116,8 +122,10 @@ export function RankBodyMap({ summaries, selected, activeSide = null, onSelect }
       path.classList.toggle("is-selected", isSelected);
       path.classList.toggle("is-dimmed", isDimmed);
       path.setAttribute("aria-pressed", String(isSelected));
+      path.setAttribute("title", path.getAttribute("aria-label") ?? MUSCLE_LABELS[groupValue]);
     });
-  });
+    setReady(true);
+  }, [activeSide, colors, selected]);
 
   function handleClick(event: ReactMouseEvent<HTMLDivElement>) {
     const path = getMusclePath(event.target, rootRef.current);
@@ -138,15 +146,44 @@ export function RankBodyMap({ summaries, selected, activeSide = null, onSelect }
     onSelect(group, side);
   }
 
+  function handlePointerMove(event: ReactPointerEvent<HTMLDivElement>) {
+    if (event.pointerType === "touch") {
+      setHovered(null);
+      return;
+    }
+    const path = getMusclePath(event.target, rootRef.current);
+    const group = path?.dataset.muscleGroup;
+    const side = path?.dataset.view;
+    const root = rootRef.current;
+    if (!path || !root || !group || !side || !isMuscleGroup(group)) {
+      setHovered(null);
+      return;
+    }
+    const bounds = root.getBoundingClientRect();
+    setHovered({
+      label: `${MUSCLE_LABELS[group]} · ${side === "front" ? "Front" : "Back"}`,
+      x: event.clientX - bounds.left,
+      y: event.clientY - bounds.top,
+    });
+  }
+
   return (
     <div
       ref={rootRef}
-      className="rank-body-map-shell"
+      className={`rank-body-map-shell${ready ? " is-ready" : ""}`}
       role="group"
       aria-label="Front and back body muscle map"
       onClick={handleClick}
       onKeyDown={handleKeyDown}
-      dangerouslySetInnerHTML={RANK_MAP_MARKUP}
-    />
+      onPointerMove={handlePointerMove}
+      onPointerLeave={() => setHovered(null)}
+    >
+      <div className="rank-body-map-svg" dangerouslySetInnerHTML={RANK_MAP_MARKUP} />
+      {hovered && (
+        <span className="rank-body-map-tooltip" role="status" style={{ left: hovered.x, top: hovered.y }}>
+          {hovered.label}
+        </span>
+      )}
+    </div>
   );
 }

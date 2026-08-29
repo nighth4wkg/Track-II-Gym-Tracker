@@ -36,6 +36,7 @@ type SidebarProps = {
   onRetrySync: () => void;
   onUseCloudCopy: () => void;
   offlineQueueCount: number;
+  offlineQueueStuckCount: number;
   settingsOpen: boolean;
   onGoHome: () => void;
   onHideSidebar: () => void;
@@ -83,6 +84,7 @@ export function Sidebar({
   lastSuccessfulSyncAt,
   onRetrySync,
   offlineQueueCount,
+  offlineQueueStuckCount,
   settingsOpen,
   onGoHome,
   onHideSidebar,
@@ -218,6 +220,7 @@ export function Sidebar({
                 lastSuccessfulSyncAt={lastSuccessfulSyncAt}
                 onRetry={onRetrySync}
                 queuedCount={offlineQueueCount}
+                stuckCount={offlineQueueStuckCount}
                 compact
               />
             </div>

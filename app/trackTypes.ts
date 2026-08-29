@@ -6,10 +6,17 @@ export type SetEntry = {
   unit: "kg" | "lb";
   reps: string;
   rir: string;
+  // Runtime-only completion affordance for the one-thumb set action. It is
+  // intentionally omitted from the cloud payload because exercise_sets stores
+  // planned values while completed workout history is append-only.
+  completed?: boolean;
   lastWeight?: number;
   lastWeightUnit?: WeightUnit;
   lastReps?: number;
   lastRir?: number;
+  historySessions?: number;
+  historySamples?: number;
+  historyFailureCount?: number;
 };
 
 export type Task = {

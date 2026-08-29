@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import "../styles/pages/dashboard.css";
-import { buildRankSummaries } from "../rankData";
+import { buildRankSummaries, MUSCLE_GROUPS } from "../rankData";
 import { aggregateWeeklyMuscleSets, aggregateWeeklyMuscleSetsFromTasks } from "../dashboardMuscleVolume";
 import {
   aggregateSessions,
@@ -21,6 +21,7 @@ import type { Checklist } from "../trackTypes";
 import { TRACK_LIMITS } from "../trackConstants";
 import { DashboardActivityGraph } from "./DashboardActivityGraph";
 import { MotionSelect } from "./MotionSelect";
+import { PageHeader } from "./PageHeader";
 
 export type DashboardScreenProps = {
   lists: Checklist[];
@@ -33,7 +34,7 @@ export type DashboardScreenProps = {
 
 const WEEKLY_SET_TARGET = TRACK_LIMITS.weeklyMuscleSetTarget;
 const TIMEFRAME_OPTIONS: { value: DashboardTimeframe; label: string }[] = [
-  { value: "week", label: "Last week" },
+  { value: "week", label: "This week" },
   { value: "month", label: "Last month" },
   { value: "ytd", label: "Year to date" },
   { value: "all", label: "All time" },
@@ -124,7 +125,7 @@ export function buildDashboardStableMetrics({
       : aggregateWeeklyMuscleSetsFromTasks(historyTasks);
   const muscleBalance = summaries
     .map((summary) => ({ ...summary, weeklySets: weeklySets.get(summary.group) ?? 0 }))
-    .sort((left, right) => right.score - left.score);
+    .sort((left, right) => MUSCLE_GROUPS.indexOf(left.group) - MUSCLE_GROUPS.indexOf(right.group));
 
   return {
     splitCount: lists.length,
@@ -184,24 +185,25 @@ export function DashboardScreen(props: DashboardScreenProps) {
     [bodyWeightKg, dashboardSummary, historyTasks, lists, rankTasks, workoutDates],
   );
   const metrics = useMemo(() => buildDashboardTimeframeMetrics(stableMetrics, timeframe), [stableMetrics, timeframe]);
-  const timeframeLabel = TIMEFRAME_OPTIONS.find((option) => option.value === timeframe)?.label ?? "Last week";
+  const timeframeLabel = TIMEFRAME_OPTIONS.find((option) => option.value === timeframe)?.label ?? "This week";
 
   return (
     <section className="dashboard-screen">
-      <span className="eyebrow">OVERVIEW</span>
-      <div className="dashboard-title-row">
-        <div>
-          <h1>Dashboard</h1>
-          <p>Your training pattern across every split.</p>
-        </div>
-        <MotionSelect
-          className="dashboard-period-select"
-          ariaLabel="Dashboard timeframe"
-          value={timeframe}
-          options={TIMEFRAME_OPTIONS}
-          onChange={setTimeframe}
-        />
-      </div>
+      <PageHeader
+        className="dashboard-page-header"
+        eyebrow="OVERVIEW"
+        title="Dashboard"
+        description="Your training pattern across every split."
+        actions={
+          <MotionSelect
+            className="dashboard-period-select"
+            ariaLabel="Dashboard timeframe"
+            value={timeframe}
+            options={TIMEFRAME_OPTIONS}
+            onChange={setTimeframe}
+          />
+        }
+      />
 
       <div className="dashboard-stat-grid" key={`dashboard-stats-${timeframe}`}>
         <article>

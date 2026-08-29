@@ -110,30 +110,33 @@ export function TaskSetRow({
           aria-label={`${task.text} set ${index + 1} RIR`}
         />
       </span>
-      <button
-        type="button"
-        className={
-          set.completed
-            ? "ui-button ui-button-quiet set-complete-action is-complete"
-            : "ui-button ui-button-quiet set-complete-action"
-        }
-        onClick={() => onCompleteSetAndStartRest(set.id)}
-        aria-label={`${set.completed ? "Repeat" : "Complete"} set ${index + 1} and ${
-          set.completed ? "restart" : "start"
-        } rest timer for ${task.text}`}
-        title={set.completed ? "Restart rest timer" : "Complete set and start rest"}
-      >
-        {set.completed ? "✓" : "Done"}
-      </button>
-      <button
-        type="button"
-        className="remove-set"
-        onClick={() => onRemoveSet(set.id)}
-        disabled={(task.sets?.length ?? 0) <= 1}
-        aria-label={`Remove set ${index + 1}`}
-      >
-        ×
-      </button>
+      <div className="set-row-actions">
+        <button
+          type="button"
+          className={
+            set.completed
+              ? "ui-button ui-button-quiet set-complete-action is-complete"
+              : "ui-button ui-button-quiet set-complete-action"
+          }
+          onClick={() => onCompleteSetAndStartRest(set.id)}
+          aria-label={`${set.completed ? "Repeat" : "Complete"} set ${index + 1} and ${
+            set.completed ? "restart" : "start"
+          } rest timer for ${task.text}`}
+          title={set.completed ? "Restart rest timer" : "Complete set and start rest"}
+        >
+          {set.completed ? "✓" : "Done"}
+        </button>
+        <button
+          type="button"
+          className="remove-set"
+          onClick={() => onRemoveSet(set.id)}
+          disabled={(task.sets?.length ?? 0) <= 1}
+          aria-label={`Remove set ${index + 1}`}
+          title={`Remove set ${index + 1}`}
+        >
+          ×
+        </button>
+      </div>
     </div>
   );
 }

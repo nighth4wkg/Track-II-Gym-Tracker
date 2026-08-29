@@ -58,6 +58,7 @@ const readCssSource = async () => {
         "app/styles/pages/dashboard.css",
         "app/styles/responsive.css",
         "app/styles/polish.css",
+        "app/styles/pages/workout.css",
       ].map(read),
     )
   ).join("\n");
@@ -1003,6 +1004,8 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(taskSetRow, /data-set-field="weight"/);
   assert.match(taskSetRow, /data-set-field="reps"/);
   assert.match(taskSetRow, /data-set-field="rir"/);
+  assert.match(taskSetRow, /className="set-row-actions"/);
+  assert.match(taskSetRow, /title=\{`Remove set \$\{index \+ 1\}`\}/);
   assert.match(taskSetRow, /focusNextSetInput\(event, "reps"\)/);
   assert.match(taskSetRow, /focusNextSetInput\(event, "rir"\)/);
   assert.match(taskSetRow, /inputMode="decimal"[\s\S]*?enterKeyHint="next"/);

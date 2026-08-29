@@ -58,7 +58,7 @@ type TaskCardProps = {
 
 type CoachDecision = {
   title: string;
-  value: "accepted" | "repeat";
+  value: "applied";
 };
 
 function TaskCardView({
@@ -94,6 +94,12 @@ function TaskCardView({
   onAddSet,
 }: TaskCardProps) {
   const progressionCoach = buildProgressionCoach(task);
+  const coachReferenceSet = task.sets?.find(
+    (candidate) => candidate.lastWeight !== undefined && candidate.lastWeightUnit && candidate.lastReps !== undefined,
+  );
+  const coachLoadLabel = coachReferenceSet
+    ? `${coachReferenceSet.weight.trim() || "current"} ${coachReferenceSet.unit.toUpperCase()}`
+    : "suggestion";
   const className = `${task.done ? "task ui-panel done" : "task ui-panel"}${task.collapsed ? " collapsed" : ""}${dragging ? " dragging" : ""}${completionEnabled ? "" : " completion-hidden"}`;
   const skipNextEditBlur = useRef(false);
   const [coachOpen, setCoachOpen] = useState(false);
@@ -244,26 +250,26 @@ function TaskCardView({
           </div>
           {coachOpen && progressionCoach && (
             <aside className={"progression-coach is-" + progressionCoach.tone} role="status">
-              <span className="progression-coach-kicker">Smart coach</span>
+              <div className="progression-coach-header">
+                <span className="progression-coach-kicker">Smart coach</span>
+                <span className="progression-coach-confidence">Confidence · {progressionCoach.confidence}</span>
+              </div>
               <strong>{progressionCoach.title}</strong>
-              <span>{progressionCoach.detail}</span>
-              <span className="progression-coach-confidence">Confidence: {progressionCoach.confidence}</span>
+              <span className="progression-coach-detail">{progressionCoach.detail}</span>
               <div className="progression-coach-actions">
                 <button
                   type="button"
-                  className="ui-button ui-button-secondary"
-                  onClick={() => setCoachDecision({ title: progressionCoach.title, value: "accepted" })}
-                  aria-label={`Accept smart coach suggestion for ${task.text}`}
+                  className="ui-button ui-button-primary"
+                  onClick={() => {
+                    const nextSet = task.sets?.find((candidate) => !candidate.completed);
+                    if (nextSet && coachReferenceSet && nextSet.weight !== coachReferenceSet.weight) {
+                      onUpdateSet(nextSet.id, "weight", coachReferenceSet.weight);
+                    }
+                    setCoachDecision({ title: progressionCoach.title, value: "applied" });
+                  }}
+                  aria-label={`Apply ${coachLoadLabel} to the next set for ${task.text}`}
                 >
-                  Accept suggestion
-                </button>
-                <button
-                  type="button"
-                  className="ui-button ui-button-secondary"
-                  onClick={() => setCoachDecision({ title: progressionCoach.title, value: "repeat" })}
-                  aria-label={`Repeat the current load for ${task.text}`}
-                >
-                  Repeat load
+                  Apply ({coachLoadLabel})
                 </button>
                 <button
                   type="button"
@@ -278,9 +284,7 @@ function TaskCardView({
               </div>
               {activeCoachDecision && (
                 <span className="progression-coach-decision" aria-live="polite">
-                  {activeCoachDecision === "accepted"
-                    ? "Accepted — adjust the next load manually; Track II never changes it for you."
-                    : "Repeat selected — keep the current load for the next exposure."}
+                  {activeCoachDecision === "applied" ? `Applied ${coachLoadLabel} to the next available set.` : ""}
                 </span>
               )}
             </aside>
@@ -292,7 +296,6 @@ function TaskCardView({
               <span>REPS</span>
               <span>RIR</span>
               <span>ACTION</span>
-              <span />
             </div>
             {(task.sets ?? []).map((set, index) => (
               <TaskSetRow

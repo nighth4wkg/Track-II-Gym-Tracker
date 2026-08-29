@@ -4161,6 +4161,14 @@ body {
   border-color: color-mix(in srgb, var(--track-accent-online-ink) 25%, var(--line));
   background: color-mix(in srgb, var(--track-accent-online-ink) 7%, var(--track-workout-card-surface));
 }
+.progression-coach-header {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+}
 .progression-coach-kicker {
   grid-column: 1 / -1;
   color: var(--muted);
@@ -4173,11 +4181,19 @@ body {
   color: var(--ink);
   font-size: 11px;
 }
-.progression-coach > span:last-child {
+.progression-coach-detail {
+  grid-column: 1 / -1;
   min-width: 0;
   color: var(--track-text-secondary);
   font-size: 10px;
   line-height: 1.35;
+}
+.progression-coach-confidence {
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 .mobile-exercise-menu button.coach-menu-item {
   color: var(--track-accent-online-ink);

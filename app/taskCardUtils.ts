@@ -275,14 +275,7 @@ export function buildProgressionCoach(task: TaskCardTask): ProgressionCoach | nu
   return {
     title: "Hold the load",
     detail:
-      "No rep gain is clear across " +
-      comparisons.length +
-      " tracked set" +
-      (comparisons.length === 1 ? "" : "s") +
-      ". Repeat " +
-      currentLoad +
-      rirGuidance +
-      "; a single plateau is not a reason to increase weight.",
+      "Need more session data to gauge progression. Stick with " + currentLoad + rirGuidance + " for the next set.",
     tone: "plateau",
     confidence: comparableSamples >= 3 ? "Medium" : "Insufficient data",
   };

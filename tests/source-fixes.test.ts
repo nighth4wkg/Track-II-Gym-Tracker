@@ -126,7 +126,8 @@ test("progression coach gives conservative next-step cues from set history", () 
     ]),
   });
   assert.equal(plateau?.title, "Hold the load");
-  assert.match(plateau?.detail ?? "", /single plateau is not a reason to increase weight/);
+  assert.match(plateau?.detail ?? "", /Need more session data to gauge progression/);
+  assert.match(plateau?.detail ?? "", /Stick with 30 KG at 1–3 RIR for the next set/);
 
   const oneSetGain = buildProgressionCoach({
     ...task("bench", [

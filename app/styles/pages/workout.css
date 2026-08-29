@@ -1,8 +1,27 @@
+.workout-page .set-row,
+.workout-page .set-heading {
+  --workout-set-grid: 48px minmax(0, 1.2fr) minmax(96px, 1fr) minmax(96px, 1fr) minmax(96px, 0.5fr);
+}
+
 .workout-page .set-row {
-  grid-template-columns: 48px minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr) 58px 32px;
+  grid-template-columns: var(--workout-set-grid);
+}
+
+.workout-page .set-heading {
+  grid-template-columns: var(--workout-set-grid);
+}
+
+.workout-page .set-row-actions {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .workout-page .set-complete-action {
+  flex: 1 1 auto;
+  width: 100%;
   min-width: 44px;
   min-height: 44px;
   padding: 0 6px;
@@ -13,6 +32,13 @@
   border-color: color-mix(in srgb, var(--track-accent-online) 75%, var(--line));
   background: color-mix(in srgb, var(--track-accent-online) 18%, var(--soft));
   color: var(--track-accent-online);
+}
+
+.workout-page .set-row-actions .remove-set {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
 }
 
 .progression-coach-actions {
@@ -31,23 +57,79 @@
 @media (max-width: 1200px) {
   .workout-page .set-row:not(.set-heading),
   .workout-page .set-heading {
-    --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) 48px 28px;
+    --workout-set-grid: 34px repeat(3, minmax(0, 1fr)) minmax(104px, 0.7fr);
     grid-template-columns: var(--workout-set-grid);
     column-gap: 8px;
+  }
+
+  .workout-page .set-row:not(.set-heading) {
+    grid-template-areas: none;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .set-number,
+  .workout-page .set-row:not(.set-heading) > .weight-set-input,
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(3),
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(4),
+  .workout-page .set-row:not(.set-heading) > .set-row-actions {
+    grid-area: auto;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .weight-set-input {
+    height: 55px;
   }
 }
 
 @media (max-width: 700px) {
-  .workout-page .set-row:not(.set-heading) {
-    grid-template-columns: 30px repeat(3, minmax(0, 1fr)) 44px;
-    grid-template-areas: none;
-  }
-
-  .workout-page .set-row:not(.set-heading) > * {
-    grid-area: auto;
-  }
-
-  .workout-page .set-row:not(.set-heading) > .remove-set {
+  .workout-page .set-heading {
     display: none;
+  }
+
+  .workout-page .set-row:not(.set-heading) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(82px, 0.8fr);
+    grid-template-areas:
+      "set set set actions"
+      "weight reps rir actions";
+    gap: 8px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--track-radius-control);
+    background: var(--soft);
+  }
+
+  .workout-page .set-row:not(.set-heading) > .set-number {
+    grid-area: set;
+    width: auto;
+    height: 20px;
+    justify-self: start;
+    background: transparent;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .weight-set-input {
+    grid-area: weight;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(3) {
+    grid-area: reps;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .set-input:nth-child(4) {
+    grid-area: rir;
+  }
+
+  .workout-page .set-row:not(.set-heading) > .set-row-actions {
+    grid-area: actions;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-content: center;
+    gap: 8px;
+    height: 100%;
+  }
+
+  .workout-page .set-row-actions .set-complete-action {
+    min-width: 0;
+  }
+
+  .workout-page .set-row-actions .remove-set {
+    justify-self: end;
   }
 }

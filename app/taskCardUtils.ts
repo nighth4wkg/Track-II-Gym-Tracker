@@ -58,10 +58,11 @@ function finiteCoachNumber(value: string | number | undefined) {
 /**
  * Turn the current workout into an advisory, autoregulated next-step cue.
  *
- * A load change is only suggested after at least two comparable work sets add
- * meaningful reps at the same load, with recorded effort staying in a
- * 1–3-RIR range. A single plateau or a single strong set therefore never
- * triggers an automatic weight jump. The cue is intentionally advisory: it
+ * A load change is only suggested after the logged work shows meaningful reps
+ * at the same load, with recorded effort staying in a 1–3-RIR range and at
+ * least three comparable sessions behind it. Multi-set plans must improve on
+ * every tracked set; a one-set plan can earn the same cue from longitudinal
+ * history without inventing extra work. The cue is intentionally advisory: it
  * never mutates a set or assumes a medical or program-specific prescription.
  */
 export function buildProgressionCoach(task: TaskCardTask): ProgressionCoach | null {
@@ -126,7 +127,7 @@ export function buildProgressionCoach(task: TaskCardTask): ProgressionCoach | nu
   const hasMultipleComparableSessions = comparableSessions >= 3;
   const allSetsImproved =
     allSameLoad &&
-    comparisons.length >= 2 &&
+    comparisons.length >= 1 &&
     comparisons.every((comparison) => comparison.currentReps >= comparison.previousReps + 1);
   const meaningfulGain =
     allSetsImproved && comparisons.every((comparison) => comparison.currentReps >= comparison.previousReps + 2);
@@ -179,13 +180,13 @@ export function buildProgressionCoach(task: TaskCardTask): ProgressionCoach | nu
       return {
         title: "Collect more evidence",
         detail:
-          "This gain is promising across " +
-          comparisons.length +
-          " sets, but only " +
+          (comparisons.length === 1
+            ? "This single-set gain is promising, but only "
+            : "This gain is promising across " + comparisons.length + " sets, but only ") +
           comparableSessions +
           " comparable session" +
           (comparableSessions === 1 ? " is" : "s are") +
-          " available. Repeat the same load and rep range until 3 sessions confirm the trend before increasing weight.",
+          " available. Repeat the same load and rep range until 3 sessions confirm the trend before testing a heavier load.",
         tone: "plateau",
         confidence: "Insufficient data",
       };
@@ -243,10 +244,12 @@ export function buildProgressionCoach(task: TaskCardTask): ProgressionCoach | nu
     return {
       title: "Collect more evidence",
       detail:
-        (comparisons.length < 2 ? "One tracked set is not enough" : "The session trend is not established yet") +
+        (comparisons.length < 2
+          ? "This single-set trend is promising but not established yet"
+          : "The session trend is not established yet") +
         ". Repeat " +
         currentLoad +
-        " across at least two work sets and 3 comparable sessions, then log RIR" +
+        " in your normal set plan for 3 comparable sessions, then log RIR" +
         rirGuidance +
         " before testing " +
         increment +

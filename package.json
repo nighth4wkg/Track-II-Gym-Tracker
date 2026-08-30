@@ -1,6 +1,6 @@
 {
   "name": "track-lifting",
-  "version": "1.0.13",
+  "version": "1.0.14",
   "private": true,
   "description": "Responsive lifting-session tracker for planning splits, recording sets, and syncing workout history.",
   "repository": {

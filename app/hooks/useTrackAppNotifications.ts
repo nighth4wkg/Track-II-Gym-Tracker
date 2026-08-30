@@ -1,21 +1,19 @@
 "use client";
 
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { useCallback, useEffect } from "react";
+import { useEffect } from "react";
 import type { NotificationCenterProps } from "../components/NotificationCenter";
 import { recordNotificationDelivery } from "../notificationTelemetry";
 import { nativeLocalNotificationsAvailable, notificationIdForNativeDelivery } from "../notifications";
 import type { IdentityState } from "./useIdentityState";
 import { useNotificationCenter } from "./useNotificationCenter";
 import type { TimerState } from "./useTimerState";
-import type { useUndoNotice } from "./useUndoNotice";
 import type { useWorkoutDraftRecovery } from "./useWorkoutDraftRecovery";
 
 export function useTrackAppNotifications(
   identity: IdentityState,
   timer: TimerState,
   workoutDraftRecovery: ReturnType<typeof useWorkoutDraftRecovery>,
-  undo: ReturnType<typeof useUndoNotice>,
 ): NotificationCenterProps {
   useEffect(() => {
     if (!nativeLocalNotificationsAvailable()) return;
@@ -61,14 +59,7 @@ export function useTrackAppNotifications(
     restRemaining: timer.restRemaining,
     timerRuntime: timer.timerRuntime,
   });
-  const { items, clearAll: clearCenter, restore } = center;
-  const { offerUndo } = undo;
-  const clearAll = useCallback(() => {
-    if (!items.length) return;
-    const snapshot = items;
-    clearCenter();
-    offerUndo("Notifications cleared", () => restore(snapshot));
-  }, [clearCenter, items, offerUndo, restore]);
+  const { items, clearAll: clearCenter } = center;
 
   return {
     items,
@@ -78,7 +69,7 @@ export function useTrackAppNotifications(
     onClose: center.close,
     onMarkRead: center.markRead,
     onMarkAllRead: center.markAllRead,
-    onClearAll: clearAll,
+    onClearAll: clearCenter,
     onDismiss: center.dismiss,
   };
 }

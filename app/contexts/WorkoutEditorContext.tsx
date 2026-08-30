@@ -39,7 +39,7 @@ export type WorkoutEditorContextValue = {
   onUpdateSet: (taskId: string, setId: string, field: "weight" | "reps" | "rir", value: string) => void;
   onFinishSetWeightEdit: (taskId: string, set: TaskCardSet) => void;
   onBeginSetWeightEdit: (taskId: string, set: TaskCardSet, input: HTMLInputElement) => void;
-  onToggleSetUnit: (taskId: string, setId: string) => void;
+  onToggleExerciseUnit: (taskId: string) => void;
   onRemoveSet: (taskId: string, setId: string) => void;
   onAddSet: (taskId: string) => void;
 };
@@ -96,7 +96,7 @@ export function useConnectedTaskCard(task: TaskCardTask) {
     onFinishSetWeightEdit: (set: TaskCardSet) => editor.onFinishSetWeightEdit(task.id, set),
     onBeginSetWeightEdit: (set: TaskCardSet, input: HTMLInputElement) =>
       editor.onBeginSetWeightEdit(task.id, set, input),
-    onToggleSetUnit: (setId: string) => editor.onToggleSetUnit(task.id, setId),
+    onToggleExerciseUnit: () => editor.onToggleExerciseUnit(task.id),
     onRemoveSet: (setId: string) => editor.onRemoveSet(task.id, setId),
     onAddSet: () => editor.onAddSet(task.id),
   };

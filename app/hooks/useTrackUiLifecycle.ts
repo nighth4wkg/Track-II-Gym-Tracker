@@ -1,36 +1,10 @@
 import { useEffect } from "react";
-import { acknowledgeTrackAnnouncement } from "../data/announcementApi";
 import { TRACK_INTERACTION, TRACK_TIMING } from "../trackConstants";
 import type { UseTrackAppLifecycleOptions } from "./trackLifecycleTypes";
 
-export function useTrackUiLifecycle({
-  user,
-  announcement,
-  identity,
-  workout,
-  settings,
-  refs,
-}: UseTrackAppLifecycleOptions) {
-  const { setAnnouncement } = identity;
+export function useTrackUiLifecycle({ workout, settings }: UseTrackAppLifecycleOptions) {
   const { setSplitMenu } = workout;
   const { setShowScrollTop, setShowScrollBottom } = settings;
-  const { announcementTimer: announcementTimerRef } = refs;
-
-  useEffect(() => {
-    if (!announcement) return;
-    if (announcementTimerRef.current !== null) window.clearTimeout(announcementTimerRef.current);
-    announcementTimerRef.current = window.setTimeout(() => {
-      if (globalThis.window) {
-        // A timed-out banner is still an acknowledgement. Keep this path in
-        // sync with the explicit close button so refreshes do not replay it.
-        void acknowledgeTrackAnnouncement(user?.id ?? "", announcement.id);
-      }
-      setAnnouncement(null);
-    }, TRACK_TIMING.announcementDismissMs);
-    return () => {
-      if (announcementTimerRef.current !== null) window.clearTimeout(announcementTimerRef.current);
-    };
-  }, [announcement, announcementTimerRef, setAnnouncement, user?.id]);
 
   useEffect(() => {
     let frame: number | null = null;

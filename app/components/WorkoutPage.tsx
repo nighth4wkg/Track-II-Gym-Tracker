@@ -1,11 +1,14 @@
 "use client";
 
-import { useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
+import { useCallback, useId, useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 import { WorkoutSetupSteps } from "./WorkoutSetupSteps";
 import { PageHeader } from "./PageHeader";
 import { VirtualizedTaskList } from "./VirtualizedTaskList";
 import { FILTER_LABELS, FILTER_OPTIONS, POPULAR_QUICK_PICK_STARTERS, TRACK_INTERACTION } from "../trackConstants";
+import { safeStorageGet, safeStorageSet } from "../trackUtils";
 import type { Checklist, Filter, Task } from "../trackTypes";
+
+const DELETE_GESTURE_HINT_STORAGE_KEY = "track-delete-set-gesture-hint-seen";
 
 type WorkoutPageProps = {
   active: Checklist;
@@ -57,6 +60,9 @@ export function WorkoutPage({
   const suggestionListId = useId();
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const [showDeleteGestureHint, setShowDeleteGestureHint] = useState(
+    () => safeStorageGet(DELETE_GESTURE_HINT_STORAGE_KEY) !== "true",
+  );
   const suggestionsVisible = showSuggestions && searchQueryActive && exerciseSuggestions.length > 0;
   const starterCards = POPULAR_QUICK_PICK_STARTERS.filter(({ name }) => quickPickExercises.includes(name));
   const hasLoggedFirstSet = tasks.some((task) => {
@@ -90,6 +96,11 @@ export function WorkoutPage({
     onShowSuggestionsChange(false);
     onAddExercise(suggestion);
   };
+
+  const handleDeleteGestureRevealed = useCallback(() => {
+    setShowDeleteGestureHint(false);
+    safeStorageSet(DELETE_GESTURE_HINT_STORAGE_KEY, "true");
+  }, []);
 
   const handleSearchKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -234,7 +245,13 @@ export function WorkoutPage({
       )}
       {tasks.length > 0 && !hasLoggedFirstSet && <WorkoutSetupSteps className="workout-start-steps" stage={3} />}
       <div className="task-list-shell" aria-live="polite">
-        <VirtualizedTaskList tasks={visible} progressFading={progressFading} draggingTaskId={draggingTaskId} />
+        <VirtualizedTaskList
+          tasks={visible}
+          progressFading={progressFading}
+          draggingTaskId={draggingTaskId}
+          showDeleteGestureHint={showDeleteGestureHint}
+          onDeleteGestureRevealed={handleDeleteGestureRevealed}
+        />
         {visible.length === 0 && (
           <div className={`empty ui-empty${tasks.length === 0 ? " empty-split" : " empty-filter"}`}>
             <div className="empty-mark">

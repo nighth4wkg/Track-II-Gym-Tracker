@@ -78,7 +78,7 @@ export function createWorkoutEditorContextValue({
     onUpdateSet: editor.updateSet,
     onFinishSetWeightEdit: editor.finishSetWeightEdit,
     onBeginSetWeightEdit: editor.beginSetWeightEdit,
-    onToggleSetUnit: editor.toggleSetUnit,
+    onToggleExerciseUnit: editor.toggleExerciseUnit,
     onRemoveSet: editor.removeSet,
     onAddSet: editor.addSet,
   };

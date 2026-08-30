@@ -2390,7 +2390,7 @@
   }
 }
 
-/* Final restrained motion polish */
+/* Motion. */
 .exercise-card-content {
   animation: card-content-in 0.34s var(--track-ease-spring) backwards;
   transform-origin: top center;
@@ -2724,9 +2724,6 @@ html.dragging-task-active [data-task-id] {
   .set-row:not(.set-heading) > .set-input:nth-child(4) {
     grid-area: auto;
   }
-  .set-row:not(.set-heading) > .remove-set {
-    display: none;
-  }
   .set-number {
     width: 30px;
     height: 34px;
@@ -2754,21 +2751,6 @@ html.dragging-task-active [data-task-id] {
     padding: 0 24px 0 7px;
     border-radius: 8px;
     font-size: 13px;
-  }
-  .weight-set-input > button {
-    display: none;
-  }
-  .weight-set-input::after {
-    content: attr(data-suffix);
-    position: absolute;
-    right: 7px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--muted);
-    font-size: 8px;
-    font-weight: 700;
-    text-transform: uppercase;
-    pointer-events: none;
   }
   .set-row .set-input:nth-child(3)::after {
     content: "reps";
@@ -2800,7 +2782,7 @@ html.dragging-task-active [data-task-id] {
   }
 }
 
-/* Unified motion system */
+/* Motion. */
 
 .motion-select {
   position: relative;

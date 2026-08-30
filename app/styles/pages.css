@@ -188,11 +188,6 @@
   .set-row:not(.set-heading) > .set-input:nth-child(4) {
     grid-area: rir;
   }
-  .set-row:not(.set-heading) > .remove-set {
-    grid-area: remove;
-    align-self: end;
-    margin-bottom: 5px;
-  }
   .set-number {
     width: auto;
     height: 20px;

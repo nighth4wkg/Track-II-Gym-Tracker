@@ -72,7 +72,16 @@ export function useTrackTimerLifecycle({ timer, markTimerChanged, refs, user }: 
       tick,
       timerMode === "stopwatch" ? TRACK_TIMING.stopwatchTickMs : TRACK_TIMING.restTimerTickMs,
     );
-    return () => window.clearInterval(interval);
+    const refreshOnReturn = () => {
+      if (!document.hidden) tick();
+    };
+    window.addEventListener("pageshow", refreshOnReturn);
+    document.addEventListener("visibilitychange", refreshOnReturn);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("pageshow", refreshOnReturn);
+      document.removeEventListener("visibilitychange", refreshOnReturn);
+    };
   }, [
     markTimerChanged,
     restEndsAtRef,

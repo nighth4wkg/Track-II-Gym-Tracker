@@ -99,35 +99,43 @@ export function NotificationCenterPanel({
     if (!mounted || !open || !globalThis.window) return undefined;
     const positionPanel = () => {
       const triggers = Array.from(document.querySelectorAll<HTMLElement>("[data-notification-center-trigger='true']"));
-      const trigger =
-        triggers.find((candidate) => {
-          const rect = candidate.getBoundingClientRect();
-          const styles = window.getComputedStyle(candidate);
-          return rect.width > 0 && rect.height > 0 && styles.display !== "none" && styles.visibility !== "hidden";
-        }) ?? triggers[0];
-      if (!trigger) return;
-      const rect = trigger.getBoundingClientRect();
+      const visibleTriggers = triggers.filter((candidate) => {
+        const rect = candidate.getBoundingClientRect();
+        const styles = window.getComputedStyle(candidate);
+        return rect.width > 0 && rect.height > 0 && styles.display !== "none" && styles.visibility !== "hidden";
+      });
+      const mobileTrigger = visibleTriggers.find((candidate) => candidate.closest(".mobile-header"));
+      const trigger = mobileTrigger ?? visibleTriggers[0];
+      const triggerRect = trigger?.getBoundingClientRect();
+      const compactMobile = window.innerWidth <= 640;
+      const viewportWidth = window.visualViewport?.width ?? window.innerWidth;
+      const viewportHeight = window.visualViewport?.height ?? window.innerHeight;
       const viewportPadding = 12;
-      const panelWidth = Math.min(370, Math.max(240, window.innerWidth - viewportPadding * 2));
+      const panelWidth = Math.min(370, Math.max(240, viewportWidth - viewportPadding * 2));
       const panelHeight = panelRef.current?.getBoundingClientRect().height ?? 420;
-      const below = rect.bottom + 8;
-      const top =
-        below + panelHeight <= window.innerHeight - viewportPadding
-          ? below
-          : Math.max(viewportPadding, rect.top - panelHeight - 8);
-      const left = Math.max(
-        viewportPadding,
-        Math.min(rect.right - panelWidth, window.innerWidth - panelWidth - viewportPadding),
-      );
+      const mobileTop = triggerRect?.bottom ? triggerRect.bottom + 8 : viewportPadding;
+      const top = compactMobile
+        ? Math.min(
+            Math.max(viewportPadding, mobileTop),
+            Math.max(viewportPadding, viewportHeight - panelHeight - viewportPadding),
+          )
+        : viewportPadding;
+      const left = compactMobile
+        ? viewportPadding
+        : Math.max(viewportPadding, viewportWidth - panelWidth - viewportPadding);
       setPanelPosition({ top, left });
     };
     const frame = window.requestAnimationFrame(positionPanel);
     window.addEventListener("resize", positionPanel);
     window.addEventListener("scroll", positionPanel, true);
+    window.visualViewport?.addEventListener("resize", positionPanel);
+    window.visualViewport?.addEventListener("scroll", positionPanel);
     return () => {
       window.cancelAnimationFrame(frame);
       window.removeEventListener("resize", positionPanel);
       window.removeEventListener("scroll", positionPanel, true);
+      window.visualViewport?.removeEventListener("resize", positionPanel);
+      window.visualViewport?.removeEventListener("scroll", positionPanel);
     };
   }, [items.length, mounted, open]);
 
@@ -138,6 +146,7 @@ export function NotificationCenterPanel({
       if (!(target instanceof Node)) return;
       if (panelRef.current?.contains(target)) return;
       if (target instanceof Element && target.closest("[data-notification-center-trigger='true']")) return;
+      if (target instanceof Element && target.closest(".notification-center-backdrop")) return;
       onClose();
     };
     const handleKey = (event: KeyboardEvent) => {
@@ -159,78 +168,89 @@ export function NotificationCenterPanel({
   };
 
   return createPortal(
-    <section
-      ref={panelRef}
-      className={`notification-center-panel${!open ? " is-closing" : ""}`}
-      id="notification-center-panel"
-      data-positioned={panelPosition ? "true" : "false"}
-      style={panelPosition ? { top: panelPosition.top, left: panelPosition.left, right: "auto" } : undefined}
-      role="dialog"
-      aria-label="Notification center"
-      aria-hidden={!open}
-    >
-      <header className="notification-center-header">
-        <div>
-          <span className="notification-center-kicker">INBOX</span>
-          <h2>Notifications</h2>
-        </div>
-        <div className="notification-center-actions">
-          <button type="button" onClick={onMarkAllRead} disabled={!unreadCount}>
-            Mark all read
-          </button>
-          <button type="button" className="notification-center-clear" onClick={onClearAll} disabled={!items.length}>
-            Clear all
-          </button>
-          <button
-            type="button"
-            className="notification-center-close"
-            onClick={onClose}
-            aria-label="Close notifications"
-          >
-            ×
-          </button>
-        </div>
-      </header>
-      {items.length > 0 ? (
-        <ul className="notification-center-list">
-          {items.map((item) => (
-            <li key={item.id} className={`notification-center-item${item.unread ? " is-unread" : ""}`}>
-              <button
-                type="button"
-                className="notification-center-item-main"
-                onClick={(event) => onNotificationClick(event, item)}
-              >
-                <span className={`notification-center-item-icon is-${item.kind}`} aria-hidden="true">
-                  {kindGlyph(item.kind)}
-                </span>
-                <span className="notification-center-item-copy">
-                  <strong>{item.title}</strong>
-                  <span>{item.message}</span>
-                  <time dateTime={new Date(item.createdAt).toISOString()}>{relativeTime(item.createdAt)}</time>
-                </span>
-                {item.unread && <i className="notification-center-unread-dot" aria-label="Unread" />}
-              </button>
-              <button
-                type="button"
-                className="notification-center-dismiss"
-                onClick={() => onDismiss(item.id)}
-                aria-label={`Dismiss ${item.title}`}
-              >
-                ×
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <div className="notification-center-empty">
-          <span className="notification-center-empty-icon" aria-hidden="true">
-            ✓
-          </span>
-          <strong>You’re all caught up</strong>
-          <span>Rest alerts, sync issues, drafts, and announcements will appear here.</span>
-        </div>
-      )}
-    </section>,
+    <>
+      <button
+        type="button"
+        className={`notification-center-backdrop${!open ? " is-closing" : ""}`}
+        data-positioned={panelPosition ? "true" : "false"}
+        aria-label="Close notifications"
+        tabIndex={-1}
+        onClick={onClose}
+      />
+      <section
+        ref={panelRef}
+        className={`notification-center-panel${!open ? " is-closing" : ""}`}
+        id="notification-center-panel"
+        data-positioned={panelPosition ? "true" : "false"}
+        style={panelPosition ? { top: panelPosition.top, left: panelPosition.left, right: "auto" } : undefined}
+        role="dialog"
+        aria-label="Notification center"
+        aria-modal="true"
+        aria-hidden={!open}
+      >
+        <header className="notification-center-header">
+          <div>
+            <span className="notification-center-kicker">INBOX</span>
+            <h2>Notifications</h2>
+          </div>
+          <div className="notification-center-actions">
+            <button type="button" onClick={onMarkAllRead} disabled={!unreadCount}>
+              Mark all read
+            </button>
+            <button type="button" className="notification-center-clear" onClick={onClearAll} disabled={!items.length}>
+              Clear all
+            </button>
+            <button
+              type="button"
+              className="notification-center-close"
+              onClick={onClose}
+              aria-label="Close notifications"
+            >
+              ×
+            </button>
+          </div>
+        </header>
+        {items.length > 0 ? (
+          <ul className="notification-center-list">
+            {items.map((item) => (
+              <li key={item.id} className={`notification-center-item${item.unread ? " is-unread" : ""}`}>
+                <button
+                  type="button"
+                  className="notification-center-item-main"
+                  onClick={(event) => onNotificationClick(event, item)}
+                >
+                  <span className={`notification-center-item-icon is-${item.kind}`} aria-hidden="true">
+                    {kindGlyph(item.kind)}
+                  </span>
+                  <span className="notification-center-item-copy">
+                    <strong>{item.title}</strong>
+                    <span>{item.message}</span>
+                    <time dateTime={new Date(item.createdAt).toISOString()}>{relativeTime(item.createdAt)}</time>
+                  </span>
+                  {item.unread && <i className="notification-center-unread-dot" aria-label="Unread" />}
+                </button>
+                <button
+                  type="button"
+                  className="notification-center-dismiss"
+                  onClick={() => onDismiss(item.id)}
+                  aria-label={`Dismiss ${item.title}`}
+                >
+                  ×
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <div className="notification-center-empty">
+            <span className="notification-center-empty-icon" aria-hidden="true">
+              ✓
+            </span>
+            <strong>You’re all caught up</strong>
+            <span>Rest alerts, sync issues, drafts, and announcements will appear here.</span>
+          </div>
+        )}
+      </section>
+    </>,
     document.body,
   );
 }

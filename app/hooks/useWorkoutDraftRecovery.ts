@@ -55,6 +55,13 @@ export function useWorkoutDraftRecovery({
   const listsRef = useRef(lists);
   const writeTimerRef = useRef<number | null>(null);
   const pendingWriteRef = useRef<{ userId: string; draft: WorkoutDraft } | null>(null);
+  const flushPendingWrite = useCallback(() => {
+    if (writeTimerRef.current !== null) window.clearTimeout(writeTimerRef.current);
+    writeTimerRef.current = null;
+    const pending = pendingWriteRef.current;
+    pendingWriteRef.current = null;
+    if (pending) void upsertWorkoutDraft(pending.userId, pending.draft);
+  }, []);
 
   useEffect(() => {
     listsRef.current = lists;
@@ -176,14 +183,20 @@ export function useWorkoutDraftRecovery({
     }, 250);
   }, [active, dirtySplits, hydratedFor, savedSplitsRef, userId]);
 
-  useEffect(
-    () => () => {
-      if (writeTimerRef.current !== null) window.clearTimeout(writeTimerRef.current);
-      const pending = pendingWriteRef.current;
-      if (pending) void upsertWorkoutDraft(pending.userId, pending.draft);
-    },
-    [],
-  );
+  useEffect(() => {
+    if (!userId) return undefined;
+    const flushWhenHidden = () => {
+      if (document.visibilityState === "hidden") flushPendingWrite();
+    };
+    window.addEventListener("pagehide", flushPendingWrite);
+    document.addEventListener("visibilitychange", flushWhenHidden);
+    return () => {
+      window.removeEventListener("pagehide", flushPendingWrite);
+      document.removeEventListener("visibilitychange", flushWhenHidden);
+    };
+  }, [flushPendingWrite, userId]);
+
+  useEffect(() => () => flushPendingWrite(), [flushPendingWrite]);
 
   const continueWorkout = useCallback(() => runViewTransition(() => setNotice(null)), []);
 

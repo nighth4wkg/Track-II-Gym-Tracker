@@ -293,7 +293,7 @@ test("beta UX surfaces expose concise summaries and useful empty states", async 
   assert.match(css, /\.calendar-insight-card,[\s\S]*?\.rank-insight-card/);
   assert.match(css, /\.calendar-month-stage\.previous \{[\s\S]*?animation: calendar-month-previous 0\.34s/);
   assert.match(css, /\.empty-starter-grid \{[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)/);
-  assert.match(css, /\.account-panel-heading \.sync-health-popover \{[\s\S]*?bottom: calc\(100% \+ 8px\)/);
+  assert.match(css, /\.sync-health-popover \{[\s\S]*?position: fixed;/);
   assert.match(sidebar, /onRetry=\{onRetrySync\}[\s\S]*?compact/);
 });
 
@@ -757,6 +757,7 @@ test("announcements acknowledge once, offline workouts queue safely, and metrics
     syncHook,
     syncIndicator,
     conflictBanner,
+    uiLifecycle,
     vitals,
     trackConfig,
     pagesConfig,
@@ -770,6 +771,7 @@ test("announcements acknowledge once, offline workouts queue safely, and metrics
     read("app/hooks/useTrackCloudSync.ts"),
     read("app/components/SyncStatusIndicator.tsx"),
     read("app/components/SyncConflictBanner.tsx"),
+    read("app/hooks/useTrackUiLifecycle.ts"),
     read("app/webVitals.ts"),
     read("app/trackConfig.ts"),
     read("vite.pages.config.ts"),
@@ -794,6 +796,7 @@ test("announcements acknowledge once, offline workouts queue safely, and metrics
   assert.match(syncIndicator, /Waiting to upload/);
   assert.match(conflictBanner, /Use cloud copy/);
   assert.match(conflictBanner, /Keep merged copy/);
+  assert.doesNotMatch(uiLifecycle, /announcementTimer|announcementDismissMs/);
   assert.match(vitals, /PerformanceObserver/);
   assert.match(vitals, /track-web-vital/);
   assert.match(trackConfig, /TRACK_METRICS_URL/);
@@ -948,34 +951,94 @@ test("settings touch targets do not inherit Safari focus or blur interference", 
 });
 
 test("responsive workout controls keep one aligned grid and remove native number chrome", async () => {
-  const [taskCard, css, motion, settings] = await Promise.all([
+  const [taskCard, css, motion, settings, workoutCss] = await Promise.all([
     read("app/components/TaskCard.tsx"),
     readCssSource(),
     read("app/domMotion.ts"),
     read("app/components/SettingsSpecialViews.tsx"),
+    read("app/styles/pages/workout.css"),
   ]);
 
   assert.match(taskCard, /className="set-row set-heading"/);
+  assert.match(taskCard, /const weightUnitLabel =/);
+  assert.match(taskCard, /className="set-heading-unit"/);
+  assert.match(taskCard, /onClick=\{onToggleExerciseUnit\}/);
+  assert.match(taskCard, /Switch \$\{task\.text\} weight unit to/);
+  assert.doesNotMatch(taskCard, /<span>\{weightUnitLabel\}<\/span>/);
   assert.match(
-    css,
-    /@media \(min-width:701px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;[\s\S]*?min-height:20px;/,
+    workoutCss,
+    /\.workout-page \.set-row,\s*\.workout-page \.set-heading \{[\s\S]*?--workout-action-width: 44px;[\s\S]*?--workout-set-grid:[^;]*var\(--workout-action-width\);/,
+  );
+  assert.match(workoutCss, /\.workout-page \.set-heading \{[\s\S]*?grid-template-columns: var\(--workout-set-grid\);/);
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-heading > span,\s*\.workout-page \.set-heading > \.set-heading-unit \{[\s\S]*?justify-self: stretch;[\s\S]*?text-align: center;/,
+  );
+  assert.match(workoutCss, /\.workout-page \.set-heading-unit \{[\s\S]*?min-height: 44px;[\s\S]*?cursor: pointer;/);
+  assert.match(
+    workoutCss,
+    /\.workout-page \.weight-set-input::after \{[\s\S]*?content: none !important;[\s\S]*?display: none !important;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-heading,[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) \{[\s\S]*?transition: grid-template-columns 360ms var\(--track-ease-spring\);/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.sets-table:has\(> \.set-row\.is-delete-revealed\) > \.set-heading \{[\s\S]*?--workout-action-width: 96px;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.sets-table:has\(> \.set-row\.is-delete-revealed\) > \.set-row:not\(\.set-heading\) \{[\s\S]*?--workout-action-width: 96px;/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 700px\)[\s\S]*?\.workout-page \.set-heading,[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) \{[\s\S]*?--workout-action-width: 44px;[\s\S]*?--workout-set-grid: 28px minmax\(0, 1\.15fr\) repeat\(2, minmax\(0, 0\.8fr\)\) var\(--workout-action-width\);/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 700px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display: grid !important;[\s\S]*?border-bottom: 1px solid var\(--line\);/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 700px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) \{[\s\S]*?grid-template-areas: none;[\s\S]*?padding: 4px 0;[\s\S]*?border: 0 !important;[\s\S]*?background: transparent !important;/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 700px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) > \.set-input::before \{[\s\S]*?content: none;[\s\S]*?display: none;/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 1200px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) > \.set-number::before \{[\s\S]*?content: none;[\s\S]*?display: none;/,
+  );
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 1200px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) > \.set-number \{[\s\S]*?width: 100%;[\s\S]*?justify-self: stretch;[\s\S]*?justify-content: center;[\s\S]*?text-align: center;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-row:not\(\.set-heading\) > \.set-input:nth-child\(3\)::after,[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) > \.set-input:nth-child\(4\)::after \{[\s\S]*?content: none;[\s\S]*?display: none;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-complete-action \{[\s\S]*?flex: 0 0 44px;[\s\S]*?width: 44px;[\s\S]*?height: 44px;[\s\S]*?display: grid;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-complete-action\.is-complete \{[\s\S]*?background: var\(--track-accent-online\);/,
+  );
+  assert.match(workoutCss, /\.workout-page \.set-row\.has-completed-set > \.set-input \{[\s\S]*?opacity: 0\.62;/);
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 1200px\)[\s\S]*?\.workout-page \.mobile-collapse,[\s\S]*?\.workout-page \.mobile-overflow \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/,
   );
   assert.match(
     css,
-    /@media \(min-width:701px\) and \(max-width:1200px\)[\s\S]*?\.workout-page \.set-row \{[\s\S]*?--workout-set-grid:34px repeat\(3,minmax\(0,1fr\)\) 30px;[\s\S]*?grid-template-columns:var\(--workout-set-grid\);[\s\S]*?column-gap:10px;[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;/,
+    /\.exercise-history-trigger \{[\s\S]*?background:color-mix\(in srgb,var\(--ink\) 5%,var\(--soft\)\);/,
   );
   assert.match(
     css,
-    /@media \(max-width:700px\)[\s\S]*?\.workout-page \.set-heading \{[\s\S]*?display:grid;[\s\S]*?grid-template-columns:34px repeat\(3,minmax\(0,1fr\)\) 30px;/,
-  );
-  assert.match(
-    css,
-    /@media \(max-width:700px\)[\s\S]*?\.workout-page \.set-row:not\(\.set-heading\) \{[\s\S]*?grid-template-columns:34px repeat\(3,minmax\(0,1fr\)\) 30px;/,
-  );
-  assert.match(css, /--workout-set-grid:34px repeat\(3,minmax\(0,1fr\)\) 30px;/);
-  assert.match(
-    css,
-    /\.workout-page \.set-row \.set-input:nth-child\(3\)::after,[\s\S]*?content:none;[\s\S]*?display:none;/,
+    /\.exercise-history-trigger \{[\s\S]*?border:1px solid color-mix\(in srgb,var\(--line\) 82%,transparent\);[\s\S]*?padding:5px 8px;/,
   );
   assert.match(css, /\.page-header-row \{[\s\S]*?align-items:flex-end;/);
   assert.match(css, /\.workout-page \.add-set \{[\s\S]*?width:100%;/);
@@ -989,27 +1052,79 @@ test("responsive workout controls keep one aligned grid and remove native number
 });
 
 test("beta workout flow keeps logging keyboard-friendly and mobile actions reachable", async () => {
-  const [taskSetRow, workoutPage, workspace, finishButton, splitGesture, splitActions, css, transitions] =
-    await Promise.all([
-      read("app/components/TaskSetRow.tsx"),
-      read("app/components/WorkoutPage.tsx"),
-      read("app/components/WorkspaceContent.tsx"),
-      read("app/components/FinishWorkoutButton.tsx"),
-      read("app/hooks/useSplitReorderGesture.ts"),
-      read("app/hooks/useSplitActions.ts"),
-      readCssSource(),
-      read("app/viewTransitions.ts"),
-    ]);
+  const [
+    taskSetRow,
+    taskCard,
+    virtualizedTaskList,
+    controller,
+    context,
+    workoutPage,
+    workspace,
+    finishButton,
+    splitGesture,
+    splitActions,
+    css,
+    transitions,
+    workoutCss,
+  ] = await Promise.all([
+    read("app/components/TaskSetRow.tsx"),
+    read("app/components/TaskCard.tsx"),
+    read("app/components/VirtualizedTaskList.tsx"),
+    read("app/hooks/useWorkoutEditorController.ts"),
+    read("app/contexts/WorkoutEditorContext.tsx"),
+    read("app/components/WorkoutPage.tsx"),
+    read("app/components/WorkspaceContent.tsx"),
+    read("app/components/FinishWorkoutButton.tsx"),
+    read("app/hooks/useSplitReorderGesture.ts"),
+    read("app/hooks/useSplitActions.ts"),
+    readCssSource(),
+    read("app/viewTransitions.ts"),
+    read("app/styles/pages/workout.css"),
+  ]);
 
   assert.match(taskSetRow, /data-set-field="weight"/);
   assert.match(taskSetRow, /data-set-field="reps"/);
   assert.match(taskSetRow, /data-set-field="rir"/);
+  assert.match(taskSetRow, /aria-hidden="true">✓<\/span>/);
+  assert.doesNotMatch(taskSetRow, />Done<\/button>/);
   assert.match(taskSetRow, /className="set-row-actions"/);
-  assert.match(taskSetRow, /title=\{`Remove set \$\{index \+ 1\}`\}/);
+  assert.match(taskSetRow, /deleteSwipeOpen/);
+  assert.match(taskSetRow, /onPointerMove={handleSetPointerMove}/);
+  assert.match(taskSetRow, /event\.button !== 0/);
+  assert.match(taskSetRow, /!target\.closest\("\.set-complete-action"\)/);
+  assert.match(taskSetRow, /swipeConsumedRef\.current = true/);
+  assert.doesNotMatch(taskSetRow, /event\.pointerType === "mouse"\) return/);
+  assert.match(taskSetRow, /createPortal/);
+  assert.match(taskSetRow, /deleteConfirmPosition/);
+  assert.match(taskSetRow, /className="ui-button ui-button-danger remove-set set-delete-trigger"/);
+  assert.doesNotMatch(taskSetRow, /set-delete-label/);
+  assert.match(taskSetRow, /aria-haspopup="dialog"/);
+  assert.match(taskSetRow, /className="set-delete-confirm"/);
+  assert.match(taskSetRow, /Delete set/);
+  assert.match(taskSetRow, /setDeleteConfirmOpen/);
+  assert.doesNotMatch(taskSetRow, /onClick=\{\(\) => onRemoveSet\(set\.id\)\}/);
   assert.match(taskSetRow, /focusNextSetInput\(event, "reps"\)/);
   assert.match(taskSetRow, /focusNextSetInput\(event, "rir"\)/);
   assert.match(taskSetRow, /inputMode="decimal"[\s\S]*?enterKeyHint="next"/);
   assert.match(taskSetRow, /inputMode="numeric"[\s\S]*?enterKeyHint="done"/);
+  assert.match(taskSetRow, /onDeleteGestureRevealed\(\)/);
+  assert.match(taskCard, /className="set-heading-unit"/);
+  assert.match(taskCard, /onToggleExerciseUnit/);
+  assert.match(taskCard, /className="set-delete-gesture-hint"/);
+  assert.match(taskCard, /Swipe or drag a set left to reveal Delete\./);
+  assert.match(taskCard, /<span>DONE<\/span>/);
+  assert.doesNotMatch(taskCard, /<span>ACTION<\/span>/);
+  assert.match(taskCard, /previous\.showDeleteGestureHint === next\.showDeleteGestureHint/);
+  assert.match(virtualizedTaskList, /showDeleteGestureHint/);
+  assert.match(virtualizedTaskList, /showDeleteGestureHint && index === 0/);
+  assert.match(controller, /const toggleExerciseUnit = useCallback/);
+  assert.match(controller, /const currentUnit = task\.sets\?\.\[0\]\?\.unit \?\? "kg"/);
+  assert.match(controller, /sets: \(task\.sets \?\? \[\]\)\.map\(\(set\) => convertSetUnit\(set, nextUnit\)\)/);
+  assert.match(context, /onToggleExerciseUnit: \(taskId: string\) => void/);
+  assert.match(context, /onToggleExerciseUnit: \(\) => editor\.onToggleExerciseUnit\(task\.id\)/);
+  assert.match(workoutPage, /DELETE_GESTURE_HINT_STORAGE_KEY/);
+  assert.match(workoutPage, /safeStorageGet\(DELETE_GESTURE_HINT_STORAGE_KEY\)/);
+  assert.match(workoutPage, /onDeleteGestureRevealed=\{handleDeleteGestureRevealed\}/);
   assert.match(workoutPage, /className="workout-start-steps"/);
   assert.match(workspace, /className="welcome-start-steps"/);
   assert.match(finishButton, /aria-haspopup="dialog"/);
@@ -1022,13 +1137,38 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(transitions, /startViewTransition/);
   assert.match(css, /view-transition-name: track-workspace;/);
   assert.match(css, /view-transition-name: rank-body-map;/);
+  assert.match(workoutCss, /\.workout-page \.weight-set-input > input \{[\s\S]*?padding-right: 11px;/);
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-row:not\(\.set-heading\) > \.set-input > input \{[\s\S]*?height: 40px;[\s\S]*?padding: 0 11px;/,
+  );
+  assert.match(
+    workoutCss,
+    /\.workout-page \.weight-set-input::after \{[\s\S]*?content: none !important;[\s\S]*?display: none !important;/,
+  );
+  assert.doesNotMatch(taskSetRow, /weight-unit-toggle|data-suffix/);
+  assert.doesNotMatch(taskSetRow, /data-label=/);
+  assert.match(workoutCss, /\.set-delete-confirm \{[\s\S]*?position: fixed;[\s\S]*?z-index: 240;/);
+  assert.match(workoutCss, /\.set-delete-confirm \{[\s\S]*?animation: menu-pop 240ms/);
+  assert.match(workoutCss, /\.workout-page \.set-delete-trigger \{[\s\S]*?width: 44px;[\s\S]*?height: 44px;/);
+  assert.match(workoutCss, /\.workout-page \.set-delete-control \{[\s\S]*?min-width: 0;[\s\S]*?opacity: 0;/);
+  assert.match(workoutCss, /grid-template-columns: 44px 0;/);
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-row:not\(\.set-heading\) > \.set-row-actions \{[\s\S]*?grid-template-columns: 44px 0;[\s\S]*?gap: 0;/,
+  );
+  assert.match(workoutCss, /animation: check-pop 360ms cubic-bezier\(0\.34, 1\.56, 0\.64, 1\)/);
+  assert.match(
+    workoutCss,
+    /\.workout-page \.set-row\.is-delete-revealed \.set-row-actions \{[\s\S]*?grid-template-columns: 44px 44px;/,
+  );
+  assert.match(workoutCss, /\.workout-page \.set-row\.is-delete-revealed \.set-row-actions \{[\s\S]*?gap: 8px;/);
+  assert.match(workoutCss, /grid-template-areas: none;/);
   assert.match(css, /--track-bottom-content-reserve/);
   assert.match(css, /@keyframes track-workspace-old[\s\S]*?to \{[\s\S]*?opacity: 0;/);
   assert.match(css, /@keyframes track-workspace-new[\s\S]*?from \{[\s\S]*?opacity: 0;/);
   assert.match(css, /\.welcome-start-steps \{[\s\S]*?gap:10px;/);
   assert.match(css, /\.welcome-start-steps \+ \.welcome-button \{[\s\S]*?margin-top:clamp\(14px,2\.5vh,20px\);/);
-  assert.match(taskSetRow, /className=\{togglingUnit \? "weight-unit-toggle is-toggling"/);
-  assert.match(taskSetRow, /set\.unit\.toUpperCase\(\)/);
   assert.match(splitGesture, /splitHoldMenuOpened/);
   assert.match(splitGesture, /function splitMenuPosition/);
   assert.match(splitGesture, /splitMenuOffsetY/);
@@ -1042,10 +1182,17 @@ test("beta workout flow keeps logging keyboard-friendly and mobile actions reach
   assert.match(css, /\.workout-page \.exercise-composer \.suggestions \{[\s\S]*?top:calc\(100% \+ 8px\);/);
   assert.doesNotMatch(css, /\.workout-page \.exercise-composer \{ position:fixed;/);
   assert.doesNotMatch(css, /undo-toast-positioner \{[\s\S]*?\+ 82px/);
-  assert.match(css, /\.weight-unit-toggle\.is-toggling/);
-  assert.match(css, /@keyframes weight-unit-toggle/);
+  assert.doesNotMatch(css, /weight-unit-toggle|@keyframes weight-unit-toggle/);
   assert.match(css, /grid-template-columns:minmax\(0,1fr\) 34px/);
   assert.match(css, /\.workout-page \.set-delta \{[\s\S]*?transform:translateY\(-100%\);/);
+  assert.match(workoutCss, /\.workout-page \.workout-page-header \{[\s\S]*?margin-bottom: var\(--track-space-4\);/);
+  assert.match(workoutCss, /\.workout-page \.task-list \{[\s\S]*?margin-top: var\(--track-space-4\);/);
+  assert.match(workoutCss, /\.workout-page \.set-delete-gesture-hint \{[\s\S]*?animation: set-delete-gesture-hint-in/);
+  assert.match(workoutCss, /@keyframes set-delete-gesture-nudge/);
+  assert.match(
+    workoutCss,
+    /@media \(max-width: 700px\)[\s\S]*?\.workout-page \.workout-page-header \{[\s\S]*?margin-bottom: var\(--track-space-3\);[\s\S]*?\.workout-page \.task-list \{[\s\S]*?margin-top: var\(--track-space-3\);/,
+  );
   assert.match(css, /--workout-set-grid/);
   assert.match(css, /@keyframes finish-confirm-in/);
   assert.match(css, /@keyframes undo-toast-in/);
@@ -1061,7 +1208,7 @@ test("mobile settings stay balanced and boot reconciliation stays quiet", async 
   );
   assert.match(
     css,
-    /\/\* Settings polish: keep narrow-screen headings and admin actions visually balanced\. \*\/[\s\S]*\.settings-heading \{[\s\S]*display:block;[\s\S]*\.admin-card > \.setting-row \{[\s\S]*align-items:flex-start;/,
+    /\.settings-heading \{[\s\S]*display:block;[\s\S]*\.admin-card > \.setting-row \{[\s\S]*align-items:flex-start;/,
   );
 });
 
@@ -1100,21 +1247,23 @@ test("mobile pages share a lower crisp surface and blur-free overlays", async ()
 });
 
 test("calendar, workout, and settings surfaces keep their review controls balanced", async () => {
-  const [calendar, taskCard, settings, navigation, constants, rank, timer, undoToast, css] = await Promise.all([
-    readSourceBundle(["app/components/CalendarScreen.tsx", "app/components/CalendarDetailModal.tsx"]),
-    read("app/components/TaskCard.tsx"),
-    readSourceBundle([
-      "app/components/SettingsViewContent.tsx",
-      "app/components/SettingsStandardViews.tsx",
-      "app/components/SettingsAiImportView.tsx",
-    ]),
-    read("app/components/SettingsNavigation.tsx"),
-    read("app/trackConstants.ts"),
-    read("app/components/RankScreen.tsx"),
-    read("app/components/TimerScreen.tsx"),
-    read("app/components/UndoToast.tsx"),
-    readCssSource(),
-  ]);
+  const [calendar, taskCard, settings, navigation, constants, rank, timer, undoToast, css, workoutCss] =
+    await Promise.all([
+      readSourceBundle(["app/components/CalendarScreen.tsx", "app/components/CalendarDetailModal.tsx"]),
+      read("app/components/TaskCard.tsx"),
+      readSourceBundle([
+        "app/components/SettingsViewContent.tsx",
+        "app/components/SettingsStandardViews.tsx",
+        "app/components/SettingsAiImportView.tsx",
+      ]),
+      read("app/components/SettingsNavigation.tsx"),
+      read("app/trackConstants.ts"),
+      read("app/components/RankScreen.tsx"),
+      read("app/components/TimerScreen.tsx"),
+      read("app/components/UndoToast.tsx"),
+      readCssSource(),
+      read("app/styles/pages/workout.css"),
+    ]);
 
   assert.match(calendar, /calendar-detail-expand-icon expanded/);
   assert.doesNotMatch(calendar, /expanded \? "−" : "\+"/);
@@ -1124,8 +1273,8 @@ test("calendar, workout, and settings surfaces keep their review controls balanc
     /\.calendar-detail-exercise-info \{[\s\S]*?border:1px solid color-mix\(in srgb,var\(--line\) 88%,transparent\);[\s\S]*?background:color-mix\(/,
   );
   assert.match(
-    css,
-    /\.workout-page \.set-row \{[\s\S]*?grid-template-columns:48px minmax\(0,1\.2fr\) minmax\(0,1fr\) minmax\(0,1fr\) 32px;/,
+    workoutCss,
+    /\.workout-page \.set-row,\s*\.workout-page \.set-heading \{[\s\S]*?--workout-set-grid: 48px minmax\(0, 1\.2fr\)/,
   );
   assert.match(settings, /className="personal-unit-selector"/);
   assert.doesNotMatch(settings, /theme-selector|Global weight unit|Installed version|about-credit/);
@@ -1308,6 +1457,8 @@ test("personal information stays owner-only and exercise menus do not resize col
   assert.match(taskCardMenuHook, /getBoundingClientRect\(\)/);
   assert.match(taskCardMenu, /Smart coach/);
   assert.match(taskCard, /coachOpen/);
+  assert.doesNotMatch(taskCard, /Apply \(/);
+  assert.doesNotMatch(taskCard, />Dismiss<\/button>/);
   assert.match(taskCardMenu, /disabled=\{!progressionCoach\}/);
   assert.match(privacyMigration, /force row level security/);
   assert.match(privacyMigration, /revoke all on table public\.profiles from anon/);
@@ -1671,9 +1822,11 @@ test("native updates and notification permissions use native-safe paths", async 
   assert.match(updateNotification, /!nativeApp \|\| !globalThis\.document/);
 });
 
-test("rest completion and announcements deliver immediate client notifications", async () => {
-  const [timerLifecycle, notifications, overlays, components] = await Promise.all([
+test("rest completion and app suspension preserve client notifications and runtime state", async () => {
+  const [timerLifecycle, timerPersistence, draftRecovery, notifications, overlays, components] = await Promise.all([
     read("app/hooks/useTrackTimerLifecycle.ts"),
+    read("app/hooks/useTimerPersistence.ts"),
+    read("app/hooks/useWorkoutDraftRecovery.ts"),
     read("app/notifications.ts"),
     read("app/components/ActionModalOverlays.tsx"),
     read("app/styles/components.css"),
@@ -1681,6 +1834,11 @@ test("rest completion and announcements deliver immediate client notifications",
 
   assert.match(timerLifecycle, /Rest complete\. Time for your next set\./);
   assert.match(timerLifecycle, /restEndsAtRef\.current = 0/);
+  assert.match(timerLifecycle, /pageshow/);
+  assert.match(timerPersistence, /pagehide/);
+  assert.match(timerPersistence, /safeStorageSet/);
+  assert.match(draftRecovery, /pagehide/);
+  assert.match(draftRecovery, /visibilitychange/);
   assert.match(notifications, /notificationDeliveries/);
   assert.match(notifications, /serviceWorker\.getRegistration\(\)/);
   assert.doesNotMatch(notifications, /serviceWorker\.ready/);
@@ -1692,28 +1850,53 @@ test("rest completion and announcements deliver immediate client notifications",
 });
 
 test("notification center state and anchored menus stay connected to the right account context", async () => {
-  const [center, centerHook, centerStore, shell, sidebar, taskCardMenu, taskCardMenuHook, splitMenu, identity, polish] =
-    await Promise.all([
-      read("app/components/NotificationCenter.tsx"),
-      read("app/hooks/useNotificationCenter.ts"),
-      read("app/notificationCenter.ts"),
-      read("app/components/TrackAppShell.tsx"),
-      read("app/components/Sidebar.tsx"),
-      read("app/components/TaskCardMenu.tsx"),
-      read("app/hooks/useTaskCardMenu.ts"),
-      read("app/components/SplitMenu.tsx"),
-      read("app/hooks/useTrackIdentityLifecycle.ts"),
-      read("app/styles/polish.css"),
-    ]);
+  const [
+    center,
+    centerHook,
+    centerStore,
+    appNotifications,
+    shell,
+    sidebar,
+    taskCardMenu,
+    taskCardMenuHook,
+    splitMenu,
+    identity,
+    polish,
+  ] = await Promise.all([
+    read("app/components/NotificationCenter.tsx"),
+    read("app/hooks/useNotificationCenter.ts"),
+    read("app/notificationCenter.ts"),
+    read("app/hooks/useTrackAppNotifications.ts"),
+    read("app/components/TrackAppShell.tsx"),
+    read("app/components/Sidebar.tsx"),
+    read("app/components/TaskCardMenu.tsx"),
+    read("app/hooks/useTaskCardMenu.ts"),
+    read("app/components/SplitMenu.tsx"),
+    read("app/hooks/useTrackIdentityLifecycle.ts"),
+    read("app/styles/polish.css"),
+  ]);
 
   assert.match(center, /Notification center/);
   assert.match(center, /Mark all read/);
   assert.match(center, /Clear all/);
+  assert.match(center, /className=\{`notification-center-backdrop\$\{!open \? " is-closing" : ""\}`\}/);
+  assert.match(center, /aria-modal="true"/);
+  assert.match(center, /data-positioned=\{panelPosition \? "true" : "false"\}/);
   assert.match(centerHook, /TRACK_NOTIFICATION_EVENT/);
   assert.match(centerHook, /Rest complete/);
   assert.match(centerHook, /const clearAll = useCallback/);
+  assert.doesNotMatch(centerHook, /restore/);
+  assert.match(appNotifications, /onClearAll: clearCenter/);
+  assert.doesNotMatch(appNotifications, /Notifications cleared|offerUndo|restore/);
   assert.doesNotMatch(centerHook, /runViewTransition/);
   assert.match(centerHook, /setOpen\(\(current\) => !current\)/);
+  assert.match(center, /const visibleTriggers = triggers\.filter/);
+  assert.match(center, /candidate\.closest\("\.mobile-header"\)/);
+  assert.match(center, /const compactMobile = window\.innerWidth <= 640/);
+  assert.match(center, /window\.visualViewport\?\.width/);
+  assert.match(center, /window\.visualViewport\?\.addEventListener\("resize", positionPanel\)/);
+  assert.match(center, /const mobileTop = triggerRect\?\.bottom \? triggerRect\.bottom \+ 8 : viewportPadding/);
+  assert.match(center, /const left = compactMobile[\s\S]*?viewportWidth - panelWidth - viewportPadding/);
   assert.match(centerStore, /readNotificationCenter/);
   assert.match(centerStore, /saveNotificationCenter/);
   assert.match(shell, /NotificationCenterPanel/);
@@ -1725,8 +1908,45 @@ test("notification center state and anchored menus stay connected to the right a
   assert.match(taskCardMenuHook, /getBoundingClientRect\(\)/);
   assert.match(splitMenu, /style=\{\{\s*top: menu\.y,\s*left: menu\.x\s*\}\}/);
   assert.match(identity, /action: "heartbeat"/);
+  assert.match(identity, /timeout: TRACK_TIMING\.accountPresenceTimeoutMs/);
+  assert.match(identity, /navigator\.onLine \? "online" : "offline"/);
   assert.match(identity, /setAdminAuthorized\(data\.isAdmin === true\)/);
   assert.match(polish, /\.notification-center-panel/);
+  assert.match(
+    polish,
+    /\.sync-conflict-banner \{[\s\S]*?z-index: var\(--track-layer-dialog\);[\s\S]*?max-height: calc\(100dvh - 32px\);[\s\S]*?overflow: auto;/,
+  );
+  assert.match(
+    polish,
+    /\.sync-health-popover \{[\s\S]*?position: fixed;[\s\S]*?z-index: var\(--track-layer-dialog\);[\s\S]*?max-height: min\(420px, calc\(100dvh - 24px\)\);[\s\S]*?overflow: auto;/,
+  );
+  assert.match(
+    polish,
+    /\.sync-health-popover\[data-positioned="false"\] \{[\s\S]*?visibility: hidden;[\s\S]*?opacity: 0;/,
+  );
+  assert.match(polish, /\.notification-center-panel \{[\s\S]*?max-height: min\(580px, calc\(100dvh - 24px/);
+  assert.match(
+    polish,
+    /\.notification-center-backdrop \{[\s\S]*?background: rgba\(4, 5, 8, 0\.48\);[\s\S]*?-webkit-backdrop-filter: blur\(4px\) saturate\(0\.88\);[\s\S]*?backdrop-filter: blur\(4px\) saturate\(0\.88\);/,
+  );
+  assert.match(polish, /@keyframes notification-center-backdrop-in/);
+  assert.match(polish, /@keyframes notification-center-backdrop-out/);
+  assert.match(
+    polish,
+    /\.notification-center-header \{[\s\S]*?align-items: center;[\s\S]*?justify-content: space-between;/,
+  );
+  assert.match(
+    polish,
+    /\.notification-center-actions > button \{[\s\S]*?min-height: 44px;[\s\S]*?display: inline-flex;[\s\S]*?align-items: center;[\s\S]*?justify-content: center;/,
+  );
+  assert.match(
+    polish,
+    /\.notification-center-clear \{[\s\S]*?border: 1px solid color-mix\(in srgb, var\(--line\) 62%, transparent\) !important;/,
+  );
+  assert.match(
+    polish,
+    /@media \(max-width: 560px\)[\s\S]*?\.notification-center-panel \{[\s\S]*?top: max\(68px, calc\(env\(safe-area-inset-top\) \+ 62px\)\);[\s\S]*?width: calc\(100vw - 24px\);/,
+  );
   assert.doesNotMatch(polish, /view-transition-name: track-notification-center;/);
   assert.match(polish, /view-transition-name: track-workout-recovery;/);
   assert.match(polish, /\.account-online\.is-offline/);
@@ -1942,6 +2162,11 @@ test("must-have reliability features keep their safe server and UI paths", async
   assert.match(syncHook, /offlineQueued/);
   assert.match(syncIndicator, /Last successful sync/);
   assert.match(syncIndicator, /Retry sync/);
+  assert.match(syncIndicator, /createPortal/);
+  assert.match(syncIndicator, /triggerRef/);
+  assert.match(syncIndicator, /popoverRef/);
+  assert.match(syncIndicator, /visualViewport\?\.width/);
+  assert.match(syncIndicator, /data-positioned=\{popoverPosition \? "true" : "false"\}/);
   assert.match(accountActions, /functions\.invoke\("delete-account"/);
   assert.match(deleteFunction, /delete_account_data/);
   assert.match(deleteFunction, /auth\.admin\.deleteUser/);

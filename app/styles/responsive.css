@@ -889,7 +889,6 @@
   }
 }
 
-/* Shared UI polish: calmer workout surfaces, clearer feedback, and one page language. */
 .workout-page {
   width: min(920px, 100%);
   margin: 0 auto;

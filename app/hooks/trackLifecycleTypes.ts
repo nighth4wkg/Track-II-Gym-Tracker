@@ -89,7 +89,6 @@ export type LifecycleRefs = {
   calendarInitializedFor: MutableRefObject<string>;
   openPasswordResetRef: MutableRefObject<() => void>;
   clearAccountClientStateRef: MutableRefObject<(userId?: string) => void>;
-  announcementTimer: MutableRefObject<number | null>;
   latestAnnouncementId: MutableRefObject<string | null>;
   activeUserIdRef: MutableRefObject<string | null>;
 };

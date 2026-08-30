@@ -46,7 +46,6 @@ export function useTrackAppLocalState({
   const resetCloudSyncStateRef = useRef<() => void>(() => undefined);
   const cloudSaveInFlightRef = useRef<() => boolean>(() => false);
   const siteUpdateCheckRef = useRef<((manual?: boolean) => Promise<"update" | "current" | "error">) | null>(null);
-  const announcementTimer = useRef<number | null>(null);
   const latestAnnouncementId = useRef<string | null>(null);
   const announcementDragStart = useRef<number | null>(null);
   const activeUserIdRef = useRef<string | null>(null);
@@ -62,7 +61,6 @@ export function useTrackAppLocalState({
     aiExercises,
     aiKey,
     announcementDragStart,
-    announcementTimer,
     applySavedTodayMarkersRef,
     broadcastSyncEventRef,
     calendarInitializedFor,

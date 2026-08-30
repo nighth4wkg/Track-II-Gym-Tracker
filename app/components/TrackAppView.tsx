@@ -87,7 +87,7 @@ export function TrackAppView({ active: activeResult, controllers, local, nativeA
     workoutDate,
     workoutEditor,
   } = controllers;
-  const notificationCenterProps = useTrackAppNotifications(identity, timer, controllers.workoutDraftRecovery, undo);
+  const notificationCenterProps = useTrackAppNotifications(identity, timer, controllers.workoutDraftRecovery);
   const { visible, openCount } = useMemo(() => filterWorkoutTasks(tasks, filter), [filter, tasks]);
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(searchQuery);
   useEffect(() => {

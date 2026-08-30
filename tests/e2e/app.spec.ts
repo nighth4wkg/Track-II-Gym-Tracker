@@ -106,7 +106,7 @@ test.describe("authenticated page smoke coverage", () => {
     await expect(page.locator(".workout-page")).toHaveCount(1);
   });
 
-  test("inbox opens at its trigger and clear all offers an undo", async ({ page }) => {
+  test("inbox opens at its trigger and clear all permanently removes notifications", async ({ page }) => {
     await signIn(page);
     const notificationId = `e2e:${Date.now()}`;
     await page.evaluate((id) => {
@@ -127,11 +127,21 @@ test.describe("authenticated page smoke coverage", () => {
     await expect(trigger).toBeVisible();
     await trigger.click();
     const panel = page.getByRole("dialog", { name: "Notification center" });
+    const backdrop = page.locator(".notification-center-backdrop");
     await expect(panel).toBeVisible();
+    await expect(panel).toHaveAttribute("aria-modal", "true");
+    await expect(backdrop).toBeVisible();
+    const panelBounds = await panel.boundingBox();
+    const viewport = page.viewportSize();
+    expect(panelBounds).not.toBeNull();
+    if (panelBounds && viewport) {
+      expect(panelBounds.y).toBeLessThan(100);
+      if (viewport.width > 640) expect(panelBounds.x + panelBounds.width).toBeGreaterThan(viewport.width - 24);
+    }
     await expect(panel.getByText("E2E notification", { exact: true })).toBeVisible();
     await panel.getByRole("button", { name: "Clear all", exact: true }).click();
     await expect(panel.getByText("You’re all caught up", { exact: true })).toBeVisible();
-    await expect(page.getByRole("status").filter({ hasText: "Notifications cleared" })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Notifications cleared" })).toHaveCount(0);
   });
 
   test("Rank front and back controls keep one body view active", async ({ page }) => {
@@ -181,6 +191,30 @@ test.describe("authenticated page smoke coverage", () => {
     });
     expect(clearance).not.toBeNull();
     expect(clearance?.cardBottom ?? 0).toBeLessThanOrEqual((clearance?.dockTop ?? 0) + 2);
+  });
+
+  test("mouse and trackpad swipes reveal set deletion without changing its values", async ({ page }) => {
+    await signIn(page);
+    const row = page.locator(".workout-page .set-row:not(.set-heading)").first();
+    test.skip((await row.count()) === 0, "The protected fixture needs at least one logged set for swipe coverage.");
+    const reps = row.getByLabel(/reps$/i);
+    const rir = row.getByLabel(/RIR$/i);
+    const before = { reps: await reps.inputValue(), rir: await rir.inputValue() };
+    const deleteButton = row.getByRole("button", { name: /Delete .* set/i });
+    await expect(deleteButton).toBeHidden();
+    const bounds = await row.boundingBox();
+    expect(bounds).not.toBeNull();
+    if (!bounds) return;
+    const startX = bounds.x + 10;
+    const y = bounds.y + bounds.height / 2;
+    await page.mouse.move(startX, y);
+    await page.mouse.down();
+    await page.mouse.move(startX - 72, y, { steps: 4 });
+    await page.mouse.up();
+    await expect(row).toHaveClass(/is-delete-revealed/);
+    await expect(deleteButton).toBeVisible();
+    await expect(reps).toHaveValue(before.reps);
+    await expect(rir).toHaveValue(before.rir);
   });
 
   test("iPad layout keeps controls and labels inside the viewport", async ({ page }, testInfo) => {

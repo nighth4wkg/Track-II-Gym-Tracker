@@ -12,6 +12,8 @@ type VirtualizedTaskListProps = {
   tasks: Task[];
   progressFading: boolean;
   draggingTaskId: string | null;
+  showDeleteGestureHint: boolean;
+  onDeleteGestureRevealed: () => void;
 };
 
 type Range = { start: number; end: number };
@@ -21,7 +23,13 @@ function taskMarginBottom(element: HTMLElement) {
   return Number.isFinite(margin) ? margin : 0;
 }
 
-export function VirtualizedTaskList({ tasks, progressFading, draggingTaskId }: VirtualizedTaskListProps) {
+export function VirtualizedTaskList({
+  tasks,
+  progressFading,
+  draggingTaskId,
+  showDeleteGestureHint,
+  onDeleteGestureRevealed,
+}: VirtualizedTaskListProps) {
   const virtualized = tasks.length > VIRTUALIZE_AFTER && !draggingTaskId;
   const listRef = useRef<HTMLDivElement>(null);
   const [measuredHeights, setMeasuredHeights] = useState<Record<string, number>>({});
@@ -99,8 +107,13 @@ export function VirtualizedTaskList({ tasks, progressFading, draggingTaskId }: V
   if (!virtualized) {
     return (
       <div className={progressFading ? "task-list progress-fading" : "task-list"} aria-live="polite">
-        {tasks.map((task) => (
-          <ConnectedTaskCard key={task.id} task={task} />
+        {tasks.map((task, index) => (
+          <ConnectedTaskCard
+            key={task.id}
+            task={task}
+            showDeleteGestureHint={showDeleteGestureHint && index === 0}
+            onDeleteGestureRevealed={onDeleteGestureRevealed}
+          />
         ))}
       </div>
     );
@@ -123,7 +136,11 @@ export function VirtualizedTaskList({ tasks, progressFading, draggingTaskId }: V
             data-virtual-task-id={task.id}
             style={{ top: offsets.values[index] ?? 0 }}
           >
-            <ConnectedTaskCard task={task} />
+            <ConnectedTaskCard
+              task={task}
+              showDeleteGestureHint={showDeleteGestureHint && index === 0}
+              onDeleteGestureRevealed={onDeleteGestureRevealed}
+            />
           </div>
         );
       })}

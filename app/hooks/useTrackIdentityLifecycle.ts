@@ -57,7 +57,7 @@ export function useTrackIdentityLifecycle({
       else if (previousUserId && event === "SIGNED_OUT")
         setAuthMessage("Your session ended. Sign in again—your saved workout data is still safe.");
       setAdminAuthorized(verifiedAdminRole(nextUser));
-      setAccountPresenceStatus(nextUser ? (navigator.onLine ? "connecting" : "offline") : "offline");
+      setAccountPresenceStatus(nextUser ? (navigator.onLine ? "online" : "offline") : "offline");
       setAuthLoading(false);
     };
     supabase.auth
@@ -100,6 +100,7 @@ export function useTrackIdentityLifecycle({
       try {
         const { data, error } = await supabase.functions.invoke("admin-member-data", {
           body: { action: "heartbeat" },
+          timeout: TRACK_TIMING.accountPresenceTimeoutMs,
         });
         if (cancelled) return;
         if (!error && data?.ok === true) setAdminAuthorized(data.isAdmin === true);

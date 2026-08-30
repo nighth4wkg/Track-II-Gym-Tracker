@@ -51,14 +51,11 @@ type TaskCardProps = {
   onUpdateSet: (setId: string, field: "weight" | "reps" | "rir", value: string) => void;
   onFinishSetWeightEdit: (set: TaskCardSet) => void;
   onBeginSetWeightEdit: (set: TaskCardSet, input: HTMLInputElement) => void;
-  onToggleSetUnit: (setId: string) => void;
+  onToggleExerciseUnit: () => void;
   onRemoveSet: (setId: string) => void;
   onAddSet: () => void;
-};
-
-type CoachDecision = {
-  title: string;
-  value: "applied";
+  showDeleteGestureHint: boolean;
+  onDeleteGestureRevealed: () => void;
 };
 
 function TaskCardView({
@@ -89,23 +86,17 @@ function TaskCardView({
   onUpdateSet,
   onFinishSetWeightEdit,
   onBeginSetWeightEdit,
-  onToggleSetUnit,
+  onToggleExerciseUnit,
   onRemoveSet,
   onAddSet,
+  showDeleteGestureHint,
+  onDeleteGestureRevealed,
 }: TaskCardProps) {
   const progressionCoach = buildProgressionCoach(task);
-  const coachReferenceSet = task.sets?.find(
-    (candidate) => candidate.lastWeight !== undefined && candidate.lastWeightUnit && candidate.lastReps !== undefined,
-  );
-  const coachLoadLabel = coachReferenceSet
-    ? `${coachReferenceSet.weight.trim() || "current"} ${coachReferenceSet.unit.toUpperCase()}`
-    : "suggestion";
+  const weightUnitLabel = (task.sets?.[0]?.unit ?? "kg").toUpperCase();
   const className = `${task.done ? "task ui-panel done" : "task ui-panel"}${task.collapsed ? " collapsed" : ""}${dragging ? " dragging" : ""}${completionEnabled ? "" : " completion-hidden"}`;
   const skipNextEditBlur = useRef(false);
   const [coachOpen, setCoachOpen] = useState(false);
-  const [coachDecision, setCoachDecision] = useState<CoachDecision | null>(null);
-  const activeCoachDecision =
-    coachDecision && coachDecision.title === progressionCoach?.title ? coachDecision.value : null;
 
   const {
     menuButtonRef,
@@ -256,46 +247,31 @@ function TaskCardView({
               </div>
               <strong>{progressionCoach.title}</strong>
               <span className="progression-coach-detail">{progressionCoach.detail}</span>
-              <div className="progression-coach-actions">
-                <button
-                  type="button"
-                  className="ui-button ui-button-primary"
-                  onClick={() => {
-                    const nextSet = task.sets?.find((candidate) => !candidate.completed);
-                    if (nextSet && coachReferenceSet && nextSet.weight !== coachReferenceSet.weight) {
-                      onUpdateSet(nextSet.id, "weight", coachReferenceSet.weight);
-                    }
-                    setCoachDecision({ title: progressionCoach.title, value: "applied" });
-                  }}
-                  aria-label={`Apply ${coachLoadLabel} to the next set for ${task.text}`}
-                >
-                  Apply ({coachLoadLabel})
-                </button>
-                <button
-                  type="button"
-                  className="ui-button ui-button-quiet"
-                  onClick={() => {
-                    setCoachDecision(null);
-                    setCoachOpen(false);
-                  }}
-                >
-                  Dismiss
-                </button>
-              </div>
-              {activeCoachDecision && (
-                <span className="progression-coach-decision" aria-live="polite">
-                  {activeCoachDecision === "applied" ? `Applied ${coachLoadLabel} to the next available set.` : ""}
-                </span>
-              )}
             </aside>
+          )}
+          {showDeleteGestureHint && (
+            <div className="set-delete-gesture-hint" role="note">
+              <span className="set-delete-gesture-arrow" aria-hidden="true">
+                ←
+              </span>
+              <span>Swipe or drag a set left to reveal Delete.</span>
+            </div>
           )}
           <div className="sets-table">
             <div className="set-row set-heading">
               <span>SET</span>
-              <span>WEIGHT</span>
+              <button
+                type="button"
+                className="set-heading-unit"
+                onClick={onToggleExerciseUnit}
+                aria-label={`Switch ${task.text} weight unit to ${weightUnitLabel === "KG" ? "LB" : "KG"}`}
+                title={`Switch weight unit to ${weightUnitLabel === "KG" ? "LB" : "KG"}`}
+              >
+                {weightUnitLabel}
+              </button>
               <span>REPS</span>
               <span>RIR</span>
-              <span>ACTION</span>
+              <span>DONE</span>
             </div>
             {(task.sets ?? []).map((set, index) => (
               <TaskSetRow
@@ -307,8 +283,8 @@ function TaskCardView({
                 onUpdateSet={onUpdateSet}
                 onFinishSetWeightEdit={onFinishSetWeightEdit}
                 onBeginSetWeightEdit={onBeginSetWeightEdit}
-                onToggleSetUnit={onToggleSetUnit}
                 onRemoveSet={onRemoveSet}
+                onDeleteGestureRevealed={onDeleteGestureRevealed}
               />
             ))}
           </div>
@@ -330,15 +306,30 @@ export const TaskCard = memo(
     previous.editing === next.editing &&
     ((!previous.editing && !next.editing) || previous.editValue === next.editValue) &&
     previous.mobileExerciseMenu === next.mobileExerciseMenu &&
+    previous.showDeleteGestureHint === next.showDeleteGestureHint &&
     previous.onCompleteSetAndStartRest === next.onCompleteSetAndStartRest,
 );
 
 export const ConnectedTaskCard = memo(
-  function ConnectedTaskCard({ task }: { task: TaskCardTask }) {
+  function ConnectedTaskCard({
+    task,
+    showDeleteGestureHint,
+    onDeleteGestureRevealed,
+  }: {
+    task: TaskCardTask;
+    showDeleteGestureHint: boolean;
+    onDeleteGestureRevealed: () => void;
+  }) {
     // Keep the context-connected adapter tiny, then let the memoized view decide
     // whether this particular exercise changed. Editing one set should not
     // repaint every card in a long split.
-    return <TaskCard {...useConnectedTaskCard(task)} />;
+    return (
+      <TaskCard
+        {...useConnectedTaskCard(task)}
+        showDeleteGestureHint={showDeleteGestureHint}
+        onDeleteGestureRevealed={onDeleteGestureRevealed}
+      />
+    );
   },
-  (previous, next) => previous.task === next.task,
+  (previous, next) => previous.task === next.task && previous.showDeleteGestureHint === next.showDeleteGestureHint,
 );

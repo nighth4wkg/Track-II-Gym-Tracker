@@ -1681,33 +1681,6 @@ h1 {
   position: relative;
   display: flex;
 }
-.weight-set-input > input {
-  padding-right: 42px;
-}
-.weight-set-input > button {
-  position: absolute;
-  z-index: 2;
-  top: 5px;
-  right: 6px;
-  width: 32px;
-  height: 28px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--muted);
-  padding: 0;
-  cursor: pointer;
-  font-size: 9px;
-  font-weight: 750;
-  text-transform: uppercase;
-}
-.weight-set-input.has-history > button {
-  top: 10px;
-}
-.weight-set-input > button:hover {
-  background: var(--subtle);
-  color: var(--ink);
-}
 .set-delta {
   position: absolute;
   z-index: 3;

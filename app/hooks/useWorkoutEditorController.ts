@@ -530,19 +530,15 @@ export function useWorkoutEditorController({
     [offerUndo, setMobileExerciseMenu, updateTasks],
   );
 
-  const toggleSetUnit = useCallback(
-    (taskId: string, setId: string) => {
+  const toggleExerciseUnit = useCallback(
+    (taskId: string) => {
       updateTasks((current) =>
-        current.map((task) =>
-          task.id === taskId
-            ? {
-                ...task,
-                sets: (task.sets ?? []).map((set) =>
-                  set.id === setId ? convertSetUnit(set, set.unit === "kg" ? "lb" : "kg") : set,
-                ),
-              }
-            : task,
-        ),
+        current.map((task) => {
+          if (task.id !== taskId) return task;
+          const currentUnit = task.sets?.[0]?.unit ?? "kg";
+          const nextUnit = currentUnit === "kg" ? "lb" : "kg";
+          return { ...task, sets: (task.sets ?? []).map((set) => convertSetUnit(set, nextUnit)) };
+        }),
       );
     },
     [updateTasks],
@@ -648,7 +644,7 @@ export function useWorkoutEditorController({
       addSet,
       removeSet,
       removeExercise,
-      toggleSetUnit,
+      toggleExerciseUnit,
       applyGlobalUnit,
       applyExerciseUnit,
       syncLatestProgressAcrossSplits,
@@ -676,7 +672,7 @@ export function useWorkoutEditorController({
       syncLatestProgressAcrossSplits,
       toggleCard,
       toggleDone,
-      toggleSetUnit,
+      toggleExerciseUnit,
       updateSet,
       updateTasks,
     ],

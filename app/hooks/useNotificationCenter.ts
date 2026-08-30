@@ -199,16 +199,8 @@ export function useNotificationCenter({
     });
     commit(() => []);
   }, [commit, items]);
-  const restore = useCallback(
-    (snapshot: TrackCenterNotification[]) =>
-      commit((current) => {
-        const currentIds = new Set(current.map((item) => item.id));
-        return [...snapshot.filter((item) => !currentIds.has(item.id)), ...current];
-      }),
-    [commit],
-  );
   const toggle = useCallback(() => setOpen((current) => !current), []);
   const close = useCallback(() => setOpen(false), []);
 
-  return { items, unreadCount, open, toggle, close, markRead, markAllRead, clearAll, restore, dismiss };
+  return { items, unreadCount, open, toggle, close, markRead, markAllRead, clearAll, dismiss };
 }

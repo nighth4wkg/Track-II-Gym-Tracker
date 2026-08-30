@@ -81,7 +81,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/track-release.jks
+      ANDROID_KEYSTORE_FILE: ${{ github.workspace }}/track-release.jks
       ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
       ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
       ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
@@ -163,7 +163,7 @@ jobs:
     runs-on: macos-15
     environment: production
     env:
-      IOS_KEYCHAIN_PATH: ${{ runner.temp }}/track-release.keychain-db
+      IOS_KEYCHAIN_PATH: ${{ github.workspace }}/track-release.keychain-db
       IOS_KEYCHAIN_PASSWORD: ${{ secrets.IOS_KEYCHAIN_PASSWORD }}
       IOS_BUNDLE_ID: com.track.lifting
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}

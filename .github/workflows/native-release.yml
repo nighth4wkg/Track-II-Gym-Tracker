@@ -39,8 +39,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Chromium for release browser checks
-        run: npx playwright install --with-deps chromium
+      - name: Install browsers for release checks
+        run: npx playwright install --with-deps chromium webkit
 
       - name: Require package version and release notes to match
         run: |
